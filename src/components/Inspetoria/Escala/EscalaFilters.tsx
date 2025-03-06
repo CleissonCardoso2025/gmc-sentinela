@@ -1,8 +1,7 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Filter } from "lucide-react";
+import { Filter, Calendar } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,22 +9,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GuarnicaoOption, SupervisorOption, RotaOption } from './types';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { GuarnicaoOption, RotaOption } from './types';
 
 interface EscalaFiltersProps {
   selectedPeriod: string;
   setSelectedPeriod: (value: string) => void;
   selectedGuarnicao: string;
   setSelectedGuarnicao: (value: string) => void;
-  selectedSupervisor: string;
-  setSelectedSupervisor: (value: string) => void;
   selectedRota: string;
   setSelectedRota: (value: string) => void;
-  selectedWeek: string;
-  setSelectedWeek: (value: string) => void;
+  selectedDate: Date | undefined;
+  setSelectedDate: (date: Date | undefined) => void;
   handleFilter: () => void;
   guarnicoes: GuarnicaoOption[];
-  supervisores: SupervisorOption[];
   rotas: RotaOption[];
 }
 
@@ -34,17 +38,16 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
   setSelectedPeriod,
   selectedGuarnicao,
   setSelectedGuarnicao,
-  selectedSupervisor,
-  setSelectedSupervisor,
   selectedRota,
   setSelectedRota,
-  selectedWeek,
-  setSelectedWeek,
+  selectedDate,
+  setSelectedDate,
   handleFilter,
   guarnicoes,
-  supervisores,
   rotas
 }) => {
+  const [dateOpen, setDateOpen] = useState(false);
+
   return (
     <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
       <div className="flex flex-col md:flex-row gap-2">
@@ -66,28 +69,15 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
           value={selectedGuarnicao}
           onValueChange={setSelectedGuarnicao}
         >
-          <SelectTrigger className="w-full md:w-48">
-            <SelectValue placeholder="Guarnição" />
+          <SelectTrigger className="w-full md:w-60">
+            <SelectValue placeholder="Guarnição/Supervisor" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas</SelectItem>
             {guarnicoes.map(g => (
-              <SelectItem key={g.id} value={g.nome}>{g.nome}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        <Select 
-          value={selectedSupervisor}
-          onValueChange={setSelectedSupervisor}
-        >
-          <SelectTrigger className="w-full md:w-48">
-            <SelectValue placeholder="Supervisor" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            {supervisores.map(s => (
-              <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
+              <SelectItem key={g.id} value={g.nome}>
+                {g.nome} ({g.supervisor})
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -109,12 +99,30 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
       </div>
       
       <div className="flex items-center w-full md:w-auto">
-        <Input 
-          type="week" 
-          className="w-full md:w-auto"
-          value={selectedWeek}
-          onChange={(e) => setSelectedWeek(e.target.value)}
-        />
+        <Popover open={dateOpen} onOpenChange={setDateOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+              )}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, "dd/MM/yyyy") : <span>Selecione data inicial</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarComponent
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                setSelectedDate(date);
+                setDateOpen(false);
+              }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       </div>
       
       <Button variant="outline" size="sm" onClick={handleFilter}>

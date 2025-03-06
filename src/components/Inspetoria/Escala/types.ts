@@ -20,11 +20,7 @@ export interface EscalaItem {
 export interface GuarnicaoOption {
   id: string;
   nome: string;
-}
-
-export interface SupervisorOption {
-  id: string;
-  nome: string;
+  supervisor: string;
 }
 
 export interface RotaOption {

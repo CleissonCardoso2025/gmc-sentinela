@@ -1,5 +1,5 @@
 
-import { EscalaItem, GuarnicaoOption, SupervisorOption, RotaOption } from './types';
+import { EscalaItem, GuarnicaoOption, RotaOption } from './types';
 
 // Mock data for the schedule
 export const weekDays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
@@ -15,11 +15,11 @@ export const escalaData: EscalaItem[] = [
     agent: "Sgt. Roberto Silva",
     role: "Supervisor",
     schedule: [
-      { day: "Segunda", shift: "Diurno", status: "presente" },
-      { day: "Terça", shift: "Diurno", status: "presente" },
+      { day: "Segunda", shift: "24h", status: "presente" },
+      { day: "Terça", shift: "Folga", status: "folga" },
       { day: "Quarta", shift: "Folga", status: "folga" },
-      { day: "Quinta", shift: "Diurno", status: "presente" },
-      { day: "Sexta", shift: "Diurno", status: "presente" },
+      { day: "Quinta", shift: "Folga", status: "folga" },
+      { day: "Sexta", shift: "24h", status: "presente" },
       { day: "Sábado", shift: "Folga", status: "folga" },
       { day: "Domingo", shift: "Folga", status: "folga" },
     ]
@@ -34,13 +34,13 @@ export const escalaData: EscalaItem[] = [
     agent: "Agente Carlos Pereira",
     role: "Agente",
     schedule: [
-      { day: "Segunda", shift: "Diurno", status: "presente" },
-      { day: "Terça", shift: "Diurno", status: "presente" },
-      { day: "Quarta", shift: "Diurno", status: "presente" },
+      { day: "Segunda", shift: "Folga", status: "folga" },
+      { day: "Terça", shift: "24h", status: "presente" },
+      { day: "Quarta", shift: "Folga", status: "folga" },
       { day: "Quinta", shift: "Folga", status: "folga" },
       { day: "Sexta", shift: "Folga", status: "folga" },
-      { day: "Sábado", shift: "Noturno", status: "presente" },
-      { day: "Domingo", shift: "Noturno", status: "presente" },
+      { day: "Sábado", shift: "24h", status: "presente" },
+      { day: "Domingo", shift: "Folga", status: "folga" },
     ]
   },
   {
@@ -50,16 +50,16 @@ export const escalaData: EscalaItem[] = [
     rota: "Rota Leste",
     viatura: "GCM-5678 (Hilux)",
     periodo: "01/07/2024 - 30/07/2024",
-    agent: "Agente Ana Melo",
-    role: "Agente",
+    agent: "Sgt. Marcos Oliveira",
+    role: "Supervisor",
     schedule: [
-      { day: "Segunda", shift: "Noturno", status: "presente" },
-      { day: "Terça", shift: "Noturno", status: "presente" },
-      { day: "Quarta", shift: "Folga", status: "folga" },
+      { day: "Segunda", shift: "Folga", status: "folga" },
+      { day: "Terça", shift: "Folga", status: "folga" },
+      { day: "Quarta", shift: "24h", status: "presente" },
       { day: "Quinta", shift: "Folga", status: "folga" },
-      { day: "Sexta", shift: "Noturno", status: "presente" },
-      { day: "Sábado", shift: "Noturno", status: "presente" },
-      { day: "Domingo", shift: "Noturno", status: "presente" },
+      { day: "Sexta", shift: "Folga", status: "folga" },
+      { day: "Sábado", shift: "Folga", status: "folga" },
+      { day: "Domingo", shift: "24h", status: "presente" },
     ]
   },
   {
@@ -74,26 +74,20 @@ export const escalaData: EscalaItem[] = [
     schedule: [
       { day: "Segunda", shift: "Folga", status: "folga" },
       { day: "Terça", shift: "Folga", status: "folga" },
-      { day: "Quarta", shift: "Diurno", status: "licença" },
-      { day: "Quinta", shift: "Diurno", status: "licença" },
-      { day: "Sexta", shift: "Diurno", status: "licença" },
-      { day: "Sábado", shift: "Diurno", status: "presente" },
-      { day: "Domingo", shift: "Diurno", status: "presente" },
+      { day: "Quarta", shift: "Folga", status: "folga" },
+      { day: "Quinta", shift: "24h", status: "licença" },
+      { day: "Sexta", shift: "Folga", status: "folga" },
+      { day: "Sábado", shift: "Folga", status: "folga" },
+      { day: "Domingo", shift: "Folga", status: "folga" },
     ]
   },
 ];
 
 // Mock data for filters
 export const guarnicoes: GuarnicaoOption[] = [
-  { id: "1", nome: "Guarnição Alpha" },
-  { id: "2", nome: "Guarnição Bravo" },
-  { id: "3", nome: "Guarnição Charlie" }
-];
-
-export const supervisores: SupervisorOption[] = [
-  { id: "1", nome: "Sgt. Roberto Silva" },
-  { id: "2", nome: "Sgt. Marcos Oliveira" },
-  { id: "3", nome: "Sgt. Pedro Costa" }
+  { id: "1", nome: "Guarnição Alpha", supervisor: "Sgt. Roberto Silva" },
+  { id: "2", nome: "Guarnição Bravo", supervisor: "Sgt. Marcos Oliveira" },
+  { id: "3", nome: "Guarnição Charlie", supervisor: "Sgt. Pedro Costa" }
 ];
 
 export const rotas: RotaOption[] = [

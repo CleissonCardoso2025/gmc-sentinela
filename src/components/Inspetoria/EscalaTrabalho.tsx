@@ -19,16 +19,15 @@ import EscalaTable from './Escala/EscalaTable';
 import EscalaLegend from './Escala/EscalaLegend';
 
 // Import mock data and utilities
-import { escalaData, weekDays, guarnicoes, supervisores, rotas } from './Escala/mockData';
+import { escalaData, weekDays, guarnicoes, rotas } from './Escala/mockData';
 import { getStatusColor } from './Escala/utils';
 
 const EscalaTrabalho: React.FC = () => {
   const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState("semanal");
-  const [selectedWeek, setSelectedWeek] = useState("");
-  const [selectedGuarnicao, setSelectedGuarnicao] = useState("");
-  const [selectedSupervisor, setSelectedSupervisor] = useState("");
-  const [selectedRota, setSelectedRota] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedGuarnicao, setSelectedGuarnicao] = useState("todas");
+  const [selectedRota, setSelectedRota] = useState("todas");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<number | null>(null);
 
@@ -82,9 +81,12 @@ const EscalaTrabalho: React.FC = () => {
   };
 
   const filteredData = escalaData.filter(item => {
-    if (selectedGuarnicao && item.guarnicao !== selectedGuarnicao) return false;
-    if (selectedSupervisor && item.supervisor !== selectedSupervisor) return false;
-    if (selectedRota && item.rota !== selectedRota) return false;
+    // Filter by guarnicao, but handle "todas" case
+    if (selectedGuarnicao !== "todas" && item.guarnicao !== selectedGuarnicao) return false;
+    
+    // Filter by rota, but handle "todas" case
+    if (selectedRota !== "todas" && item.rota !== selectedRota) return false;
+    
     return true;
   });
 
@@ -96,15 +98,12 @@ const EscalaTrabalho: React.FC = () => {
           setSelectedPeriod={setSelectedPeriod}
           selectedGuarnicao={selectedGuarnicao}
           setSelectedGuarnicao={setSelectedGuarnicao}
-          selectedSupervisor={selectedSupervisor}
-          setSelectedSupervisor={setSelectedSupervisor}
           selectedRota={selectedRota}
           setSelectedRota={setSelectedRota}
-          selectedWeek={selectedWeek}
-          setSelectedWeek={setSelectedWeek}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
           handleFilter={handleFilter}
           guarnicoes={guarnicoes}
-          supervisores={supervisores}
           rotas={rotas}
         />
         

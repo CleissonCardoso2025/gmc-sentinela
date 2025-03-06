@@ -12,7 +12,7 @@ import {
   UserCog,
   ChevronLeft,
   ChevronRight,
-  Balance
+  GavelIcon
 } from "lucide-react";
 
 interface SidebarProps {
@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
     { icon: <Wrench className="h-5 w-5" />, text: 'Manutenção' },
     { icon: <Users className="h-5 w-5" />, text: 'Efetivo' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências' },
-    { icon: <Balance className="h-5 w-5" />, text: 'Corregedoria' },
+    { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria' },
     { icon: <UserCog className="h-5 w-5" />, text: 'Recursos Humanos' },
     { icon: <Shield className="h-5 w-5" />, text: 'Inspetoria Geral' },
     { icon: <Settings className="h-5 w-5" />, text: 'Configurações' },

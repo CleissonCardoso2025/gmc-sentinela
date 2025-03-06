@@ -10,21 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface GuarnicaoOption {
-  id: string;
-  nome: string;
-}
-
-interface SupervisorOption {
-  id: string;
-  nome: string;
-}
-
-interface RotaOption {
-  id: string;
-  nome: string;
-}
+import { GuarnicaoOption, SupervisorOption, RotaOption } from './types';
 
 interface EscalaFiltersProps {
   selectedPeriod: string;
@@ -84,7 +70,7 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
             <SelectValue placeholder="Guarnição" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas</SelectItem>
+            <SelectItem value="todas">Todas</SelectItem>
             {guarnicoes.map(g => (
               <SelectItem key={g.id} value={g.nome}>{g.nome}</SelectItem>
             ))}
@@ -99,7 +85,7 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
             <SelectValue placeholder="Supervisor" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos</SelectItem>
+            <SelectItem value="todos">Todos</SelectItem>
             {supervisores.map(s => (
               <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
             ))}
@@ -114,7 +100,7 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
             <SelectValue placeholder="Rota" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas</SelectItem>
+            <SelectItem value="todas">Todas</SelectItem>
             {rotas.map(r => (
               <SelectItem key={r.id} value={r.nome}>{r.nome}</SelectItem>
             ))}

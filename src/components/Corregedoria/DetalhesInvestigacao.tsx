@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { EtapaInvestigacao } from './EtapaInvestigacao';
-import { Calendar, Check, FileUp, Printer } from 'lucide-react';
+import { Calendar, Check, FileText, FileUp, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface DetalhesInvestigacaoProps {

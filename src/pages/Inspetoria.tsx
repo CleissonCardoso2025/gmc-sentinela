@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -17,7 +15,6 @@ import GuarnicoesList from "@/components/Inspetoria/GuarnicoesList";
 import GuarnicaoForm from "@/components/Inspetoria/GuarnicaoForm";
 import EscalaTrabalho from "@/components/Inspetoria/EscalaTrabalho";
 import RelatoriosOperacionais from "@/components/Inspetoria/RelatoriosOperacionais";
-import AlertPanel from "@/components/Inspetoria/AlertPanel";
 import RotasList from "@/components/Inspetoria/RotasList";
 import RotaForm from "@/components/Inspetoria/RotaForm";
 

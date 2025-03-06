@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
@@ -21,16 +22,23 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
+  const location = useLocation();
+  
   const menuItems = [
-    { icon: <Car className="h-5 w-5" />, text: 'Viaturas' },
-    { icon: <Wrench className="h-5 w-5" />, text: 'Manutenção' },
-    { icon: <Users className="h-5 w-5" />, text: 'Efetivo' },
-    { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências' },
-    { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria' },
-    { icon: <UserCog className="h-5 w-5" />, text: 'Recursos Humanos' },
-    { icon: <Shield className="h-5 w-5" />, text: 'Inspetoria Geral' },
-    { icon: <Settings className="h-5 w-5" />, text: 'Configurações' },
+    { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
+    { icon: <Wrench className="h-5 w-5" />, text: 'Manutenção', path: '/manutencao' },
+    { icon: <Users className="h-5 w-5" />, text: 'Efetivo', path: '/efetivo' },
+    { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
+    { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
+    { icon: <UserCog className="h-5 w-5" />, text: 'Recursos Humanos', path: '/rh' },
+    { icon: <Shield className="h-5 w-5" />, text: 'Inspetoria Geral', path: '/inspetoria' },
+    { icon: <Settings className="h-5 w-5" />, text: 'Configurações', path: '/configuracoes' },
   ];
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <aside className={cn(
@@ -62,14 +70,18 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
                 key={index}
                 variant="ghost"
                 className={cn(
-                  "flex items-center justify-start text-white bg-opacity-0 hover:bg-gcm-700 border-none transition-all duration-300",
-                  collapsed ? "px-3" : "px-4"
+                  "flex items-center justify-start text-white hover:bg-gcm-700 border-none transition-all duration-300",
+                  collapsed ? "px-3" : "px-4",
+                  isActive(item.path) ? "bg-gcm-700" : "bg-opacity-0"
                 )}
+                asChild
               >
-                <span className={cn("flex items-center", collapsed ? "justify-center" : "")}>
-                  {item.icon}
-                  {!collapsed && <span className="ml-3 font-medium">{item.text}</span>}
-                </span>
+                <Link to={item.path}>
+                  <span className={cn("flex items-center", collapsed ? "justify-center" : "")}>
+                    {item.icon}
+                    {!collapsed && <span className="ml-3 font-medium">{item.text}</span>}
+                  </span>
+                </Link>
               </Button>
             ))}
           </nav>

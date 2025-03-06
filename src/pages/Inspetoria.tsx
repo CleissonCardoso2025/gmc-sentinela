@@ -3,6 +3,13 @@ import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Dashboard from "@/layouts/Dashboard";
 import { Shield, Users, Calendar, FileText, Bell, Plus, Map } from "lucide-react";
 import InspetoriaDashboard from "@/components/Inspetoria/InspetoriaDashboard";

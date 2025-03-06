@@ -4,17 +4,20 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Dashboard from "@/layouts/Dashboard";
-import { Shield, Users, Calendar, FileText, Bell, Plus } from "lucide-react";
+import { Shield, Users, Calendar, FileText, Bell, Plus, Map } from "lucide-react";
 import InspetoriaDashboard from "@/components/Inspetoria/InspetoriaDashboard";
 import GuarnicoesList from "@/components/Inspetoria/GuarnicoesList";
 import GuarnicaoForm from "@/components/Inspetoria/GuarnicaoForm";
 import EscalaTrabalho from "@/components/Inspetoria/EscalaTrabalho";
 import RelatoriosOperacionais from "@/components/Inspetoria/RelatoriosOperacionais";
 import AlertPanel from "@/components/Inspetoria/AlertPanel";
+import RotasList from "@/components/Inspetoria/RotasList";
+import RotaForm from "@/components/Inspetoria/RotaForm";
 
 const InspetoriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isCreatingGuarnicao, setIsCreatingGuarnicao] = useState(false);
+  const [isCreatingRota, setIsCreatingRota] = useState(false);
 
   return (
     <Dashboard>
@@ -26,18 +29,23 @@ const InspetoriaPage: React.FC = () => {
           </div>
           
           <div className="flex space-x-2">
-            <Button onClick={() => {
-              setIsCreatingGuarnicao(true);
-              setActiveTab("guarnicoes");
-            }}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Guarnição
-            </Button>
+            {activeTab === "guarnicoes" && (
+              <Button onClick={() => setIsCreatingGuarnicao(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Guarnição
+              </Button>
+            )}
+            {activeTab === "rotas" && (
+              <Button onClick={() => setIsCreatingRota(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Rota
+              </Button>
+            )}
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center">
               <Shield className="mr-2 h-4 w-4" />
               Dashboard
@@ -53,6 +61,10 @@ const InspetoriaPage: React.FC = () => {
             <TabsTrigger value="relatorios" className="flex items-center">
               <FileText className="mr-2 h-4 w-4" />
               Relatórios
+            </TabsTrigger>
+            <TabsTrigger value="rotas" className="flex items-center">
+              <Map className="mr-2 h-4 w-4" />
+              Rotas
             </TabsTrigger>
           </TabsList>
 
@@ -90,6 +102,25 @@ const InspetoriaPage: React.FC = () => {
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Relatórios Operacionais</h2>
               <RelatoriosOperacionais />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="rotas">
+            <Card className="p-6">
+              {isCreatingRota ? (
+                <>
+                  <h2 className="text-xl font-semibold mb-4">Nova Rota</h2>
+                  <RotaForm 
+                    onSave={() => setIsCreatingRota(false)}
+                    onCancel={() => setIsCreatingRota(false)}
+                  />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-semibold mb-4">Rotas de Patrulhamento</h2>
+                  <RotasList onCreateNew={() => setIsCreatingRota(true)} />
+                </>
+              )}
             </Card>
           </TabsContent>
         </Tabs>

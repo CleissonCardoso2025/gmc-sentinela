@@ -8,8 +8,28 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { EtapaInvestigacao } from './EtapaInvestigacao';
-import { Calendar, Check, FileText, FileUp, Printer } from 'lucide-react';
+import { Calendar, Check, FileText, FileUp, Printer, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface DetalhesInvestigacaoProps {
   sindicancia: {
@@ -22,11 +42,19 @@ interface DetalhesInvestigacaoProps {
   };
 }
 
+const novaEtapaSchema = z.object({
+  nome: z.string().min(3, "O nome da etapa deve ter pelo menos 3 caracteres"),
+  descricao: z.string().min(10, "A descrição deve ter pelo menos 10 caracteres"),
+  responsavel: z.string().min(3, "O nome do responsável deve ter pelo menos 3 caracteres"),
+  data: z.string().min(1, "A data é obrigatória")
+});
+
+type NovaEtapaForm = z.infer<typeof novaEtapaSchema>;
+
 export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState(sindicancia.status);
-  
-  const etapas = [
+  const [etapas, setEtapas] = useState([
     {
       id: 1,
       nome: "Investigação Inicial",
@@ -59,7 +87,19 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
       responsavel: "Cel. Pedro Albuquerque",
       descricao: "Conclusão da análise e emissão de parecer final sobre a conduta do GMC investigado e recomendações de ações disciplinares, se necessárias."
     }
-  ];
+  ]);
+  
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
+  const form = useForm<NovaEtapaForm>({
+    resolver: zodResolver(novaEtapaSchema),
+    defaultValues: {
+      nome: "",
+      descricao: "",
+      responsavel: "",
+      data: new Date().toISOString().split('T')[0]
+    }
+  });
 
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
@@ -70,10 +110,35 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
   };
   
   const concluirEtapa = (id: number) => {
+    setEtapas(etapas.map(etapa => 
+      etapa.id === id ? { ...etapa, concluida: true } : etapa
+    ));
+    
     toast({
       title: "Etapa concluída",
       description: `A etapa ${etapas.find(e => e.id === id)?.nome} foi marcada como concluída.`
     });
+  };
+  
+  const adicionarNovaEtapa = (data: NovaEtapaForm) => {
+    const novaEtapa = {
+      id: etapas.length + 1,
+      nome: data.nome,
+      concluida: false,
+      data: new Date(data.data).toLocaleDateString('pt-BR'),
+      responsavel: data.responsavel,
+      descricao: data.descricao
+    };
+    
+    setEtapas([...etapas, novaEtapa]);
+    
+    toast({
+      title: "Nova etapa adicionada",
+      description: `A etapa "${data.nome}" foi adicionada com sucesso.`
+    });
+    
+    setDialogOpen(false);
+    form.reset();
   };
 
   const getStatusBadge = (status: string) => {
@@ -186,9 +251,93 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
             />
           ))}
           
-          <Button className="mt-4">
-            Adicionar Nova Etapa
-          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="mt-4">
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Nova Etapa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Adicionar Nova Etapa</DialogTitle>
+                <DialogDescription>
+                  Preencha as informações para adicionar uma nova etapa à sindicância.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(adicionarNovaEtapa)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Etapa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Oitiva de Testemunhas" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="data"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="responsavel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Responsável</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome do responsável" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="descricao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Descreva as ações a serem realizadas nesta etapa" 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">Adicionar Etapa</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
         
         <TabsContent value="relatorios">

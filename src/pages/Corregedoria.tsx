@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import Dashboard from '@/layouts/Dashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NovaInvestigacao } from '@/components/Corregedoria/NovaInvestigacao';

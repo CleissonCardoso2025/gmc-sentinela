@@ -10,10 +10,12 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Add a default notification count
+  const [notifications, setNotifications] = useState(3);
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Header notifications={notifications} />
       <div className="flex flex-grow">
         <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
         <main 

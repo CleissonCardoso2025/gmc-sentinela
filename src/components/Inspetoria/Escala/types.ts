@@ -27,3 +27,9 @@ export interface RotaOption {
   id: string;
   nome: string;
 }
+
+export interface ViaturaOption {
+  id: string;
+  codigo: string;
+  modelo: string;
+}

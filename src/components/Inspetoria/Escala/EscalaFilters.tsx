@@ -1,6 +1,6 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Filter, Calendar } from "lucide-react";
 import {
   Select,
@@ -17,7 +17,7 @@ import {
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { GuarnicaoOption, RotaOption } from './types';
+import { GuarnicaoOption, RotaOption, ViaturaOption } from './types';
 
 interface EscalaFiltersProps {
   selectedPeriod: string;
@@ -26,11 +26,14 @@ interface EscalaFiltersProps {
   setSelectedGuarnicao: (value: string) => void;
   selectedRota: string;
   setSelectedRota: (value: string) => void;
+  selectedViatura: string;
+  setSelectedViatura: (value: string) => void;
   selectedDate: Date | undefined;
   setSelectedDate: (date: Date | undefined) => void;
   handleFilter: () => void;
   guarnicoes: GuarnicaoOption[];
   rotas: RotaOption[];
+  viaturas: ViaturaOption[];
 }
 
 const EscalaFilters: React.FC<EscalaFiltersProps> = ({
@@ -40,22 +43,25 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
   setSelectedGuarnicao,
   selectedRota,
   setSelectedRota,
+  selectedViatura,
+  setSelectedViatura,
   selectedDate,
   setSelectedDate,
   handleFilter,
   guarnicoes,
-  rotas
+  rotas,
+  viaturas
 }) => {
   const [dateOpen, setDateOpen] = useState(false);
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-      <div className="flex flex-col md:flex-row gap-2">
+    <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:flex-wrap gap-3 items-start md:items-center animate-fade-in">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 w-full">
         <Select 
           value={selectedPeriod}
           onValueChange={setSelectedPeriod}
         >
-          <SelectTrigger className="w-full md:w-40">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Período" />
           </SelectTrigger>
           <SelectContent>
@@ -69,8 +75,8 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
           value={selectedGuarnicao}
           onValueChange={setSelectedGuarnicao}
         >
-          <SelectTrigger className="w-full md:w-60">
-            <SelectValue placeholder="Guarnição/Supervisor" />
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Guarnição" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas</SelectItem>
@@ -86,7 +92,7 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
           value={selectedRota}
           onValueChange={setSelectedRota}
         >
-          <SelectTrigger className="w-full md:w-48">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Rota" />
           </SelectTrigger>
           <SelectContent>
@@ -96,19 +102,37 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
             ))}
           </SelectContent>
         </Select>
+        
+        <Select 
+          value={selectedViatura}
+          onValueChange={setSelectedViatura}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Viatura" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas</SelectItem>
+            {viaturas.map(v => (
+              <SelectItem key={v.id} value={v.codigo}>
+                {v.codigo} ({v.modelo})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       
-      <div className="flex items-center w-full md:w-auto">
+      <div className="flex items-center gap-3 w-full md:w-auto">
         <Popover open={dateOpen} onOpenChange={setDateOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-full justify-start text-left font-normal",
+                "w-full md:w-auto justify-start text-left font-normal",
+                "transition-all duration-200 hover:bg-primary/10"
               )}
             >
               <Calendar className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "dd/MM/yyyy") : <span>Selecione data inicial</span>}
+              {selectedDate ? format(selectedDate, "dd/MM/yyyy") : <span>Data inicial</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -123,12 +147,17 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
             />
           </PopoverContent>
         </Popover>
-      </div>
       
-      <Button variant="outline" size="sm" onClick={handleFilter}>
-        <Filter className="h-4 w-4 mr-2" />
-        Filtrar
-      </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleFilter}
+          className="transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+        >
+          <Filter className="h-4 w-4 mr-2" />
+          Filtrar
+        </Button>
+      </div>
     </div>
   );
 };

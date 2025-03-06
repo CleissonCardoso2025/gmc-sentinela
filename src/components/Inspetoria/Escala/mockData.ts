@@ -1,5 +1,5 @@
 
-import { EscalaItem, GuarnicaoOption, RotaOption } from './types';
+import { EscalaItem, GuarnicaoOption, RotaOption, ViaturaOption } from './types';
 
 // Mock data for the schedule
 export const weekDays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
@@ -94,4 +94,10 @@ export const rotas: RotaOption[] = [
   { id: "1", nome: "Rota Centro-Norte" },
   { id: "2", nome: "Rota Leste" },
   { id: "3", nome: "Rota Escolar" }
+];
+
+export const viaturas: ViaturaOption[] = [
+  { id: "1", codigo: "GCM-1234", modelo: "Spin" },
+  { id: "2", codigo: "GCM-5678", modelo: "Hilux" },
+  { id: "3", codigo: "GCM-9012", modelo: "Duster" }
 ];

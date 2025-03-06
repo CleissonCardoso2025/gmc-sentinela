@@ -19,7 +19,7 @@ import EscalaTable from './Escala/EscalaTable';
 import EscalaLegend from './Escala/EscalaLegend';
 
 // Import mock data and utilities
-import { escalaData, weekDays, guarnicoes, rotas } from './Escala/mockData';
+import { escalaData, weekDays, guarnicoes, rotas, viaturas } from './Escala/mockData';
 import { getStatusColor } from './Escala/utils';
 
 const EscalaTrabalho: React.FC = () => {
@@ -28,6 +28,7 @@ const EscalaTrabalho: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedGuarnicao, setSelectedGuarnicao] = useState("todas");
   const [selectedRota, setSelectedRota] = useState("todas");
+  const [selectedViatura, setSelectedViatura] = useState("todas");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<number | null>(null);
 
@@ -87,6 +88,9 @@ const EscalaTrabalho: React.FC = () => {
     // Filter by rota, but handle "todas" case
     if (selectedRota !== "todas" && item.rota !== selectedRota) return false;
     
+    // Filter by viatura, but handle "todas" case
+    if (selectedViatura !== "todas" && item.viatura.includes(selectedViatura) === false) return false;
+    
     return true;
   });
 
@@ -100,11 +104,14 @@ const EscalaTrabalho: React.FC = () => {
           setSelectedGuarnicao={setSelectedGuarnicao}
           selectedRota={selectedRota}
           setSelectedRota={setSelectedRota}
+          selectedViatura={selectedViatura}
+          setSelectedViatura={setSelectedViatura}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
           handleFilter={handleFilter}
           guarnicoes={guarnicoes}
           rotas={rotas}
+          viaturas={viaturas}
         />
         
         <EscalaActions

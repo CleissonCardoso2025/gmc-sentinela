@@ -51,6 +51,110 @@ const InspetoriaDashboard: React.FC = () => {
     }
   ];
 
+  // Mock data for occurrences
+  const mockOccurrences = [
+    {
+      titulo: "Perturbação do sossego",
+      local: "Rua das Flores, 123",
+      hora: "Hoje, 14:30"
+    },
+    {
+      titulo: "Acidente de trânsito",
+      local: "Av. Paulista, 1000",
+      hora: "Hoje, 11:15"
+    },
+    {
+      titulo: "Fiscalização de comércio",
+      local: "Rua Comercial, 456",
+      hora: "Hoje, 09:45"
+    },
+    {
+      titulo: "Apoio ao SAMU",
+      local: "Praça Central",
+      hora: "Ontem, 23:20"
+    },
+    {
+      titulo: "Fiscalização de som alto",
+      local: "Rua das Palmeiras, 789",
+      hora: "Ontem, 22:10"
+    }
+  ];
+
+  // Mock data for vehicles
+  const mockVehicles = [
+    {
+      id: 1,
+      placa: "GCM-1234",
+      status: "Em serviço",
+      condutor: "Agente Carlos Pereira",
+      quilometragem: "45.890",
+      proximaManutencao: "15/12/2023"
+    },
+    {
+      id: 2,
+      placa: "GCM-5678",
+      status: "Em serviço",
+      condutor: "Agente Ricardo Alves",
+      quilometragem: "32.450",
+      proximaManutencao: "20/12/2023"
+    },
+    {
+      id: 3,
+      placa: "GCM-9012",
+      status: "Disponível",
+      condutor: "-",
+      quilometragem: "28.760",
+      proximaManutencao: "05/01/2024"
+    },
+    {
+      id: 4,
+      placa: "GCM-3456",
+      status: "Manutenção",
+      condutor: "-",
+      quilometragem: "52.120",
+      proximaManutencao: "Em andamento"
+    },
+    {
+      id: 5,
+      placa: "GCM-7890",
+      status: "Inoperante",
+      condutor: "-",
+      quilometragem: "68.540",
+      proximaManutencao: "Indeterminado"
+    }
+  ];
+
+  // Mock data for maintenances
+  const mockMaintenances = [
+    {
+      id: 1,
+      placa: "GCM-3456",
+      tipo: "Revisão Completa",
+      dataInicio: "10/12/2023",
+      previsaoTermino: "15/12/2023",
+      descricao: "Troca de óleo, filtros e verificação geral",
+      status: "Em andamento"
+    },
+    {
+      id: 2,
+      placa: "GCM-7890",
+      tipo: "Reparo no Motor",
+      dataInicio: "05/12/2023",
+      previsaoTermino: "Indeterminado",
+      descricao: "Problema no sistema de injeção eletrônica",
+      status: "Em andamento"
+    },
+    {
+      id: 3,
+      placa: "GCM-2345",
+      tipo: "Troca de Pneus",
+      dataInicio: "01/12/2023",
+      previsaoTermino: "01/12/2023",
+      descricao: "Substituição dos 4 pneus",
+      status: "Concluída"
+    }
+  ];
+
   const handleDesignateSupervisor = () => {
     toast({
       title: "Supervisor designado",
@@ -184,7 +288,7 @@ const InspetoriaDashboard: React.FC = () => {
             <FileText className="h-5 w-5 mr-2 text-indigo-500" />
             Ocorrências Recentes
           </h3>
-          <OccurrenceList limit={5} />
+          <OccurrenceList occurrences={mockOccurrences} limit={5} />
         </Card>
 
         {/* Available Vehicles */}
@@ -193,7 +297,7 @@ const InspetoriaDashboard: React.FC = () => {
             <Car className="h-5 w-5 mr-2 text-green-500" />
             Viaturas Disponíveis
           </h3>
-          <VehicleTable limit={5} />
+          <VehicleTable vehicles={mockVehicles} maintenances={mockMaintenances} limit={5} />
         </Card>
       </div>
     </div>

@@ -38,11 +38,20 @@ interface Maintenance {
 }
 
 interface VehicleTableProps {
-  vehicles: Vehicle[];
-  maintenances: Maintenance[];
+  vehicles?: Vehicle[];
+  maintenances?: Maintenance[];
+  limit?: number;
 }
 
-const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, maintenances }) => {
+const VehicleTable: React.FC<VehicleTableProps> = ({ 
+  vehicles = [], 
+  maintenances = [],
+  limit
+}) => {
+  // Apply limit if provided
+  const displayedVehicles = limit ? vehicles.slice(0, limit) : vehicles;
+  const displayedMaintenances = limit ? maintenances.slice(0, limit) : maintenances;
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'em serviço':
@@ -87,19 +96,27 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, maintenances }) =
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vehicles.map((vehicle) => (
-                  <TableRow key={vehicle.id} className="hover:bg-gray-50 transition-colors">
-                    <TableCell className="font-medium">{vehicle.placa}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("font-normal", getStatusColor(vehicle.status))}>
-                        {vehicle.status}
-                      </Badge>
+                {displayedVehicles.length > 0 ? (
+                  displayedVehicles.map((vehicle) => (
+                    <TableRow key={vehicle.id} className="hover:bg-gray-50 transition-colors">
+                      <TableCell className="font-medium">{vehicle.placa}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("font-normal", getStatusColor(vehicle.status))}>
+                          {vehicle.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{vehicle.condutor}</TableCell>
+                      <TableCell>{vehicle.quilometragem} km</TableCell>
+                      <TableCell>{vehicle.proximaManutencao}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      Nenhuma viatura disponível
                     </TableCell>
-                    <TableCell>{vehicle.condutor}</TableCell>
-                    <TableCell>{vehicle.quilometragem} km</TableCell>
-                    <TableCell>{vehicle.proximaManutencao}</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
@@ -119,20 +136,28 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, maintenances }) =
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {maintenances.map((maintenance) => (
-                  <TableRow key={maintenance.id} className="hover:bg-gray-50 transition-colors">
-                    <TableCell className="font-medium">{maintenance.placa}</TableCell>
-                    <TableCell>{maintenance.tipo}</TableCell>
-                    <TableCell>{maintenance.dataInicio}</TableCell>
-                    <TableCell>{maintenance.previsaoTermino}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{maintenance.descricao}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("font-normal", getStatusColor(maintenance.status))}>
-                        {maintenance.status}
-                      </Badge>
+                {displayedMaintenances.length > 0 ? (
+                  displayedMaintenances.map((maintenance) => (
+                    <TableRow key={maintenance.id} className="hover:bg-gray-50 transition-colors">
+                      <TableCell className="font-medium">{maintenance.placa}</TableCell>
+                      <TableCell>{maintenance.tipo}</TableCell>
+                      <TableCell>{maintenance.dataInicio}</TableCell>
+                      <TableCell>{maintenance.previsaoTermino}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{maintenance.descricao}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("font-normal", getStatusColor(maintenance.status))}>
+                          {maintenance.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      Nenhuma manutenção registrada
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>

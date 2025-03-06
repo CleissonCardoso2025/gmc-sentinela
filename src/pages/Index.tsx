@@ -1,11 +1,107 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState } from 'react';
+import Header from '@/components/Dashboard/Header';
+import Sidebar from '@/components/Dashboard/Sidebar';
+import StatCard from '@/components/Dashboard/StatCard';
+import OccurrenceMap from '@/components/Dashboard/OccurrenceMap';
+import VehicleTable from '@/components/Dashboard/VehicleTable';
+import OccurrenceList from '@/components/Dashboard/OccurrenceList';
+import Footer from '@/components/Dashboard/Footer';
+import { Car, AlertTriangle, Users, Settings } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
+  // State
+  const [collapsed, setCollapsed] = useState(false);
+  const [notifications, setNotifications] = useState(3);
+
+  // Mock data for the component props
+  const viaturasData = [
+    { id: 1, placa: 'GCM-1234', status: 'Em serviço', condutor: 'Carlos Silva', quilometragem: '45.678', proximaManutencao: '2025-04-15' },
+    { id: 2, placa: 'GCM-5678', status: 'Manutenção', condutor: 'Ana Oliveira', quilometragem: '32.456', proximaManutencao: '2025-03-20' },
+    { id: 3, placa: 'GCM-9012', status: 'Em serviço', condutor: 'Pedro Santos', quilometragem: '28.901', proximaManutencao: '2025-05-01' },
+  ];
+
+  const manutencaoData = [
+    { id: 1, placa: 'GCM-5678', tipo: 'Preventiva', dataInicio: '2025-03-06', previsaoTermino: '2025-03-08', descricao: 'Troca de óleo e filtros', status: 'Em andamento' },
+    { id: 2, placa: 'GCM-1234', tipo: 'Corretiva', dataInicio: '2025-02-28', previsaoTermino: '2025-03-01', descricao: 'Substituição de pastilhas de freio', status: 'Concluída' },
+    { id: 3, placa: 'GCM-9012', tipo: 'Preventiva', dataInicio: '2025-02-15', previsaoTermino: '2025-02-16', descricao: 'Alinhamento e balanceamento', status: 'Concluída' },
+  ];
+
+  const ocorrenciasData = [
+    { titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', hora: '14:30' },
+    { titulo: 'Acidente de Trânsito', local: 'Av. Principal, 456', hora: '13:15' },
+    { titulo: 'Apoio ao Cidadão', local: 'Praça Central', hora: '12:45' },
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header notifications={notifications} />
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      
+      <main className={cn(
+        "flex-1 pt-16 transition-all duration-300 ease-in-out",
+        collapsed ? "ml-20" : "ml-64"
+      )}>
+        <div className="p-6 h-full">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <StatCard 
+              title="Viaturas em Operação" 
+              value={12} 
+              icon={<Car className="h-5 w-5 text-gcm-600" />}
+              color="text-gcm-600"
+              className="animate-fade-up"
+              
+            />
+            <StatCard 
+              title="Ocorrências Ativas" 
+              value={5} 
+              icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+              color="text-red-600"
+              className="animate-fade-up"
+              
+            />
+            <StatCard 
+              title="Efetivo em Serviço" 
+              value={28} 
+              icon={<Users className="h-5 w-5 text-green-600" />}
+              color="text-green-600"
+              className="animate-fade-up delay-75"
+              
+            />
+            <StatCard 
+              title="Alertas de Manutenção" 
+              value={3} 
+              icon={<Settings className="h-5 w-5 text-amber-600" />}
+              color="text-amber-600"
+              className="animate-fade-up delay-100"
+              
+            />
+          </div>
+          
+          {/* Map */}
+          <div className="mb-6">
+            <OccurrenceMap />
+          </div>
+          
+          {/* Tables and Lists */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <VehicleTable vehicles={viaturasData} maintenances={manutencaoData} />
+            </div>
+            <div>
+              <OccurrenceList occurrences={ocorrenciasData} />
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      <div className={cn(
+        "transition-all duration-300 ease-in-out",
+        collapsed ? "ml-20" : "ml-64"
+      )}>
+        <Footer />
       </div>
     </div>
   );

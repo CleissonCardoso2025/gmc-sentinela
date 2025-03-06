@@ -1,0 +1,248 @@
+
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { EtapaInvestigacao } from './EtapaInvestigacao';
+import { Calendar, Check, FileUp, Printer } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface DetalhesInvestigacaoProps {
+  sindicancia: {
+    id: string;
+    dataAbertura: string;
+    gmcInvestigado: string;
+    motivo: string;
+    status: string;
+    etapaAtual: string;
+  };
+}
+
+export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps) {
+  const { toast } = useToast();
+  const [status, setStatus] = useState(sindicancia.status);
+  
+  const etapas = [
+    {
+      id: 1,
+      nome: "Investigação Inicial",
+      concluida: true,
+      data: "12/08/2023",
+      responsavel: "Cap. Roberto Andrade",
+      descricao: "Levantamento inicial dos fatos e coleta de evidências preliminares. Análise da ocorrência e depoimento do supervisor responsável."
+    },
+    {
+      id: 2,
+      nome: "Coleta de Testemunhos",
+      concluida: sindicancia.etapaAtual !== "Investigação Inicial",
+      data: "18/08/2023",
+      responsavel: "Ten. Mariana Souza",
+      descricao: "Coleta de depoimentos de três testemunhas presentes no momento da ocorrência e do envolvido direto na denúncia."
+    },
+    {
+      id: 3,
+      nome: "Análise dos Fatos",
+      concluida: sindicancia.etapaAtual === "Parecer Final" || sindicancia.status === "Concluída",
+      data: "25/08/2023",
+      responsavel: "Maj. Carlos Eduardo",
+      descricao: "Análise detalhada dos depoimentos, inconsistências, e evidências coletadas. Confrontação entre os relatos e verificação de fatos."
+    },
+    {
+      id: 4,
+      nome: "Parecer Final",
+      concluida: sindicancia.status === "Concluída",
+      data: "02/09/2023",
+      responsavel: "Cel. Pedro Albuquerque",
+      descricao: "Conclusão da análise e emissão de parecer final sobre a conduta do GMC investigado e recomendações de ações disciplinares, se necessárias."
+    }
+  ];
+
+  const handleStatusChange = (newStatus: string) => {
+    setStatus(newStatus);
+    toast({
+      title: "Status atualizado",
+      description: `A sindicância ${sindicancia.id} foi atualizada para: ${newStatus}`
+    });
+  };
+  
+  const concluirEtapa = (id: number) => {
+    toast({
+      title: "Etapa concluída",
+      description: `A etapa ${etapas.find(e => e.id === id)?.nome} foi marcada como concluída.`
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Em andamento':
+        return <Badge className="bg-amber-500">Em andamento</Badge>;
+      case 'Concluída':
+        return <Badge className="bg-green-500">Concluída</Badge>;
+      case 'Arquivada':
+        return <Badge className="bg-gray-500">Arquivada</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">{sindicancia.id}</h2>
+          <p className="text-muted-foreground">Aberta em {sindicancia.dataAbertura}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Calendar className="mr-2 h-4 w-4" />
+            Agendar
+          </Button>
+          <Button variant="outline" size="sm">
+            <Printer className="mr-2 h-4 w-4" />
+            Relatório
+          </Button>
+          {status !== "Concluída" && (
+            <Button size="sm" onClick={() => handleStatusChange("Concluída")}>
+              <Check className="mr-2 h-4 w-4" />
+              Concluir
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between">
+            <div>
+              <CardTitle>Detalhes da Sindicância</CardTitle>
+              <CardDescription>Informações sobre a sindicância e o GMC investigado</CardDescription>
+            </div>
+            <div>{getStatusBadge(status)}</div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-semibold mb-1">GMC Investigado</h3>
+              <p>{sindicancia.gmcInvestigado}</p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-1">Motivo da Investigação</h3>
+              <p>{sindicancia.motivo}</p>
+            </div>
+            
+            <div className="md:col-span-2">
+              <h3 className="font-semibold mb-1">Relato Inicial</h3>
+              <p className="text-sm">
+                O GMC foi observado em possível desvio de conduta durante abordagem a um cidadão na Praça Central. 
+                Segundo relatos de testemunhas, houve excesso de força e tratamento desrespeitoso. O GMC alega que 
+                a abordagem seguiu os protocolos padrão e que o cidadão estava alterado e apresentou resistência.
+              </p>
+            </div>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <div>
+            <h3 className="font-semibold mb-2">Documentos Anexados</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="bg-slate-50 p-2 rounded text-sm">
+                relatorio_inicial.pdf
+              </div>
+              <div className="bg-slate-50 p-2 rounded text-sm">
+                foto_evidencia1.jpg
+              </div>
+              <div className="bg-slate-50 p-2 rounded text-sm">
+                depoimento_testemunha.pdf
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="mt-2">
+              <FileUp className="mr-2 h-4 w-4" />
+              Anexar Documentos
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Tabs defaultValue="etapas">
+        <TabsList>
+          <TabsTrigger value="etapas">Passo a Passo da Apuração</TabsTrigger>
+          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="etapas" className="space-y-4">
+          <h3 className="text-lg font-semibold mb-2">Etapas da Sindicância</h3>
+          
+          {etapas.map((etapa) => (
+            <EtapaInvestigacao 
+              key={etapa.id}
+              etapa={etapa}
+              onComplete={() => concluirEtapa(etapa.id)}
+            />
+          ))}
+          
+          <Button className="mt-4">
+            Adicionar Nova Etapa
+          </Button>
+        </TabsContent>
+        
+        <TabsContent value="relatorios">
+          <Card>
+            <CardHeader>
+              <CardTitle>Relatórios da Sindicância</CardTitle>
+              <CardDescription>Gere relatórios da sindicância em diferentes formatos</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button variant="outline" className="h-auto py-6 flex flex-col items-center justify-center">
+                  <Printer className="h-6 w-6 mb-2" />
+                  <span className="font-medium">Relatório Detalhado</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Relatório completo com todas as etapas e evidências
+                  </span>
+                </Button>
+                
+                <Button variant="outline" className="h-auto py-6 flex flex-col items-center justify-center">
+                  <FileText className="h-6 w-6 mb-2" />
+                  <span className="font-medium">Relatório Resumido</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Resumo com principais pontos e conclusão
+                  </span>
+                </Button>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="font-medium mb-2">Filtros de Relatório</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Período</label>
+                    <div className="flex mt-1 gap-2">
+                      <Input type="date" placeholder="Data inicial" />
+                      <Input type="date" placeholder="Data final" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium">Formato de Saída</label>
+                    <div className="flex mt-1 gap-2">
+                      <Button variant="outline" size="sm">PDF</Button>
+                      <Button variant="outline" size="sm">DOC</Button>
+                      <Button variant="outline" size="sm">CSV</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

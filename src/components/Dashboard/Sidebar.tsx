@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -8,7 +7,6 @@ import {
   Users, 
   AlertTriangle, 
   Settings,
-  Wrench,
   Shield,
   UserCog,
   ChevronLeft,
@@ -26,8 +24,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
   
   const menuItems = [
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
-    { icon: <Wrench className="h-5 w-5" />, text: 'Manutenção', path: '/manutencao' },
-    { icon: <Users className="h-5 w-5" />, text: 'Efetivo', path: '/efetivo' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
     { icon: <UserCog className="h-5 w-5" />, text: 'Recursos Humanos', path: '/rh' },

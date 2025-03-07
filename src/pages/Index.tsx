@@ -1,19 +1,17 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import Header from '@/components/Dashboard/Header';
-import Sidebar from '@/components/Dashboard/Sidebar';
+import Navbar from '@/components/Dashboard/Navbar';
 import StatCard from '@/components/Dashboard/StatCard';
 import OccurrenceMap from '@/components/Dashboard/OccurrenceMap';
 import VehicleTable from '@/components/Dashboard/VehicleTable';
 import OccurrenceList from '@/components/Dashboard/OccurrenceList';
 import Footer from '@/components/Dashboard/Footer';
 import { Car, AlertTriangle, Users, Settings } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const Index = () => {
   // State
-  const [collapsed, setCollapsed] = useState(false);
-  const [notifications, setNotifications] = useState(3);
+  const [notifications, setNotifications] = React.useState(3);
 
   // Mock data for the component props
   const viaturasData = [
@@ -37,12 +35,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header notifications={notifications} />
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <Navbar />
       
-      <main className={cn(
-        "flex-1 pt-16 transition-all duration-300 ease-in-out",
-        collapsed ? "ml-20" : "ml-64"
-      )}>
+      <main className="flex-1 pt-32 pb-16">
         <div className="p-6 h-full">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -52,7 +47,6 @@ const Index = () => {
               icon={<Car className="h-5 w-5 text-gcm-600" />}
               color="text-gcm-600"
               className="animate-fade-up"
-              
             />
             <StatCard 
               title="Ocorrências Ativas" 
@@ -60,7 +54,6 @@ const Index = () => {
               icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
               color="text-red-600"
               className="animate-fade-up"
-              
             />
             <StatCard 
               title="Efetivo em Serviço" 
@@ -68,7 +61,6 @@ const Index = () => {
               icon={<Users className="h-5 w-5 text-green-600" />}
               color="text-green-600"
               className="animate-fade-up delay-75"
-              
             />
             <StatCard 
               title="Alertas de Manutenção" 
@@ -76,7 +68,6 @@ const Index = () => {
               icon={<Settings className="h-5 w-5 text-amber-600" />}
               color="text-amber-600"
               className="animate-fade-up delay-100"
-              
             />
           </div>
           
@@ -97,12 +88,7 @@ const Index = () => {
         </div>
       </main>
       
-      <div className={cn(
-        "transition-all duration-300 ease-in-out",
-        collapsed ? "ml-20" : "ml-64"
-      )}>
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 };

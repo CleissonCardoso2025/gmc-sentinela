@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   notifications: number;
@@ -25,16 +26,18 @@ const Header: React.FC<HeaderProps> = ({ notifications }) => {
   return (
     <header className="bg-gcm-600 fixed w-full h-16 z-50 px-6 flex items-center justify-between shadow-md animate-fade-in">
       <div className="flex items-center">
-        <img
-          src="https://public.readdy.ai/ai/img_res/2757560924cb34e1a98965e742a69af1.jpg"
-          alt="Logo GCM"
-          className="h-10 mr-4 rounded-sm"
-        />
-        <h1 className="text-white text-xl font-semibold">Sistema GCM</h1>
+        <Link to="/">
+          <img
+            src="https://public.readdy.ai/ai/img_res/2757560924cb34e1a98965e742a69af1.jpg"
+            alt="Logo GCM"
+            className="h-10 mr-4 rounded-sm"
+          />
+        </Link>
+        <h1 className="text-white text-xl font-semibold hidden sm:block">Sistema GCM</h1>
       </div>
       
       <div className="flex items-center space-x-4">
-        <div className="relative">
+        <div className="relative hidden md:block">
           <Input
             placeholder="Pesquisar..."
             className="w-64 bg-gcm-700/70 border-none text-white placeholder:text-white/60 focus:ring-gcm-400 focus:ring-opacity-50 pr-10 transition-all duration-300"
@@ -64,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ notifications }) => {
               <div className="h-7 w-7 rounded-full bg-white/30 flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
               </div>
-              <span>Usuário</span>
+              <span className="hidden sm:inline">Usuário</span>
               <ChevronDown className="h-4 w-4 text-white/70" />
             </Button>
           </DropdownMenuTrigger>

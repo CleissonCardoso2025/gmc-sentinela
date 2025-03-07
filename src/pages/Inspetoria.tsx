@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,62 +26,69 @@ const InspetoriaPage: React.FC = () => {
 
   return (
     <Dashboard>
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="container mx-auto p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex items-center">
-            <Shield className="h-8 w-8 text-gcm-600 mr-3" />
-            <h1 className="text-2xl font-bold">Inspetoria Geral</h1>
+            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-gcm-600 mr-2 sm:mr-3" />
+            <h1 className="text-xl sm:text-2xl font-bold">Inspetoria Geral</h1>
           </div>
           
           <div className="flex space-x-2">
             {activeTab === "guarnicoes" && (
               <Button onClick={() => setIsCreatingGuarnicao(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Guarnição
+                <span className="hidden sm:inline">Nova Guarnição</span>
+                <span className="sm:hidden">Guarnição</span>
               </Button>
             )}
             {activeTab === "rotas" && (
               <Button onClick={() => setIsCreatingRota(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Rota
+                <span className="hidden sm:inline">Nova Rota</span>
+                <span className="sm:hidden">Rota</span>
               </Button>
             )}
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="dashboard" className="flex items-center">
-              <Shield className="mr-2 h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="guarnicoes" className="flex items-center">
-              <Users className="mr-2 h-4 w-4" />
-              Guarnições
-            </TabsTrigger>
-            <TabsTrigger value="escala" className="flex items-center">
-              <Calendar className="mr-2 h-4 w-4" />
-              Escala de Trabalho
-            </TabsTrigger>
-            <TabsTrigger value="relatorios" className="flex items-center">
-              <FileText className="mr-2 h-4 w-4" />
-              Relatórios
-            </TabsTrigger>
-            <TabsTrigger value="rotas" className="flex items-center">
-              <Map className="mr-2 h-4 w-4" />
-              Rotas
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="grid min-w-max w-full grid-cols-5">
+              <TabsTrigger value="dashboard" className="flex items-center">
+                <Shield className="sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="guarnicoes" className="flex items-center">
+                <Users className="sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Guarnições</span>
+              </TabsTrigger>
+              <TabsTrigger value="escala" className="flex items-center">
+                <Calendar className="sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Escala de Trabalho</span>
+              </TabsTrigger>
+              <TabsTrigger value="relatorios" className="flex items-center">
+                <FileText className="sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Relatórios</span>
+              </TabsTrigger>
+              <TabsTrigger value="rotas" className="flex items-center">
+                <Map className="sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Rotas</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="dashboard">
-            <InspetoriaDashboard />
+            <Card className="p-4 sm:p-6 animate-fade-in">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Dashboard Operacional</h2>
+              <InspetoriaDashboard />
+            </Card>
           </TabsContent>
 
           <TabsContent value="guarnicoes">
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6 animate-fade-in">
               {isCreatingGuarnicao ? (
                 <>
-                  <h2 className="text-xl font-semibold mb-4">Nova Guarnição</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-4">Nova Guarnição</h2>
                   <GuarnicaoForm 
                     onSave={() => setIsCreatingGuarnicao(false)}
                     onCancel={() => setIsCreatingGuarnicao(false)}
@@ -88,7 +96,7 @@ const InspetoriaPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <h2 className="text-xl font-semibold mb-4">Guarnições</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-4">Guarnições</h2>
                   <GuarnicoesList onCreateNew={() => setIsCreatingGuarnicao(true)} />
                 </>
               )}
@@ -96,24 +104,24 @@ const InspetoriaPage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="escala">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Escala de Trabalho</h2>
+            <Card className="p-4 sm:p-6 animate-fade-in">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Escala de Trabalho</h2>
               <EscalaTrabalho />
             </Card>
           </TabsContent>
 
           <TabsContent value="relatorios">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Relatórios Operacionais</h2>
+            <Card className="p-4 sm:p-6 animate-fade-in">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Relatórios Operacionais</h2>
               <RelatoriosOperacionais />
             </Card>
           </TabsContent>
 
           <TabsContent value="rotas">
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6 animate-fade-in">
               {isCreatingRota ? (
                 <>
-                  <h2 className="text-xl font-semibold mb-4">Nova Rota</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-4">Nova Rota</h2>
                   <RotaForm 
                     onSave={() => setIsCreatingRota(false)}
                     onCancel={() => setIsCreatingRota(false)}
@@ -121,7 +129,7 @@ const InspetoriaPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <h2 className="text-xl font-semibold mb-4">Rotas de Patrulhamento</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-4">Rotas de Patrulhamento</h2>
                   <RotasList onCreateNew={() => setIsCreatingRota(true)} />
                 </>
               )}

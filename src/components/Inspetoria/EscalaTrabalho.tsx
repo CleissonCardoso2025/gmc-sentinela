@@ -96,41 +96,47 @@ const EscalaTrabalho: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <EscalaFilters
-          selectedPeriod={selectedPeriod}
-          setSelectedPeriod={setSelectedPeriod}
-          selectedGuarnicao={selectedGuarnicao}
-          setSelectedGuarnicao={setSelectedGuarnicao}
-          selectedRota={selectedRota}
-          setSelectedRota={setSelectedRota}
-          selectedViatura={selectedViatura}
-          setSelectedViatura={setSelectedViatura}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          handleFilter={handleFilter}
-          guarnicoes={guarnicoes}
-          rotas={rotas}
-          viaturas={viaturas}
-        />
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <div className="w-full lg:w-3/4">
+          <EscalaFilters
+            selectedPeriod={selectedPeriod}
+            setSelectedPeriod={setSelectedPeriod}
+            selectedGuarnicao={selectedGuarnicao}
+            setSelectedGuarnicao={setSelectedGuarnicao}
+            selectedRota={selectedRota}
+            setSelectedRota={setSelectedRota}
+            selectedViatura={selectedViatura}
+            setSelectedViatura={setSelectedViatura}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            handleFilter={handleFilter}
+            guarnicoes={guarnicoes}
+            rotas={rotas}
+            viaturas={viaturas}
+          />
+        </div>
         
-        <EscalaActions
-          handleExportPDF={handleExportPDF}
-          handlePrint={handlePrint}
-          openCreateModal={() => setIsCreateModalOpen(true)}
-        />
+        <div className="w-full lg:w-auto">
+          <EscalaActions
+            handleExportPDF={handleExportPDF}
+            handlePrint={handlePrint}
+            openCreateModal={() => setIsCreateModalOpen(true)}
+          />
+        </div>
       </div>
 
       <EscalaInfo />
 
-      <EscalaTable
-        weekDays={weekDays}
-        filteredData={filteredData}
-        onEditSchedule={handleEditSchedule}
-        onSubstituteAgent={handleSubstituteAgent}
-        onDeleteShift={handleDeleteShift}
-        getStatusColor={getStatusColor}
-      />
+      <div className="overflow-x-auto">
+        <EscalaTable
+          weekDays={weekDays}
+          filteredData={filteredData}
+          onEditSchedule={handleEditSchedule}
+          onSubstituteAgent={handleSubstituteAgent}
+          onDeleteShift={handleDeleteShift}
+          getStatusColor={getStatusColor}
+        />
+      </div>
 
       <EscalaLegend
         filteredDataCount={filteredData.length}

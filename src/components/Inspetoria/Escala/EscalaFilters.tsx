@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Filter, Calendar } from "lucide-react";
+import { Filter, Calendar, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -55,8 +55,39 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
   const [dateOpen, setDateOpen] = useState(false);
 
   return (
-    <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:flex-wrap gap-3 items-start md:items-center animate-fade-in">
+    <div className="w-full animate-fade-in">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 w-full">
+        <div>
+          <Popover open={dateOpen} onOpenChange={setDateOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-between text-left font-normal",
+                  "transition-all duration-200 hover:bg-primary/10"
+                )}
+              >
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "dd/MM/yyyy") : <span>Data inicial</span>}
+                </div>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  setDateOpen(false);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        
         <Select 
           value={selectedPeriod}
           onValueChange={setSelectedPeriod}
@@ -102,12 +133,14 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
             ))}
           </SelectContent>
         </Select>
-        
+      </div>
+      
+      <div className="flex flex-wrap items-center gap-3 mt-3">
         <Select 
           value={selectedViatura}
           onValueChange={setSelectedViatura}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full sm:w-52">
             <SelectValue placeholder="Viatura" />
           </SelectTrigger>
           <SelectContent>
@@ -119,43 +152,14 @@ const EscalaFilters: React.FC<EscalaFiltersProps> = ({
             ))}
           </SelectContent>
         </Select>
-      </div>
-      
-      <div className="flex items-center gap-3 w-full md:w-auto">
-        <Popover open={dateOpen} onOpenChange={setDateOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full md:w-auto justify-start text-left font-normal",
-                "transition-all duration-200 hover:bg-primary/10"
-              )}
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "dd/MM/yyyy") : <span>Data inicial</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <CalendarComponent
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                setSelectedDate(date);
-                setDateOpen(false);
-              }}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
       
         <Button 
-          variant="outline" 
-          size="sm" 
+          variant="default" 
           onClick={handleFilter}
-          className="transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+          className="transition-all duration-200 hover:scale-105 ml-auto"
         >
           <Filter className="h-4 w-4 mr-2" />
-          Filtrar
+          Aplicar Filtros
         </Button>
       </div>
     </div>

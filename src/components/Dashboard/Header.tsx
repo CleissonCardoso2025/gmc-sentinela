@@ -15,7 +15,7 @@ const Header: React.FC<HeaderProps> = ({
         <Link to="/">
           <img alt="Logo GCM" className="h-10 mr-4 rounded-sm" src="/lovable-uploads/d563df95-6038-43c8-80a6-882d66215f63.png" />
         </Link>
-        <h1 className="text-white text-xl font-semibold hidden sm:block">Sistema GCM</h1>
+        <h1 className="text-white text-xl font-semibold hidden sm:block">GCM Sentinela</h1>
       </div>
       
       <div className="flex items-center space-x-4">

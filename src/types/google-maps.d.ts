@@ -28,6 +28,7 @@ declare global {
     };
     initMap: () => void;
     mapsCallback?: () => void;
+    vehicleMapCallback?: () => void;
     [key: string]: any; // Allow for dynamic callback names
   }
 }

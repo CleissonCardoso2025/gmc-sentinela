@@ -29,7 +29,6 @@ const App = () => (
           <Route path="/ocorrencias" element={<Ocorrencias />} />
           <Route path="/corregedoria" element={<Corregedoria />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

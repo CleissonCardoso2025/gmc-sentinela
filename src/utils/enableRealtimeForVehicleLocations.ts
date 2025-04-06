@@ -7,14 +7,23 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const enableRealtimeForVehicleLocations = async () => {
   try {
-    // Enable realtime for the channel
-    await supabase.realtime.setConfig({
-      presence: {
-        key: 'vehicle-monitoring',
+    // Create and subscribe to a channel for vehicle monitoring
+    const channel = supabase.channel('vehicle-monitoring', {
+      config: {
+        broadcast: { self: true },
+        presence: {
+          key: 'vehicle-monitoring',
+        },
       },
     });
     
-    console.log('Realtime enabled for vehicle locations');
+    // Subscribe to the channel
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Realtime enabled for vehicle locations');
+      }
+    });
+    
     return true;
   } catch (error) {
     console.error('Error enabling realtime for vehicle locations:', error);

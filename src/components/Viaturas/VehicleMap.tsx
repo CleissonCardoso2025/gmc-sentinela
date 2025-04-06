@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
@@ -25,6 +25,7 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: location, isLoading, error } = useQuery({
     queryKey: ['vehicleLocation', vehicleId],
@@ -42,10 +43,16 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
     }
   });
 
-  // Setup Google Maps
+  // Load Google Maps API
   useEffect(() => {
-    // Load Google Maps script if not already loaded
-    if (!document.getElementById('google-maps-script') && !window.google?.maps) {
+    // Check if the API is already loaded
+    if (window.google?.maps) {
+      setMapLoaded(true);
+      return;
+    }
+
+    // Load the API if not already loaded
+    if (!document.getElementById('google-maps-script')) {
       const script = document.createElement('script');
       script.id = 'google-maps-script';
       script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCgYRdHFm_wBz70Xgljgj-HVswvCGYLVHg&libraries=places`;
@@ -53,8 +60,6 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
       script.defer = true;
       script.onload = () => setMapLoaded(true);
       document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
     }
 
     // Setup realtime subscription for this vehicle's location
@@ -77,21 +82,16 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
 
     return () => {
       supabase.removeChannel(channel);
-      if (map) {
-        // Clean up map resources
-      }
     };
   }, [vehicleId]);
 
   // Initialize map when location data is available and maps are loaded
   useEffect(() => {
-    if (!location || !mapLoaded || !window.google?.maps) return;
+    if (!location || !mapLoaded || !window.google?.maps || !mapContainerRef.current) return;
     
-    const initMap = () => {
-      const mapElement = document.getElementById('vehicle-map');
-      if (!mapElement) return;
-
-      const mapOptions = {
+    // Initialize map if not already initialized
+    if (!map) {
+      const mapOptions: google.maps.MapOptions = {
         center: { lat: location.latitude, lng: location.longitude },
         zoom: 15,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -100,15 +100,16 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
         fullscreenControl: true,
       };
 
-      const newMap = new google.maps.Map(mapElement, mapOptions);
+      const newMap = new google.maps.Map(mapContainerRef.current, mapOptions);
       setMap(newMap);
 
       // Add marker for vehicle
       updateMapMarker(location, newMap);
-    };
-
-    initMap();
-  }, [location, mapLoaded]);
+    } else {
+      // Update existing map with new location
+      updateMapMarker(location, map);
+    }
+  }, [location, mapLoaded, map]);
 
   // Function to update the marker position
   const updateMapMarker = (newLocation: VehicleLocation, newMap?: google.maps.Map) => {
@@ -211,7 +212,7 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
   return (
     <div className="h-full w-full flex flex-col gap-4">
       <div className="bg-white h-full w-full flex flex-col gap-4 rounded-md border p-4">
-        <div id="vehicle-map" className="h-[350px] w-full rounded-md shadow-sm"></div>
+        <div id="vehicle-map" ref={mapContainerRef} className="h-[350px] w-full rounded-md shadow-sm"></div>
         
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-left text-sm">
           <p className="text-gray-600">Latitude:</p>

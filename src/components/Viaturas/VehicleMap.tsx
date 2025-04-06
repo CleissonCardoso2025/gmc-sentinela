@@ -1,20 +1,31 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { Car, MapPin } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
 interface VehicleMapProps {
   vehicleId: number;
+  vehicleInfo?: {
+    placa: string;
+    status: string;
+    condutor?: string;
+  };
 }
 
 type VehicleLocation = Database['public']['Tables']['vehicle_locations']['Row'];
 
 /**
- * This is a placeholder component that would use react-native-maps
- * in a React Native application. For web, we're displaying the coordinates.
+ * Vehicle Map component using Google Maps to display vehicle location
  */
-const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId }) => {
+const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+
   const { data: location, isLoading, error } = useQuery({
     queryKey: ['vehicleLocation', vehicleId],
     queryFn: async () => {
@@ -31,6 +42,160 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId }) => {
     }
   });
 
+  // Setup Google Maps
+  useEffect(() => {
+    // Load Google Maps script if not already loaded
+    if (!document.getElementById('google-maps-script') && !window.google?.maps) {
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCgYRdHFm_wBz70Xgljgj-HVswvCGYLVHg&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setMapLoaded(true);
+      document.head.appendChild(script);
+    } else {
+      setMapLoaded(true);
+    }
+
+    // Setup realtime subscription for this vehicle's location
+    const channel = supabase
+      .channel('vehicle-location-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vehicle_locations',
+          filter: `vehicle_id=eq.${vehicleId}`
+        },
+        (payload) => {
+          const newLocation = payload.new as VehicleLocation;
+          updateMapMarker(newLocation);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (map) {
+        // Clean up map resources
+      }
+    };
+  }, [vehicleId]);
+
+  // Initialize map when location data is available and maps are loaded
+  useEffect(() => {
+    if (!location || !mapLoaded || !window.google?.maps) return;
+    
+    const initMap = () => {
+      const mapElement = document.getElementById('vehicle-map');
+      if (!mapElement) return;
+
+      const mapOptions = {
+        center: { lat: location.latitude, lng: location.longitude },
+        zoom: 15,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+      };
+
+      const newMap = new google.maps.Map(mapElement, mapOptions);
+      setMap(newMap);
+
+      // Add marker for vehicle
+      updateMapMarker(location, newMap);
+    };
+
+    initMap();
+  }, [location, mapLoaded]);
+
+  // Function to update the marker position
+  const updateMapMarker = (newLocation: VehicleLocation, newMap?: google.maps.Map) => {
+    if (!newLocation) return;
+    const currentMap = newMap || map;
+    if (!currentMap || !window.google?.maps) return;
+
+    const position = { 
+      lat: newLocation.latitude, 
+      lng: newLocation.longitude 
+    };
+
+    // Center map on new position
+    currentMap.setCenter(position);
+
+    // Update or create marker
+    if (marker) {
+      marker.setPosition(position);
+    } else {
+      const newMarker = new google.maps.Marker({
+        position,
+        map: currentMap,
+        title: vehicleInfo?.placa || `Veículo #${vehicleId}`,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: getStatusColor(vehicleInfo?.status),
+          fillOpacity: 0.8,
+          strokeWeight: 2,
+          strokeColor: 'white',
+        },
+      });
+
+      // Add info window with vehicle details
+      if (vehicleInfo) {
+        const infoContent = `
+          <div style="padding:8px">
+            <h3 style="margin:0;font-weight:bold">${vehicleInfo.placa}</h3>
+            <p style="margin:4px 0">Status: ${vehicleInfo.status}</p>
+            ${vehicleInfo.condutor ? `<p style="margin:4px 0">Condutor: ${vehicleInfo.condutor}</p>` : ''}
+            <p style="margin:4px 0;font-size:12px">Última atualização: ${new Date(newLocation.recorded_at).toLocaleString('pt-BR')}</p>
+          </div>
+        `;
+        
+        const infoWindow = new google.maps.InfoWindow({
+          content: infoContent,
+        });
+
+        newMarker.addListener('click', () => {
+          infoWindow.open(currentMap, newMarker);
+        });
+      }
+
+      setMarker(newMarker);
+    }
+  };
+
+  // Helper to get color based on status
+  const getStatusColor = (status?: string): string => {
+    if (!status) return '#888';
+    
+    switch (status.toLowerCase()) {
+      case 'em serviço':
+        return '#22c55e'; // green-500
+      case 'manutenção':
+        return '#eab308'; // yellow-500
+      case 'inoperante':
+        return '#ef4444'; // red-500
+      case 'reserva':
+        return '#3b82f6'; // blue-500
+      default:
+        return '#888888';
+    }
+  };
+
+  // Format date for display
+  const formattedDate = location ? new Date(location.recorded_at).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }) : '';
+  
+  const formattedTime = location ? new Date(location.recorded_at).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : '';
+
   if (isLoading) {
     return <div className="flex h-full w-full items-center justify-center">Carregando...</div>;
   }
@@ -43,68 +208,36 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId }) => {
     );
   }
 
-  // Format date for display
-  const formattedDate = new Date(location.recorded_at).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-  
-  const formattedTime = new Date(location.recorded_at).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
   return (
     <div className="h-full w-full flex flex-col gap-4">
-      <div className="bg-gray-100 h-full w-full flex items-center justify-center rounded-md border p-4">
-        <div className="text-center space-y-2">
-          <h3 className="font-medium">Informações de Localização</h3>
+      <div className="bg-white h-full w-full flex flex-col gap-4 rounded-md border p-4">
+        <div id="vehicle-map" className="h-[350px] w-full rounded-md shadow-sm"></div>
+        
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-left text-sm">
+          <p className="text-gray-600">Latitude:</p>
+          <p>{location.latitude.toFixed(6)}</p>
           
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-left mt-4">
-            <p className="text-gray-600">Latitude:</p>
-            <p>{location.latitude.toFixed(6)}</p>
-            
-            <p className="text-gray-600">Longitude:</p>
-            <p>{location.longitude.toFixed(6)}</p>
-            
-            <p className="text-gray-600">Data:</p>
-            <p>{formattedDate}</p>
-            
-            <p className="text-gray-600">Hora:</p>
-            <p>{formattedTime}</p>
-            
-            {location.accuracy && (
-              <>
-                <p className="text-gray-600">Precisão:</p>
-                <p>{location.accuracy.toFixed(1)} metros</p>
-              </>
-            )}
-            
-            {location.location_name && (
-              <>
-                <p className="text-gray-600">Local:</p>
-                <p>{location.location_name}</p>
-              </>
-            )}
-          </div>
+          <p className="text-gray-600">Longitude:</p>
+          <p>{location.longitude.toFixed(6)}</p>
           
-          <div className="mt-4">
-            <a 
-              href={`https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline text-sm"
-            >
-              Abrir no Google Maps
-            </a>
-          </div>
+          <p className="text-gray-600">Data/Hora:</p>
+          <p>{formattedDate} às {formattedTime}</p>
+          
+          {location.accuracy && (
+            <>
+              <p className="text-gray-600">Precisão:</p>
+              <p>{location.accuracy.toFixed(1)} metros</p>
+            </>
+          )}
+          
+          {location.location_name && (
+            <>
+              <p className="text-gray-600">Local:</p>
+              <p>{location.location_name}</p>
+            </>
+          )}
         </div>
       </div>
-      <p className="text-xs text-gray-500 text-center">
-        Este é um componente temporário. Para implementação completa, será necessário utilizar o componente 
-        react-native-maps no aplicativo móvel.
-      </p>
     </div>
   );
 };

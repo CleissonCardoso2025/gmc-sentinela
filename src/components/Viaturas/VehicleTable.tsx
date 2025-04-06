@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import VehicleMap from "./VehicleMap";
 import { Database } from '@/integrations/supabase/types';
+import { useToast } from "@/hooks/use-toast";
 
 interface VehicleTableProps {
   vehicles: Vehicle[];
@@ -38,9 +40,10 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
 }) => {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   // Fetch the latest locations for all vehicles
-  const { data: locationsData } = useQuery({
+  const { data: locationsData, refetch: refetchLocations } = useQuery({
     queryKey: ['vehicleLocations'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_latest_vehicle_locations');
@@ -48,6 +51,41 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
       return data as VehicleLocation[];
     }
   });
+
+  // Setup realtime subscription for location updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('vehicle-locations-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vehicle_locations'
+        },
+        (payload) => {
+          // Refetch locations when new data is inserted
+          refetchLocations();
+          
+          // Show toast notification
+          const vehicleId = payload.new.vehicle_id;
+          const vehicle = vehicles.find(v => v.id === vehicleId);
+          
+          if (vehicle) {
+            toast({
+              title: `Localização atualizada`,
+              description: `Nova localização recebida para ${vehicle.placa}`,
+              duration: 3000,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [vehicles, refetchLocations, toast]);
 
   // Function to get status color
   const getStatusColor = (status: string) => {
@@ -152,10 +190,13 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-7 w-7 p-0" 
+                          className="h-7 w-7 p-0 relative group" 
                           onClick={() => handleShowMap(vehicle)}
                         >
                           <MapPin className="h-4 w-4 text-blue-500" />
+                          <span className="absolute top-0 left-0 whitespace-nowrap bg-black text-white text-xs py-1 px-2 rounded opacity-0 pointer-events-none transform -translate-y-full group-hover:opacity-100 transition-opacity duration-200">
+                            Ver no mapa
+                          </span>
                           <span className="sr-only">Ver no mapa</span>
                         </Button>
                       )}
@@ -198,7 +239,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
 
       {/* Map Dialog */}
       <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedVehicle ? `Localização: ${selectedVehicle.placa} - ${selectedVehicle.modelo}` : 'Localização'}
@@ -206,12 +247,19 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
           </DialogHeader>
           
           {selectedVehicle && (
-            <div className="h-[400px] w-full">
-              <VehicleMap vehicleId={selectedVehicle.id} />
+            <div className="h-[450px] w-full">
+              <VehicleMap 
+                vehicleId={selectedVehicle.id} 
+                vehicleInfo={{
+                  placa: selectedVehicle.placa,
+                  status: selectedVehicle.status,
+                  condutor: "Não informado" // You can update this if you have driver information
+                }}
+              />
             </div>
           )}
           
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-4">
             <DialogClose asChild>
               <Button variant="outline">Fechar</Button>
             </DialogClose>

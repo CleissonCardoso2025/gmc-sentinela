@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +13,7 @@ import Dashboard from "@/layouts/Dashboard";
 import { Plus, FileText, AlertTriangle, History, MapPin } from "lucide-react";
 import { generateMockLocationsForAllVehicles } from "@/utils/mockLocationData";
 import { useToast } from "@/hooks/use-toast";
+import { enableRealtimeForVehicleLocations } from "@/utils/enableRealtimeForVehicleLocations";
 
 export interface Vehicle {
   id: number;
@@ -51,7 +51,6 @@ const ViaturasPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Mock data for vehicles
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
       id: 1,
@@ -94,7 +93,6 @@ const ViaturasPage: React.FC = () => {
     },
   ]);
 
-  // Mock data for maintenance records
   const [maintenances, setMaintenances] = useState<Maintenance[]>([
     {
       id: 1,
@@ -131,6 +129,10 @@ const ViaturasPage: React.FC = () => {
       descricao: "Alinhamento e balanceamento"
     },
   ]);
+
+  useEffect(() => {
+    enableRealtimeForVehicleLocations();
+  }, []);
 
   const handleAddVehicle = () => {
     setFormMode("add");

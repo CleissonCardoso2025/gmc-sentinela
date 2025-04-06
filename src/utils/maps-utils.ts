@@ -25,21 +25,21 @@ export const formatDateBR = (dateString: string): string => {
  */
 export const calculateMapCenter = (
   items: Array<{ latitude?: number; longitude?: number }>
-) => {
+): [number, number] => {
   const validItems = items.filter(item => item.latitude && item.longitude);
   
   if (validItems.length === 0) {
     // Default to São Paulo if no valid coordinates
-    return { lat: -23.550520, lng: -46.633308 };
+    return [-23.550520, -46.633308];
   }
   
   const sumLat = validItems.reduce((sum, item) => sum + (item.latitude || 0), 0);
   const sumLng = validItems.reduce((sum, item) => sum + (item.longitude || 0), 0);
   
-  return { 
-    lat: sumLat / validItems.length, 
-    lng: sumLng / validItems.length 
-  };
+  return [
+    sumLat / validItems.length,
+    sumLng / validItems.length
+  ];
 };
 
 /**
@@ -50,23 +50,4 @@ export const determineZoomLevel = (itemCount: number): number => {
   if (itemCount === 1) return 15;
   if (itemCount <= 3) return 13;
   return 12;
-};
-
-/**
- * Creates the HTML content for map info windows
- */
-export const createInfoWindowContent = (
-  title: string,
-  location: string,
-  date: string
-): string => {
-  const formattedDate = formatDateBR(date);
-  
-  return `
-    <div style="padding: 10px; max-width: 200px;">
-      <h3 style="margin-top: 0; font-weight: bold;">${title}</h3>
-      <p>${location}</p>
-      <p>Data: ${formattedDate}</p>
-    </div>
-  `;
 };

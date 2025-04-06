@@ -5,20 +5,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DateRange, useOccurrenceData } from "@/hooks/use-occurrence-data";
-import { useGoogleMaps } from "@/hooks/use-google-maps";
-import OccurrenceMapDisplay from "./OccurrenceMapDisplay";
 import { useToast } from '@/hooks/use-toast';
+import LeafletMap from '../Map/LeafletMap';
+import { MapMarker } from '@/types/maps';
+import { formatDateBR } from '@/utils/maps-utils';
 
 const OccurrenceMap: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRange>('3m');
   const { occurrences, isLoading: dataLoading, refetchOccurrences } = useOccurrenceData(dateRange);
   const isMobile = useIsMobile();
-  const { isLoaded, isLoading: mapsLoading, loadError } = useGoogleMaps({
-    callback: 'mapsCallback',
-    libraries: ['places']
-  });
   const { toast } = useToast();
-  const [retryCount, setRetryCount] = useState(0);
   
   const handleRangeChange = (value: string) => {
     setDateRange(value as DateRange);
@@ -32,21 +28,44 @@ const OccurrenceMap: React.FC = () => {
     });
   }, [refetchOccurrences, toast]);
   
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
-    toast({
-      title: "Tentando novamente",
-      description: "Tentando carregar o mapa novamente."
-    });
+  // Prepare markers for the map
+  const markers: MapMarker[] = occurrences.filter(o => o.latitude && o.longitude).map(occurrence => ({
+    id: occurrence.id,
+    position: [occurrence.latitude || -23.550520, occurrence.longitude || -46.633308], // Default to São Paulo if invalid
+    title: occurrence.titulo,
+    content: `
+      <p>${occurrence.local}</p>
+      <p>Data: ${formatDateBR(occurrence.data)}</p>
+    `,
+    icon: 'incident'
+  }));
+  
+  // Calculate center point
+  const calculateCenter = (): [number, number] => {
+    const validOccurrences = occurrences.filter(o => o.latitude && o.longitude);
     
-    // Force reload of the Google Maps script
-    const existingScript = document.getElementById('google-maps-script');
-    if (existingScript && existingScript.parentNode) {
-      existingScript.parentNode.removeChild(existingScript);
+    if (validOccurrences.length === 0) {
+      // Default to São Paulo if no valid coordinates
+      return [-23.550520, -46.633308];
     }
+    
+    const sumLat = validOccurrences.reduce((sum, item) => sum + (item.latitude || 0), 0);
+    const sumLng = validOccurrences.reduce((sum, item) => sum + (item.longitude || 0), 0);
+    
+    return [
+      sumLat / validOccurrences.length,
+      sumLng / validOccurrences.length
+    ];
   };
   
-  const isLoading = dataLoading || mapsLoading;
+  // Determine the zoom level based on number of items
+  const determineZoom = (): number => {
+    const validOccurrences = occurrences.filter(o => o.latitude && o.longitude);
+    if (validOccurrences.length === 0) return 12;
+    if (validOccurrences.length === 1) return 15;
+    if (validOccurrences.length <= 3) return 13;
+    return 12;
+  };
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
@@ -64,7 +83,7 @@ const OccurrenceMap: React.FC = () => {
         </Select>
       </div>
       
-      {isLoading ? (
+      {dataLoading ? (
         <div className="w-full h-[300px] md:h-[400px] p-4 flex items-center justify-center">
           <div className="space-y-4 w-full">
             <Skeleton className="h-[250px] md:h-[350px] w-full rounded-md" />
@@ -72,22 +91,19 @@ const OccurrenceMap: React.FC = () => {
         </div>
       ) : (
         <div className="w-full relative">
-          <OccurrenceMapDisplay 
-            occurrences={occurrences} 
-            isLoaded={isLoaded} 
+          <LeafletMap 
+            center={calculateCenter()} 
+            markers={markers}
+            zoom={determineZoom()}
+            height="h-[300px] md:h-[400px]"
+            markerType="incident"
           />
           
-          {loadError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
-              <div className="text-center p-4">
-                <p className="text-red-600 mb-2">Erro ao carregar o mapa</p>
-                <button 
-                  className="bg-gcm-600 text-white px-3 py-1 rounded-md hover:bg-gcm-700 transition-colors"
-                  onClick={handleRetry}
-                >
-                  Tentar novamente
-                </button>
-              </div>
+          {occurrences.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80 z-[999]">
+              <p className="text-gray-600 italic">
+                Nenhuma ocorrência encontrada no período selecionado.
+              </p>
             </div>
           )}
           

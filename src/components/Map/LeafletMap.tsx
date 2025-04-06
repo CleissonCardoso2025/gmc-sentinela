@@ -63,6 +63,27 @@ const MapViewControl: React.FC<MapViewProps> = ({ center, zoom }) => {
   return null;
 };
 
+// Component to handle map click events
+const MapClickHandler: React.FC<{ onMapClick: (coords: { lat: number, lng: number }) => void }> = ({ onMapClick }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (onMapClick) {
+      const clickHandler = (e: { latlng: { lat: number, lng: number } }) => {
+        onMapClick(e.latlng);
+      };
+      
+      map.on('click', clickHandler);
+      
+      return () => {
+        map.off('click', clickHandler);
+      };
+    }
+  }, [map, onMapClick]);
+  
+  return null;
+};
+
 interface LeafletMapProps {
   center: [number, number];
   markers: MapMarker[];
@@ -114,19 +135,14 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         zoom={mapZoom} 
         style={{ height: '100%', width: '100%' }} 
         zoomControl={true}
-        whenCreated={(map) => {
-          if (onMapClick) {
-            map.on('click', (e) => {
-              onMapClick(e.latlng);
-            });
-          }
-        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapViewControl center={mapCenter} zoom={mapZoom} />
+        
+        {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
         
         {markers.map(marker => (
           <Marker 

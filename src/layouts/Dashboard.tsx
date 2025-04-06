@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import Header from "@/components/Dashboard/Header";
-import Navbar from "@/components/Dashboard/Navbar";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import Footer from "@/components/Dashboard/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -23,8 +22,7 @@ const Dashboard: React.FC<DashboardProps> = ({ children }) => {
           <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
         )}
         <div className={`flex-1 transition-all duration-300 ${!isMobile && !sidebarCollapsed ? 'ml-64' : !isMobile && sidebarCollapsed ? 'ml-20' : ''}`}>
-          <Navbar />
-          <main className="flex-grow pt-16 pb-12 sm:pt-20 sm:pb-16 px-4 sm:px-6">
+          <main className="flex-grow pt-8 pb-12 sm:pb-16 px-4 sm:px-6">
             {children}
           </main>
           <Footer />

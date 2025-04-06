@@ -26,6 +26,7 @@ declare global {
       };
     };
     initMap: () => void;
+    mapsCallback?: () => void;
   }
 }
 

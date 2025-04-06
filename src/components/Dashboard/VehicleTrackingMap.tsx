@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,8 +24,8 @@ const VehicleTrackingMap: React.FC = () => {
   const googleMapsLoaded = useRef(false);
   const googleMapRef = useRef<any>(null);
   const markersRef = useRef<{ [key: number]: any }>({});
+  const mapInitialized = useRef(false);
   
-  // Get current vehicle locations from Supabase
   useEffect(() => {
     const fetchVehicleLocations = async () => {
       try {
@@ -37,7 +36,6 @@ const VehicleTrackingMap: React.FC = () => {
           throw error;
         }
         
-        // Get full vehicle details
         if (data && data.length > 0) {
           const vehicleIds = data.map(location => location.vehicle_id);
           
@@ -50,7 +48,6 @@ const VehicleTrackingMap: React.FC = () => {
             throw vehiclesError;
           }
           
-          // Combine location data with vehicle details
           const vehiclesWithLocation = vehiclesData?.map(vehicle => {
             const location = data.find(loc => loc.vehicle_id === vehicle.id);
             return {
@@ -78,128 +75,141 @@ const VehicleTrackingMap: React.FC = () => {
     
     fetchVehicleLocations();
     
-    // Set up a periodic refresh
-    const intervalId = setInterval(fetchVehicleLocations, 60000); // Refresh every minute
+    const intervalId = setInterval(fetchVehicleLocations, 60000);
     
     return () => clearInterval(intervalId);
   }, [toast]);
   
-  // Initialize Google Maps
-  useEffect(() => {
-    if (isLoading || googleMapsLoaded.current || !mapRef.current || vehicles.length === 0) return;
+  const initializeMap = () => {
+    console.log("Initializing vehicle tracking map");
+    if (!mapRef.current) return;
     
-    const loadGoogleMaps = async () => {
-      if (typeof window.google === 'undefined') {
-        try {
-          // Define a callback function for when Google Maps loads
-          window.initMap = () => {
-            initializeMap();
-          };
-          
-          const script = document.createElement('script');
-          const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
-          script.async = true;
-          script.defer = true;
-          
-          document.head.appendChild(script);
-        } catch (error) {
-          console.error("Error loading Google Maps:", error);
-          toast({
-            title: "Erro ao carregar o mapa",
-            description: "Não foi possível carregar o Google Maps.",
-            variant: "destructive"
-          });
-        }
-      } else {
-        initializeMap();
-      }
-    };
+    googleMapsLoaded.current = true;
+    setIsLoading(false);
     
-    const initializeMap = () => {
-      if (!mapRef.current) return;
-      
-      googleMapsLoaded.current = true;
-      
-      // Find center point for map (average lat/lng of all vehicles)
-      const validVehicles = vehicles.filter(v => v.latitude && v.longitude);
-      
-      // Default to São Paulo coordinates if no valid vehicles
-      let center = { lat: -23.550520, lng: -46.633308 };
-      
-      if (validVehicles.length > 0) {
-        const sumLat = validVehicles.reduce((sum, v) => sum + (v.latitude || 0), 0);
-        const sumLng = validVehicles.reduce((sum, v) => sum + (v.longitude || 0), 0);
-        center = { 
-          lat: sumLat / validVehicles.length, 
-          lng: sumLng / validVehicles.length 
-        };
-      }
-      
-      // Create map
-      if (window.google) {
-        googleMapRef.current = new window.google.maps.Map(mapRef.current, {
-          center,
-          zoom: 12,
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-          mapTypeControl: true,
-          fullscreenControl: true,
-          streetViewControl: false,
-          styles: [
-            {
-              featureType: "administrative",
-              elementType: "geometry",
-              stylers: [{ visibility: "on" }]
-            },
-            {
-              featureType: "poi",
-              stylers: [{ visibility: "off" }]
-            }
-          ]
-        });
-        
-        // Add markers for each vehicle
-        validVehicles.forEach(vehicle => {
-          if (vehicle.latitude && vehicle.longitude && googleMapRef.current) {
-            const marker = new window.google.maps.Marker({
-              position: { lat: vehicle.latitude, lng: vehicle.longitude },
-              map: googleMapRef.current,
-              title: `${vehicle.placa} - ${vehicle.modelo || ""}`,
-              icon: {
-                url: "https://maps.google.com/mapfiles/ms/icons/police.png",
-                scaledSize: new window.google.maps.Size(32, 32)
-              }
-            });
-            
-            // Add info window
-            const infoContent = `
-              <div style="padding: 10px; max-width: 200px;">
-                <h3 style="margin-top: 0; font-weight: bold;">${vehicle.placa}</h3>
-                <p>${vehicle.marca || ""} ${vehicle.modelo || ""}</p>
-                ${vehicle.condutor ? `<p>Condutor: ${vehicle.condutor}</p>` : ''}
-                ${vehicle.location_name ? `<p>Local: ${vehicle.location_name}</p>` : ''}
-                <p>Última atualização: ${formatDate(vehicle.lastUpdate || '')}</p>
-              </div>
-            `;
-            
-            const infoWindow = new window.google.maps.InfoWindow({
-              content: infoContent
-            });
-            
-            marker.addListener('click', () => {
-              infoWindow.open(googleMapRef.current, marker);
-            });
-            
-            markersRef.current[vehicle.id] = marker;
+    const validVehicles = vehicles.filter(v => v.latitude && v.longitude);
+    
+    let center = { lat: -23.550520, lng: -46.633308 };
+    
+    if (validVehicles.length > 0) {
+      const sumLat = validVehicles.reduce((sum, v) => sum + (v.latitude || 0), 0);
+      const sumLng = validVehicles.reduce((sum, v) => sum + (v.longitude || 0), 0);
+      center = { 
+        lat: sumLat / validVehicles.length, 
+        lng: sumLng / validVehicles.length 
+      };
+    }
+    
+    if (window.google && !googleMapRef.current) {
+      googleMapRef.current = new window.google.maps.Map(mapRef.current, {
+        center,
+        zoom: 12,
+        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+        mapTypeControl: true,
+        fullscreenControl: true,
+        streetViewControl: false,
+        styles: [
+          {
+            featureType: "administrative",
+            elementType: "geometry",
+            stylers: [{ visibility: "on" }]
+          },
+          {
+            featureType: "poi",
+            stylers: [{ visibility: "off" }]
           }
-        });
+        ]
+      });
+      
+      validVehicles.forEach(vehicle => {
+        if (vehicle.latitude && vehicle.longitude && googleMapRef.current) {
+          const marker = new window.google.maps.Marker({
+            position: { lat: vehicle.latitude, lng: vehicle.longitude },
+            map: googleMapRef.current,
+            title: `${vehicle.placa} - ${vehicle.modelo || ""}`,
+            icon: {
+              url: "https://maps.google.com/mapfiles/ms/icons/police.png",
+              scaledSize: new window.google.maps.Size(32, 32)
+            }
+          });
+          
+          const infoContent = `
+            <div style="padding: 10px; max-width: 200px;">
+              <h3 style="margin-top: 0; font-weight: bold;">${vehicle.placa}</h3>
+              <p>${vehicle.marca || ""} ${vehicle.modelo || ""}</p>
+              ${vehicle.condutor ? `<p>Condutor: ${vehicle.condutor}</p>` : ''}
+              ${vehicle.location_name ? `<p>Local: ${vehicle.location_name}</p>` : ''}
+              <p>Última atualização: ${formatDate(vehicle.lastUpdate || '')}</p>
+            </div>
+          `;
+          
+          const infoWindow = new window.google.maps.InfoWindow({
+            content: infoContent
+          });
+          
+          marker.addListener('click', () => {
+            infoWindow.open(googleMapRef.current, marker);
+          });
+          
+          markersRef.current[vehicle.id] = marker;
+        }
+      });
+    }
+    
+    mapInitialized.current = true;
+  };
+  
+  useEffect(() => {
+    if (isLoading || googleMapsLoaded.current || !mapRef.current) return;
+    
+    const loadGoogleMaps = () => {
+      console.log("Loading Google Maps for vehicle tracking");
+      
+      if (window.google && window.google.maps) {
+        initializeMap();
+        return;
       }
+      
+      window.mapsCallback = () => {
+        console.log("Maps callback triggered - vehicle tracking");
+        initializeMap();
+      };
+      
+      const existingScript = document.getElementById('google-maps-script');
+      if (existingScript) {
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      const apiKey = 'AIzaSyAQWzSfxrMNrsQ64PhLJGrBZEYNjA4UJY0';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=mapsCallback`;
+      script.async = true;
+      script.defer = true;
+      
+      script.onerror = () => {
+        console.error("Error loading Google Maps script");
+        toast({
+          title: "Erro ao carregar o mapa",
+          description: "Não foi possível carregar o Google Maps.",
+          variant: "destructive"
+        });
+      };
+      
+      document.head.appendChild(script);
     };
     
     loadGoogleMaps();
+    
+    return () => {
+      if (mapInitialized.current) {
+        Object.values(markersRef.current).forEach(marker => {
+          if (marker) marker.setMap(null);
+        });
+      }
+    };
   }, [isLoading, vehicles, toast]);
   
-  // Helper function to format date
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'Desconhecido';
     
@@ -217,7 +227,6 @@ const VehicleTrackingMap: React.FC = () => {
     }
   };
   
-  // Get location of the browser/user
   const getUserLocation = () => {
     if (navigator.geolocation && googleMapRef.current) {
       navigator.geolocation.getCurrentPosition(
@@ -230,7 +239,6 @@ const VehicleTrackingMap: React.FC = () => {
           googleMapRef.current?.setCenter(userPos);
           googleMapRef.current?.setZoom(14);
           
-          // Add a marker for user's position
           if (window.google && googleMapRef.current) {
             new window.google.maps.Marker({
               position: userPos,

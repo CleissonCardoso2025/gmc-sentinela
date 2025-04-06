@@ -19,7 +19,7 @@ const Dashboard: React.FC<DashboardProps> = ({ children }) => {
       <Header notifications={notifications} />
       <div className="flex flex-1 pt-16">
         {!isMobile && (
-          <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+          <Sidebar />
         )}
         <div className={`flex-1 transition-all duration-300 ${!isMobile && !sidebarCollapsed ? 'ml-64' : !isMobile && sidebarCollapsed ? 'ml-20' : ''}`}>
           <main className="flex-grow pt-8 pb-12 sm:pb-16 px-4 sm:px-6">

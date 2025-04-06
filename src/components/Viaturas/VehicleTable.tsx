@@ -1,23 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Edit, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Edit, Wrench, AlertTriangle, MapPin } from "lucide-react";
 import { Vehicle } from "@/pages/Viaturas";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose
-} from "@/components/ui/dialog";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import VehicleMap from "./VehicleMap";
-import { Database } from '@/integrations/supabase/types';
-import { useToast } from "@/hooks/use-toast";
 
 interface VehicleTableProps {
   vehicles: Vehicle[];
@@ -25,69 +20,7 @@ interface VehicleTableProps {
   onAddMaintenance: (vehicle: Vehicle) => void;
 }
 
-type VehicleLocation = {
-  vehicle_id: number;
-  latitude: number;
-  longitude: number;
-  recorded_at: string;
-  location_name: string | null;
-};
-
-const VehicleTable: React.FC<VehicleTableProps> = ({ 
-  vehicles, 
-  onEdit, 
-  onAddMaintenance 
-}) => {
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [mapDialogOpen, setMapDialogOpen] = useState(false);
-  const { toast } = useToast();
-
-  // Fetch the latest locations for all vehicles
-  const { data: locationsData, refetch: refetchLocations } = useQuery({
-    queryKey: ['vehicleLocations'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_latest_vehicle_locations');
-      if (error) throw error;
-      return data as VehicleLocation[];
-    }
-  });
-
-  // Setup realtime subscription for location updates
-  useEffect(() => {
-    const channel = supabase
-      .channel('vehicle-locations-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'vehicle_locations'
-        },
-        (payload) => {
-          // Refetch locations when new data is inserted
-          refetchLocations();
-          
-          // Show toast notification
-          const vehicleId = payload.new.vehicle_id;
-          const vehicle = vehicles.find(v => v.id === vehicleId);
-          
-          if (vehicle) {
-            toast({
-              title: `Localização atualizada`,
-              description: `Nova localização recebida para ${vehicle.placa}`,
-              duration: 3000,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [vehicles, refetchLocations, toast]);
-
-  // Function to get status color
+const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, onEdit, onAddMaintenance }) => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'em serviço':
@@ -96,177 +29,75 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'inoperante':
         return 'bg-red-100 text-red-800 border-red-300';
-      case 'reserva':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
-  
-  // Function to determine if maintenance warning should be shown
-  const shouldShowMaintenanceWarning = (vehicle: Vehicle) => {
+
+  const needsMaintenance = (vehicle: Vehicle) => {
+    // Check if maintenance is due soon (within 7 days or 1000 km)
     const today = new Date();
     const maintenanceDate = new Date(vehicle.proximaManutencao);
-    const diffTime = maintenanceDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7 && diffDays >= 0;
-  };
-
-  // Function to format the location information
-  const getLocationInfo = (vehicleId: number) => {
-    if (!locationsData) return "Não disponível";
+    const daysUntilMaintenance = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
-    const vehicleLocation = locationsData.find(loc => loc.vehicle_id === vehicleId);
-    if (!vehicleLocation) return "Não disponível";
-    
-    if (vehicleLocation.location_name) {
-      return vehicleLocation.location_name;
-    }
-    
-    // Format the date as "10-Apr 14:30"
-    const date = new Date(vehicleLocation.recorded_at);
-    return `${date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-  };
-
-  // Function to handle opening the map dialog
-  const handleShowMap = (vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
-    setMapDialogOpen(true);
-  };
-
-  // Function to get the latitude and longitude for a vehicle
-  const getVehicleCoordinates = (vehicleId: number) => {
-    if (!locationsData) return null;
-    
-    const vehicleLocation = locationsData.find(loc => loc.vehicle_id === vehicleId);
-    if (!vehicleLocation) return null;
-    
-    return {
-      latitude: vehicleLocation.latitude,
-      longitude: vehicleLocation.longitude,
-      timestamp: vehicleLocation.recorded_at
-    };
+    // Using logic: if either less than 7 days until scheduled maintenance or within 1000km of maintenance threshold
+    return daysUntilMaintenance <= 7 || 
+           (vehicle.quilometragem >= 5000 && vehicle.quilometragem % 5000 >= 4000);
   };
 
   return (
-    <>
-      <div className="border rounded-md overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Placa</TableHead>
-              <TableHead>Modelo/Marca</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Quilometragem</TableHead>
-              <TableHead>Próxima Manutenção</TableHead>
-              <TableHead>Localização</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+    <div className="rounded-md border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="font-medium">Placa</TableHead>
+            <TableHead className="font-medium">Modelo</TableHead>
+            <TableHead className="font-medium">Marca</TableHead>
+            <TableHead className="font-medium">Ano</TableHead>
+            <TableHead className="font-medium">Tipo</TableHead>
+            <TableHead className="font-medium">Status</TableHead>
+            <TableHead className="font-medium">KM</TableHead>
+            <TableHead className="font-medium">Próxima Manutenção</TableHead>
+            <TableHead className="font-medium">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {vehicles.map((vehicle) => (
+            <TableRow key={vehicle.id} className="hover:bg-gray-50 transition-colors">
+              <TableCell className="font-medium">
+                <div className="flex items-center">
+                  {needsMaintenance(vehicle) && (
+                    <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
+                  )}
+                  {vehicle.placa}
+                </div>
+              </TableCell>
+              <TableCell>{vehicle.modelo}</TableCell>
+              <TableCell>{vehicle.marca}</TableCell>
+              <TableCell>{vehicle.ano}</TableCell>
+              <TableCell>{vehicle.tipo}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className={cn("font-normal", getStatusColor(vehicle.status))}>
+                  {vehicle.status}
+                </Badge>
+              </TableCell>
+              <TableCell>{vehicle.quilometragem.toLocaleString()} km</TableCell>
+              <TableCell>{new Date(vehicle.proximaManutencao).toLocaleDateString()}</TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => onEdit(vehicle)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onAddMaintenance(vehicle)}>
+                    <Wrench className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {vehicles.length > 0 ? (
-              vehicles.map((vehicle) => (
-                <TableRow key={vehicle.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{vehicle.placa}</TableCell>
-                  <TableCell>{vehicle.modelo} - {vehicle.marca}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn("font-normal", getStatusColor(vehicle.status))}>
-                      {vehicle.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{vehicle.quilometragem.toLocaleString()} km</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {new Date(vehicle.proximaManutencao).toLocaleDateString('pt-BR')}
-                      {shouldShowMaintenanceWarning(vehicle) && (
-                        <AlertTriangle className="h-4 w-4 text-yellow-500" aria-label="Manutenção próxima" />
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {getLocationInfo(vehicle.id)}
-                      {getVehicleCoordinates(vehicle.id) && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-7 w-7 p-0 relative group" 
-                          onClick={() => handleShowMap(vehicle)}
-                        >
-                          <MapPin className="h-4 w-4 text-blue-500" />
-                          <span className="absolute top-0 left-0 whitespace-nowrap bg-black text-white text-xs py-1 px-2 rounded opacity-0 pointer-events-none transform -translate-y-full group-hover:opacity-100 transition-opacity duration-200">
-                            Ver no mapa
-                          </span>
-                          <span className="sr-only">Ver no mapa</span>
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => onEdit(vehicle)}
-                        className="h-8 px-2"
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Editar</span>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => onAddMaintenance(vehicle)}
-                        className="h-8 px-2"
-                      >
-                        <Wrench className="h-4 w-4" />
-                        <span className="sr-only">Manutenção</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  Nenhuma viatura encontrada.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Map Dialog */}
-      <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedVehicle ? `Localização: ${selectedVehicle.placa} - ${selectedVehicle.modelo}` : 'Localização'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedVehicle && (
-            <div className="h-[450px] w-full">
-              <VehicleMap 
-                vehicleId={selectedVehicle.id} 
-                vehicleInfo={{
-                  placa: selectedVehicle.placa,
-                  status: selectedVehicle.status,
-                  condutor: "Não informado" // You can update this if you have driver information
-                }}
-              />
-            </div>
-          )}
-          
-          <div className="flex justify-end mt-4">
-            <DialogClose asChild>
-              <Button variant="outline">Fechar</Button>
-            </DialogClose>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 

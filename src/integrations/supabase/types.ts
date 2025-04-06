@@ -9,104 +9,13 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      vehicle_locations: {
-        Row: {
-          accuracy: number | null
-          id: string
-          latitude: number
-          location_name: string | null
-          longitude: number
-          recorded_at: string
-          user_id: string | null
-          vehicle_id: number
-        }
-        Insert: {
-          accuracy?: number | null
-          id?: string
-          latitude: number
-          location_name?: string | null
-          longitude: number
-          recorded_at?: string
-          user_id?: string | null
-          vehicle_id: number
-        }
-        Update: {
-          accuracy?: number | null
-          id?: string
-          latitude?: number
-          location_name?: string | null
-          longitude?: number
-          recorded_at?: string
-          user_id?: string | null
-          vehicle_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vehicle_locations_vehicle_id_fkey"
-            columns: ["vehicle_id"]
-            isOneToOne: false
-            referencedRelation: "vehicles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vehicles: {
-        Row: {
-          ano: string | null
-          id: number
-          marca: string
-          modelo: string
-          observacoes: string | null
-          placa: string
-          proximamanutencao: string | null
-          quilometragem: number | null
-          status: string | null
-          tipo: string | null
-          ultimamanutencao: string | null
-        }
-        Insert: {
-          ano?: string | null
-          id?: number
-          marca: string
-          modelo: string
-          observacoes?: string | null
-          placa: string
-          proximamanutencao?: string | null
-          quilometragem?: number | null
-          status?: string | null
-          tipo?: string | null
-          ultimamanutencao?: string | null
-        }
-        Update: {
-          ano?: string | null
-          id?: number
-          marca?: string
-          modelo?: string
-          observacoes?: string | null
-          placa?: string
-          proximamanutencao?: string | null
-          quilometragem?: number | null
-          status?: string | null
-          tipo?: string | null
-          ultimamanutencao?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_latest_vehicle_locations: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          vehicle_id: number
-          latitude: number
-          longitude: number
-          recorded_at: string
-          location_name: string
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

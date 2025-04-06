@@ -66,34 +66,36 @@ const OccurrenceMap: React.FC = () => {
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
-      <div className="absolute top-4 left-4 z-10 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <h2 className="text-lg font-semibold text-gray-800">Mapa de Ocorrências</h2>
-        <div className="flex flex-wrap gap-2">
-          <Select value={dateRange} onValueChange={handleRangeChange}>
-            <SelectTrigger className="w-[120px] h-8 text-sm bg-white">
-              <Calendar className="h-3.5 w-3.5 mr-1" />
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3m">Últimos 3 meses</SelectItem>
-              <SelectItem value="6m">Últimos 6 meses</SelectItem>
-              <SelectItem value="12m">Últimos 12 meses</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={occurrenceType} onValueChange={handleTypeChange}>
-            <SelectTrigger className="w-[140px] h-8 text-sm bg-white">
-              <Filter className="h-3.5 w-3.5 mr-1" />
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os tipos</SelectItem>
-              <SelectItem value="transito">Trânsito</SelectItem>
-              <SelectItem value="crime">Crimes</SelectItem>
-              <SelectItem value="apoio">Apoio ao cidadão</SelectItem>
-              <SelectItem value="perturbacao">Perturbação</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="p-4 bg-white border-b z-20 relative">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h2 className="text-lg font-semibold text-gray-800">Mapa de Ocorrências</h2>
+          <div className="flex flex-wrap gap-2">
+            <Select value={dateRange} onValueChange={handleRangeChange}>
+              <SelectTrigger className="w-[120px] h-8 text-sm bg-white">
+                <Calendar className="h-3.5 w-3.5 mr-1" />
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3m">Últimos 3 meses</SelectItem>
+                <SelectItem value="6m">Últimos 6 meses</SelectItem>
+                <SelectItem value="12m">Últimos 12 meses</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={occurrenceType} onValueChange={handleTypeChange}>
+              <SelectTrigger className="w-[140px] h-8 text-sm bg-white">
+                <Filter className="h-3.5 w-3.5 mr-1" />
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                <SelectItem value="transito">Trânsito</SelectItem>
+                <SelectItem value="crime">Crimes</SelectItem>
+                <SelectItem value="apoio">Apoio ao cidadão</SelectItem>
+                <SelectItem value="perturbacao">Perturbação</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       

@@ -24,6 +24,13 @@ declare global {
           INSET_LARGE: string;
         };
         places?: any;
+        marker?: {
+          AdvancedMarkerElement: any;
+        };
+        event: {
+          addListener: (instance: any, eventName: string, handler: Function) => any;
+          removeListener: (listener: any) => void;
+        };
       };
     };
     initMap: () => void;

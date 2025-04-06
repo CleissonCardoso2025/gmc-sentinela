@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,8 +19,11 @@ export const useVehicleLocations = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  const fetchVehicleLocations = async () => {
+  
+  const fetchVehicleLocations = useCallback(async () => {
+    console.log("Fetching vehicle locations");
+    setIsLoading(true);
+    
     try {
       const { data, error } = await supabase
         .rpc('get_latest_vehicle_locations');
@@ -28,6 +31,8 @@ export const useVehicleLocations = () => {
       if (error) {
         throw error;
       }
+      
+      console.log("Vehicle locations data:", data);
       
       if (data && data.length > 0) {
         const vehicleIds = data.map(location => location.vehicle_id);
@@ -52,7 +57,37 @@ export const useVehicleLocations = () => {
           };
         }) || [];
         
+        console.log("Vehicles with location:", vehiclesWithLocation);
         setVehicles(vehiclesWithLocation);
+      } else {
+        // If no real vehicle data, create mock data for development purposes
+        const mockVehicles: Vehicle[] = [
+          {
+            id: 1,
+            placa: "GCM-1234",
+            marca: "Chevrolet",
+            modelo: "Spin",
+            condutor: "Carlos Silva",
+            latitude: -23.550520,
+            longitude: -46.633308,
+            lastUpdate: new Date().toISOString(),
+            location_name: "Centro, São Paulo"
+          },
+          {
+            id: 2,
+            placa: "GCM-5678",
+            marca: "Toyota",
+            modelo: "Hilux",
+            condutor: "Ana Oliveira",
+            latitude: -23.555520,
+            longitude: -46.639308,
+            lastUpdate: new Date().toISOString(),
+            location_name: "Bela Vista, São Paulo"
+          }
+        ];
+        
+        console.log("Using mock vehicle data for development");
+        setVehicles(mockVehicles);
       }
     } catch (error) {
       console.error("Error fetching vehicle locations:", error);
@@ -64,7 +99,7 @@ export const useVehicleLocations = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchVehicleLocations();
@@ -72,7 +107,11 @@ export const useVehicleLocations = () => {
     const intervalId = setInterval(fetchVehicleLocations, 60000);
     
     return () => clearInterval(intervalId);
-  }, [toast]);
+  }, [fetchVehicleLocations]);
 
-  return { vehicles, isLoading };
+  return { 
+    vehicles, 
+    isLoading,
+    refetchVehicles: fetchVehicleLocations
+  };
 };

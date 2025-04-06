@@ -139,7 +139,7 @@ const MaintenanceHistory: React.FC<MaintenanceHistoryProps> = ({
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os tipos</SelectItem>
+                  <SelectItem value="all-types">Todos os tipos</SelectItem>
                   <SelectItem value="Preventiva">Preventiva</SelectItem>
                   <SelectItem value="Corretiva">Corretiva</SelectItem>
                   <SelectItem value="Revisão">Revisão</SelectItem>
@@ -159,7 +159,7 @@ const MaintenanceHistory: React.FC<MaintenanceHistoryProps> = ({
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os status</SelectItem>
+                  <SelectItem value="all-status">Todos os status</SelectItem>
                   <SelectItem value="Agendada">Agendada</SelectItem>
                   <SelectItem value="Em andamento">Em andamento</SelectItem>
                   <SelectItem value="Concluída">Concluída</SelectItem>

@@ -164,11 +164,11 @@ const OccurrenceMap: React.FC = () => {
       }
       
       // Create or update map
-      if (!googleMapRef.current && typeof google !== 'undefined') {
-        googleMapRef.current = new google.maps.Map(mapRef.current, {
+      if (!googleMapRef.current && window.google) {
+        googleMapRef.current = new window.google.maps.Map(mapRef.current, {
           center,
           zoom,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
           mapTypeControl: true,
           fullscreenControl: true,
           streetViewControl: false
@@ -179,16 +179,16 @@ const OccurrenceMap: React.FC = () => {
       }
       
       // Add markers for occurrences
-      if (typeof google !== 'undefined') {
+      if (window.google) {
         validOccurrences.forEach(occurrence => {
           if (occurrence.latitude && occurrence.longitude && googleMapRef.current) {
-            const marker = new google.maps.Marker({
+            const marker = new window.google.maps.Marker({
               position: { lat: occurrence.latitude, lng: occurrence.longitude },
               map: googleMapRef.current,
               title: occurrence.titulo,
               icon: {
                 url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-                scaledSize: new google.maps.Size(32, 32)
+                scaledSize: new window.google.maps.Size(32, 32)
               }
             });
             
@@ -209,7 +209,7 @@ const OccurrenceMap: React.FC = () => {
               </div>
             `;
             
-            const infoWindow = new google.maps.InfoWindow({
+            const infoWindow = new window.google.maps.InfoWindow({
               content: infoContent
             });
             

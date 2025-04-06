@@ -138,11 +138,11 @@ const VehicleTrackingMap: React.FC = () => {
       }
       
       // Create map
-      if (typeof google !== 'undefined') {
-        googleMapRef.current = new google.maps.Map(mapRef.current, {
+      if (window.google) {
+        googleMapRef.current = new window.google.maps.Map(mapRef.current, {
           center,
           zoom: 12,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
           mapTypeControl: true,
           fullscreenControl: true,
           streetViewControl: false,
@@ -162,13 +162,13 @@ const VehicleTrackingMap: React.FC = () => {
         // Add markers for each vehicle
         validVehicles.forEach(vehicle => {
           if (vehicle.latitude && vehicle.longitude && googleMapRef.current) {
-            const marker = new google.maps.Marker({
+            const marker = new window.google.maps.Marker({
               position: { lat: vehicle.latitude, lng: vehicle.longitude },
               map: googleMapRef.current,
               title: `${vehicle.placa} - ${vehicle.modelo || ""}`,
               icon: {
                 url: "https://maps.google.com/mapfiles/ms/icons/police.png",
-                scaledSize: new google.maps.Size(32, 32)
+                scaledSize: new window.google.maps.Size(32, 32)
               }
             });
             
@@ -183,7 +183,7 @@ const VehicleTrackingMap: React.FC = () => {
               </div>
             `;
             
-            const infoWindow = new google.maps.InfoWindow({
+            const infoWindow = new window.google.maps.InfoWindow({
               content: infoContent
             });
             
@@ -232,14 +232,14 @@ const VehicleTrackingMap: React.FC = () => {
           googleMapRef.current?.setZoom(14);
           
           // Add a marker for user's position
-          if (typeof google !== 'undefined' && googleMapRef.current) {
-            new google.maps.Marker({
+          if (window.google && googleMapRef.current) {
+            new window.google.maps.Marker({
               position: userPos,
               map: googleMapRef.current,
               title: "Sua localização",
               icon: {
                 url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                scaledSize: new google.maps.Size(32, 32)
+                scaledSize: new window.google.maps.Size(32, 32)
               }
             });
           }

@@ -1,113 +1,85 @@
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { 
+  AlertTriangle, 
+  Calendar, 
+  ArrowDownCircle 
+} from "lucide-react";
 import { Vehicle } from "@/pages/Viaturas";
-import { AlertTriangle, Calendar, Gauge } from "lucide-react";
 
 interface AlertPanelProps {
   vehicles: Vehicle[];
 }
 
 const AlertPanel: React.FC<AlertPanelProps> = ({ vehicles }) => {
-  const getMaintenanceAlerts = () => {
-    const alerts = [];
-    const today = new Date();
-    
-    for (const vehicle of vehicles) {
-      // Check scheduled maintenance date
-      const maintenanceDate = new Date(vehicle.proximaManutencao);
-      const daysUntilMaintenance = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysUntilMaintenance <= 7 && daysUntilMaintenance >= 0) {
-        alerts.push({
-          vehicleId: vehicle.id,
-          placa: vehicle.placa,
-          modelo: vehicle.modelo,
-          tipo: "data",
-          message: `Manutenção programada em ${daysUntilMaintenance} dias`,
-          daysOrKm: daysUntilMaintenance,
-          severity: daysUntilMaintenance <= 3 ? "high" : "medium"
-        });
-      }
-      
-      // Check maintenance based on mileage (every 5000 km)
-      const kmUntilMaintenance = 5000 - (vehicle.quilometragem % 5000);
-      
-      if (kmUntilMaintenance <= 1000) {
-        alerts.push({
-          vehicleId: vehicle.id,
-          placa: vehicle.placa,
-          modelo: vehicle.modelo,
-          tipo: "quilometragem",
-          message: `Manutenção preventiva em ${kmUntilMaintenance} km`,
-          daysOrKm: kmUntilMaintenance,
-          severity: kmUntilMaintenance <= 500 ? "high" : "medium"
-        });
-      }
-    }
-    
-    // Sort by severity (high first) and then by days/km
-    return alerts.sort((a, b) => {
-      if (a.severity === "high" && b.severity !== "high") return -1;
-      if (a.severity !== "high" && b.severity === "high") return 1;
-      return a.daysOrKm - b.daysOrKm;
-    });
-  };
+  // Find vehicles that need maintenance soon (within the next 7 days)
+  const today = new Date();
+  const sevenDaysFromNow = new Date();
+  sevenDaysFromNow.setDate(today.getDate() + 7);
   
-  const alerts = getMaintenanceAlerts();
+  const vehiclesNeedingMaintenance = vehicles.filter(vehicle => {
+    const maintenanceDate = new Date(vehicle.proximaManutencao);
+    return maintenanceDate >= today && maintenanceDate <= sevenDaysFromNow;
+  });
   
+  // Sort by closest maintenance date first
+  vehiclesNeedingMaintenance.sort((a, b) => 
+    new Date(a.proximaManutencao).getTime() - new Date(b.proximaManutencao).getTime()
+  );
+  
+  // Find vehicles with status issues
+  const vehiclesWithIssues = vehicles.filter(vehicle => 
+    vehicle.status === 'Manutenção' || vehicle.status === 'Inoperante'
+  );
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl">Alertas de Manutenção</CardTitle>
-      </CardHeader>
+    <div className="rounded-md border p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        <h3 className="text-lg font-semibold">Alertas e Notificações</h3>
+      </div>
       
-      <CardContent>
-        {alerts.length > 0 ? (
-          <div className="space-y-3">
-            {alerts.map((alert, index) => (
-              <div 
-                key={`${alert.vehicleId}-${alert.tipo}-${index}`}
-                className={`p-3 rounded-md border flex items-start space-x-3 ${
-                  alert.severity === "high" 
-                    ? "bg-red-50 border-red-200" 
-                    : "bg-yellow-50 border-yellow-200"
-                }`}
-              >
-                <div className={`p-2 rounded-full ${
-                  alert.severity === "high" 
-                    ? "bg-red-100 text-red-600" 
-                    : "bg-yellow-100 text-yellow-600"
-                }`}>
-                  {alert.tipo === "data" ? (
-                    <Calendar className="h-5 w-5" />
-                  ) : (
-                    <Gauge className="h-5 w-5" />
-                  )}
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">
-                    {alert.placa} - {alert.modelo}
-                  </h4>
-                  <p className={`text-sm ${
-                    alert.severity === "high" 
-                      ? "text-red-600" 
-                      : "text-yellow-600"
-                  }`}>
-                    {alert.message}
-                  </p>
-                </div>
-              </div>
+      {vehiclesNeedingMaintenance.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-blue-500" />
+            Manutenções Programadas
+          </h4>
+          <ul className="text-sm space-y-1">
+            {vehiclesNeedingMaintenance.slice(0, 3).map(vehicle => (
+              <li key={vehicle.id} className="bg-blue-50 p-2 rounded-md">
+                <span className="font-medium">{vehicle.placa} ({vehicle.modelo})</span>: 
+                Manutenção programada para {new Date(vehicle.proximaManutencao).toLocaleDateString('pt-BR')}
+              </li>
             ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-6 text-gray-500">
-            <AlertTriangle className="h-12 w-12 mb-2 text-gray-300" />
-            <p>Nenhum alerta de manutenção no momento</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </ul>
+        </div>
+      )}
+      
+      {vehiclesWithIssues.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium flex items-center gap-2">
+            <ArrowDownCircle className="h-4 w-4 text-red-500" />
+            Viaturas Indisponíveis
+          </h4>
+          <ul className="text-sm space-y-1">
+            {vehiclesWithIssues.slice(0, 3).map(vehicle => (
+              <li key={vehicle.id} className="bg-red-50 p-2 rounded-md">
+                <span className="font-medium">{vehicle.placa} ({vehicle.modelo})</span>: 
+                {vehicle.status === 'Manutenção' ? ' Em manutenção' : ' Inoperante'}
+                {vehicle.observacoes && ` - ${vehicle.observacoes}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
+      {vehiclesNeedingMaintenance.length === 0 && vehiclesWithIssues.length === 0 && (
+        <div className="text-center py-6 text-gray-500">
+          <p>Nenhum alerta ou notificação pendente</p>
+        </div>
+      )}
+    </div>
   );
 };
 

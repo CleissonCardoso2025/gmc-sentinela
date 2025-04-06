@@ -1,28 +1,9 @@
 
-import React, { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import React from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Vehicle, Maintenance } from "@/pages/Viaturas";
-import { Calendar, Filter, Download } from "lucide-react";
 
 interface MaintenanceHistoryProps {
   maintenances: Maintenance[];
@@ -30,21 +11,18 @@ interface MaintenanceHistoryProps {
   fullHistory?: boolean;
 }
 
-const MaintenanceHistory: React.FC<MaintenanceHistoryProps> = ({ 
-  maintenances, 
-  vehicles, 
-  fullHistory = false 
+const MaintenanceHistory: React.FC<MaintenanceHistoryProps> = ({
+  maintenances,
+  vehicles,
+  fullHistory = false
 }) => {
-  const [filters, setFilters] = useState({
-    vehicleId: 0,
-    type: "",
-    status: "",
-    dateFrom: "",
-    dateTo: ""
-  });
+  // Function to get vehicle info by ID
+  const getVehicleInfo = (vehicleId: number) => {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    return vehicle ? `${vehicle.placa} (${vehicle.modelo})` : "N/A";
+  };
   
-  const [showFilters, setShowFilters] = useState(false);
-  
+  // Function to get status color
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'concluída':
@@ -60,187 +38,65 @@ const MaintenanceHistory: React.FC<MaintenanceHistoryProps> = ({
     }
   };
   
-  const getVehiclePlate = (vehicleId: number) => {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle ? vehicle.placa : 'Desconhecido';
-  };
+  // Get the correct title based on whether this is full history or not
+  const title = fullHistory ? "Histórico Completo de Manutenções" : "Últimas Manutenções";
   
-  const handleFilterChange = (name: string, value: string | number) => {
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  const filteredMaintenances = maintenances.filter(m => {
-    if (filters.vehicleId && m.veiculoId !== filters.vehicleId) return false;
-    if (filters.type && m.tipo !== filters.type) return false;
-    if (filters.status && m.status !== filters.status) return false;
-    if (filters.dateFrom && new Date(m.data) < new Date(filters.dateFrom)) return false;
-    if (filters.dateTo && new Date(m.data) > new Date(filters.dateTo)) return false;
-    return true;
-  });
-  
-  const handleExport = () => {
-    // In a real app, this would generate and download a PDF or Excel file
-    alert("Exportação de relatório simulada! Em uma aplicação real, isso geraria um arquivo para download.");
-  };
+  // Sort maintenance records by date (newest first)
+  const sortedMaintenances = [...maintenances].sort((a, b) => 
+    new Date(b.data).getTime() - new Date(a.data).getTime()
+  );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-xl">
-          {fullHistory ? "Histórico de Manutenções" : "Últimas Manutenções"}
-        </CardTitle>
-        {fullHistory && (
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
-        )}
-      </CardHeader>
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">{title}</h3>
       
-      <CardContent>
-        {fullHistory && showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 border rounded-md bg-gray-50">
-            <div className="space-y-2">
-              <Label htmlFor="vehicleFilter">Viatura</Label>
-              <Select
-                value={filters.vehicleId.toString()}
-                onValueChange={(value) => handleFilterChange("vehicleId", Number(value))}
-              >
-                <SelectTrigger id="vehicleFilter">
-                  <SelectValue placeholder="Todas as viaturas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Todas as viaturas</SelectItem>
-                  {vehicles.map(v => (
-                    <SelectItem key={v.id} value={v.id.toString()}>
-                      {v.placa} - {v.modelo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="typeFilter">Tipo</Label>
-              <Select
-                value={filters.type}
-                onValueChange={(value) => handleFilterChange("type", value)}
-              >
-                <SelectTrigger id="typeFilter">
-                  <SelectValue placeholder="Todos os tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos os tipos</SelectItem>
-                  <SelectItem value="Preventiva">Preventiva</SelectItem>
-                  <SelectItem value="Corretiva">Corretiva</SelectItem>
-                  <SelectItem value="Revisão">Revisão</SelectItem>
-                  <SelectItem value="Troca de Óleo">Troca de Óleo</SelectItem>
-                  <SelectItem value="Troca de Pneus">Troca de Pneus</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="statusFilter">Status</Label>
-              <Select
-                value={filters.status}
-                onValueChange={(value) => handleFilterChange("status", value)}
-              >
-                <SelectTrigger id="statusFilter">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos os status</SelectItem>
-                  <SelectItem value="Agendada">Agendada</SelectItem>
-                  <SelectItem value="Em andamento">Em andamento</SelectItem>
-                  <SelectItem value="Concluída">Concluída</SelectItem>
-                  <SelectItem value="Cancelada">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="dateFrom">Data Inicial</Label>
-              <Input
-                id="dateFrom"
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="dateTo">Data Final</Label>
-              <Input
-                id="dateTo"
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => handleFilterChange("dateTo", e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-        
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-medium">Viatura</TableHead>
-                <TableHead className="font-medium">Data</TableHead>
-                <TableHead className="font-medium">Tipo</TableHead>
-                <TableHead className="font-medium">Quilometragem</TableHead>
-                <TableHead className="font-medium">Descrição</TableHead>
-                <TableHead className="font-medium">Custo</TableHead>
-                <TableHead className="font-medium">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMaintenances.length > 0 ? (
-                filteredMaintenances.map((maintenance) => (
-                  <TableRow key={maintenance.id} className="hover:bg-gray-50 transition-colors">
-                    <TableCell>{getVehiclePlate(maintenance.veiculoId)}</TableCell>
-                    <TableCell>{new Date(maintenance.data).toLocaleDateString()}</TableCell>
-                    <TableCell>{maintenance.tipo}</TableCell>
-                    <TableCell>{maintenance.quilometragem.toLocaleString()} km</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{maintenance.descricao}</TableCell>
-                    <TableCell>R$ {maintenance.custo.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("font-normal", getStatusColor(maintenance.status))}>
-                        {maintenance.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4 text-gray-500">
-                    Nenhuma manutenção encontrada
+      <div className="border rounded-md overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Viatura</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedMaintenances.length > 0 ? (
+              sortedMaintenances.map((maintenance) => (
+                <TableRow key={maintenance.id}>
+                  <TableCell className="font-medium">
+                    {new Date(maintenance.data).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell>{getVehicleInfo(maintenance.veiculoId)}</TableCell>
+                  <TableCell>{maintenance.tipo}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{maintenance.descricao}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn("font-normal", getStatusColor(maintenance.status))}>
+                      {maintenance.status}
+                    </Badge>
                   </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  Nenhum registro de manutenção encontrado
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      {!fullHistory && maintenances.length > 3 && (
+        <div className="text-right">
+          <a href="#" className="text-sm text-gcm-600 hover:underline">
+            Ver histórico completo →
+          </a>
         </div>
-        
-        {!fullHistory && maintenances.length > 0 && (
-          <div className="flex justify-center mt-4">
-            <Button variant="ghost" size="sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              Ver Histórico Completo
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
 

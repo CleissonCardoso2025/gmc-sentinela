@@ -11,7 +11,9 @@ import MaintenanceHistory from "@/components/Viaturas/MaintenanceHistory";
 import AlertPanel from "@/components/Viaturas/AlertPanel";
 import ReportPanel from "@/components/Viaturas/ReportPanel";
 import Dashboard from "@/layouts/Dashboard";
-import { Plus, FileText, AlertTriangle, History } from "lucide-react";
+import { Plus, FileText, AlertTriangle, History, MapPin } from "lucide-react";
+import { generateMockLocationsForAllVehicles } from "@/utils/mockLocationData";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Vehicle {
   id: number;
@@ -47,6 +49,7 @@ const ViaturasPage: React.FC = () => {
   const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Mock data for vehicles
   const [vehicles, setVehicles] = useState<Vehicle[]>([
@@ -167,6 +170,31 @@ const ViaturasPage: React.FC = () => {
     setMaintenanceMode(false);
   };
 
+  const handleGenerateLocationData = async () => {
+    try {
+      const result = await generateMockLocationsForAllVehicles();
+      if (result) {
+        toast({
+          title: "Dados de localização gerados",
+          description: "Os dados de localização foram gerados com sucesso para todas as viaturas.",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Houve um erro ao gerar os dados de localização.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating location data:", error);
+      toast({
+        title: "Erro",
+        description: "Houve um erro ao gerar os dados de localização.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredVehicles = vehicles.filter(vehicle => {
     const matchesSearch = 
       vehicle.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -227,6 +255,13 @@ const ViaturasPage: React.FC = () => {
                     onClick={() => setStatusFilter("Manutenção")}
                   >
                     Em manutenção
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateLocationData}
+                  >
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Gerar Localizações
                   </Button>
                 </div>
               </div>

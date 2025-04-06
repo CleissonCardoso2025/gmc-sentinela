@@ -1,243 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useToast } from "@/hooks/use-toast";
-
-type DateRange = '3m' | '6m' | '12m';
-
-interface Occurrence {
-  id: string;
-  titulo: string;
-  local: string;
-  data: string;
-  latitude?: number;
-  longitude?: number;
-}
+import { DateRange, useOccurrenceData } from "@/hooks/use-occurrence-data";
+import { useGoogleMaps } from "@/hooks/use-google-maps";
+import OccurrenceMapDisplay from "./OccurrenceMapDisplay";
 
 const OccurrenceMap: React.FC = () => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>('3m');
-  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const { occurrences } = useOccurrenceData(dateRange);
   const isMobile = useIsMobile();
-  const { toast } = useToast();
-  const googleMapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const mapInitialized = useRef(false);
-  
-  const mockOccurrences: Occurrence[] = [
-    { 
-      id: '1', 
-      titulo: 'Perturbação do Sossego', 
-      local: 'Rua das Flores, 123, São Paulo', 
-      data: '2025-01-15T14:30:00',
-      latitude: -23.550520, 
-      longitude: -46.633308 
-    },
-    { 
-      id: '2', 
-      titulo: 'Acidente de Trânsito', 
-      local: 'Av. Paulista, 1000, São Paulo', 
-      data: '2025-02-20T13:15:00',
-      latitude: -23.561414, 
-      longitude: -46.655532 
-    },
-    { 
-      id: '3', 
-      titulo: 'Apoio ao Cidadão', 
-      local: 'Praça da Sé, São Paulo', 
-      data: '2024-12-01T12:45:00',
-      latitude: -23.549913, 
-      longitude: -46.633409 
-    },
-    { 
-      id: '4', 
-      titulo: 'Ocorrência Maria da Penha', 
-      local: 'Rua Augusta, 500, São Paulo', 
-      data: '2024-10-10T09:20:00',
-      latitude: -23.553105, 
-      longitude: -46.645935 
-    },
-    { 
-      id: '5', 
-      titulo: 'Fiscalização de Trânsito', 
-      local: 'Av. 23 de Maio, São Paulo', 
-      data: '2024-09-05T16:40:00',
-      latitude: -23.580855, 
-      longitude: -46.622703 
-    }
-  ];
-  
-  useEffect(() => {
-    const now = new Date();
-    let monthsAgo;
-    
-    switch (dateRange) {
-      case '3m':
-        monthsAgo = 3;
-        break;
-      case '6m':
-        monthsAgo = 6;
-        break;
-      case '12m':
-        monthsAgo = 12;
-        break;
-      default:
-        monthsAgo = 3;
-    }
-    
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(now.getMonth() - monthsAgo);
-    
-    const filtered = mockOccurrences.filter(occ => {
-      const occDate = new Date(occ.data);
-      return occDate >= cutoffDate;
-    });
-    
-    setOccurrences(filtered);
-  }, [dateRange]);
-
-  const initializeMap = () => {
-    console.log("Initializing occurrence map");
-    if (!mapRef.current) return;
-    
-    setIsLoading(false);
-    
-    if (markersRef.current.length > 0) {
-      markersRef.current.forEach(marker => marker.setMap(null));
-      markersRef.current = [];
-    }
-    
-    const validOccurrences = occurrences.filter(o => o.latitude && o.longitude);
-    
-    let center = { lat: -23.550520, lng: -46.633308 };
-    let zoom = 12;
-    
-    if (validOccurrences.length > 0) {
-      const sumLat = validOccurrences.reduce((sum, o) => sum + (o.latitude || 0), 0);
-      const sumLng = validOccurrences.reduce((sum, o) => sum + (o.longitude || 0), 0);
-      center = { 
-        lat: sumLat / validOccurrences.length, 
-        lng: sumLng / validOccurrences.length 
-      };
-      
-      if (validOccurrences.length === 1) zoom = 15;
-      else if (validOccurrences.length <= 3) zoom = 13;
-      else zoom = 12;
-    }
-    
-    if (!googleMapRef.current && window.google) {
-      googleMapRef.current = new window.google.maps.Map(mapRef.current, {
-        center,
-        zoom,
-        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-        mapTypeControl: true,
-        fullscreenControl: true,
-        streetViewControl: false
-      });
-    } else if (googleMapRef.current) {
-      googleMapRef.current.setCenter(center);
-      googleMapRef.current.setZoom(zoom);
-    }
-    
-    if (window.google) {
-      validOccurrences.forEach(occurrence => {
-        if (occurrence.latitude && occurrence.longitude && googleMapRef.current) {
-          const marker = new window.google.maps.Marker({
-            position: { lat: occurrence.latitude, lng: occurrence.longitude },
-            map: googleMapRef.current,
-            title: occurrence.titulo,
-            icon: {
-              url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-              scaledSize: new window.google.maps.Size(32, 32)
-            }
-          });
-          
-          const formattedDate = new Date(occurrence.data).toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          
-          const infoContent = `
-            <div style="padding: 10px; max-width: 200px;">
-              <h3 style="margin-top: 0; font-weight: bold;">${occurrence.titulo}</h3>
-              <p>${occurrence.local}</p>
-              <p>Data: ${formattedDate}</p>
-            </div>
-          `;
-          
-          const infoWindow = new window.google.maps.InfoWindow({
-            content: infoContent
-          });
-          
-          marker.addListener('click', () => {
-            infoWindow.open(googleMapRef.current, marker);
-          });
-          
-          markersRef.current.push(marker);
-        }
-      });
-    }
-
-    mapInitialized.current = true;
-  };
-  
-  useEffect(() => {
-    if (!mapRef.current || !occurrences.length) return;
-    
-    const loadGoogleMaps = () => {
-      console.log("Loading Google Maps for occurrences map");
-      
-      if (window.google && window.google.maps) {
-        initializeMap();
-        return;
-      }
-      
-      window.mapsCallback = () => {
-        console.log("Maps callback triggered - occurrence map");
-        initializeMap();
-      };
-      
-      const existingScript = document.getElementById('google-maps-script');
-      if (existingScript) {
-        return;
-      }
-      
-      const script = document.createElement('script');
-      script.id = 'google-maps-script';
-      const apiKey = 'AIzaSyAQWzSfxrMNrsQ64PhLJGrBZEYNjA4UJY0';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=mapsCallback`;
-      script.async = true;
-      script.defer = true;
-      
-      script.onerror = () => {
-        console.error("Error loading Google Maps script");
-        setIsLoading(false);
-        toast({
-          title: "Erro ao carregar o mapa",
-          description: "Não foi possível carregar o Google Maps.",
-          variant: "destructive"
-        });
-      };
-      
-      document.head.appendChild(script);
-    };
-    
-    loadGoogleMaps();
-    
-    return () => {
-      if (mapInitialized.current && markersRef.current.length > 0) {
-        markersRef.current.forEach(marker => {
-          if (marker) marker.setMap(null);
-        });
-      }
-    };
-  }, [occurrences, toast]);
+  const { isLoaded, isLoading } = useGoogleMaps({
+    callback: 'mapsCallback',
+    libraries: ['places']
+  });
   
   const handleRangeChange = (value: string) => {
     setDateRange(value as DateRange);
@@ -266,19 +44,7 @@ const OccurrenceMap: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div 
-          id="occurrenceMap" 
-          ref={mapRef} 
-          className="w-full h-[300px] md:h-[400px] relative"
-        >
-          {occurrences.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80">
-              <p className="text-gray-600 italic">
-                Nenhuma ocorrência encontrada no período selecionado.
-              </p>
-            </div>
-          )}
-        </div>
+        <OccurrenceMapDisplay occurrences={occurrences} isLoaded={isLoaded} />
       )}
       
       <div className="p-3 border-t bg-gray-50 text-xs text-gray-500 text-center">

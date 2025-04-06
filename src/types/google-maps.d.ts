@@ -23,10 +23,12 @@ declare global {
           INSET: string;
           INSET_LARGE: string;
         };
+        places?: any;
       };
     };
     initMap: () => void;
     mapsCallback?: () => void;
+    [key: string]: any; // Allow for dynamic callback names
   }
 }
 

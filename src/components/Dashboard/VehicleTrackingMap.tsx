@@ -133,7 +133,7 @@ const VehicleTrackingMap: React.FC = () => {
           />
           
           {vehicles.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80 z-[999]">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80">
               <p className="text-gray-600 italic">
                 Nenhuma viatura encontrada.
               </p>

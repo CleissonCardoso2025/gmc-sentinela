@@ -19,11 +19,11 @@ Deno.serve(async (req) => {
 
   try {
     // Extract the request data
-    const { address } = await req.json()
+    const { address, reverse = false } = await req.json()
     
     if (!address) {
       return new Response(
-        JSON.stringify({ error: 'Address is required' }), 
+        JSON.stringify({ error: 'Address or coordinates are required' }), 
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -45,8 +45,16 @@ Deno.serve(async (req) => {
       )
     }
     
-    // Create the Google Maps Geocoding API URL
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
+    let url: string;
+    
+    if (reverse) {
+      // For reverse geocoding (coordinates to address)
+      // Expects address in format "lat,lng"
+      url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(address)}&key=${apiKey}`
+    } else {
+      // For forward geocoding (address to coordinates)
+      url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
+    }
     
     // Fetch from Google Maps Geocoding API
     const response = await fetch(url)

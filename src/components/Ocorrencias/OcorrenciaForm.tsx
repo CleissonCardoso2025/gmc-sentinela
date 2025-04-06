@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List } from 'lucide-react';
+import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import LeafletMap from '@/components/Map/LeafletMap';
+import { MapMarker } from '@/types/maps';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL || '',
+  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+);
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
 type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros';
@@ -25,13 +34,32 @@ export const OcorrenciaForm = () => {
   const [status, setStatus] = useState<OcorrenciaStatus>('Aberta');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [anexos, setAnexos] = useState<File[]>([]);
-
+  const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
+  const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
+  
   // Simulação de agentes da guarnição atual
   const guarnicaoAtual = [
     { id: '1', nome: 'Carlos Silva', patente: 'Guarda Civil' },
     { id: '2', nome: 'Mariana Santos', patente: 'Guarda Civil' },
     { id: '3', nome: 'João Oliveira', patente: 'Supervisor' },
   ];
+
+  // Atualiza os marcadores do mapa quando as coordenadas mudam
+  useEffect(() => {
+    if (coordenadas) {
+      setMapMarkers([
+        {
+          id: 'local-ocorrencia',
+          position: [coordenadas.lat, coordenadas.lng],
+          title: 'Local da Ocorrência',
+          content: local || 'Local selecionado',
+          icon: 'incident'
+        }
+      ]);
+    } else {
+      setMapMarkers([]);
+    }
+  }, [coordenadas, local]);
 
   // Função para gerar número de ocorrência
   const gerarNumeroOcorrencia = () => {
@@ -50,12 +78,22 @@ export const OcorrenciaForm = () => {
     
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
           setCoordenadas({ lat: latitude, lng: longitude });
-          setLocal(`Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`);
-          toast.success('Localização capturada com sucesso!');
-          setIsLoading(false);
+          
+          // Buscar endereço usando geocodificação reversa
+          try {
+            const endereco = await obterEnderecoPorCoordenadas(latitude, longitude);
+            setLocal(endereco);
+            toast.success('Localização capturada com sucesso!');
+          } catch (error) {
+            console.error('Erro ao obter o endereço:', error);
+            setLocal(`Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`);
+            toast.warning('Localização capturada, mas não foi possível obter o endereço completo.');
+          } finally {
+            setIsLoading(false);
+          }
         },
         (error) => {
           console.error('Erro ao capturar localização:', error);
@@ -65,6 +103,49 @@ export const OcorrenciaForm = () => {
       );
     } else {
       toast.error('Geolocalização não suportada por este navegador.');
+      setIsLoading(false);
+    }
+  };
+
+  // Obter endereço a partir de coordenadas (geocodificação reversa)
+  const obterEnderecoPorCoordenadas = async (latitude: number, longitude: number): Promise<string> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('geocode', {
+        body: { address: `${latitude},${longitude}`, reverse: true }
+      });
+      
+      if (error) throw new Error(error.message);
+      
+      if (data && data.results && data.results.length > 0) {
+        return data.results[0].formatted_address;
+      }
+      
+      throw new Error('Nenhum resultado encontrado');
+    } catch (error) {
+      console.error('Erro ao geocodificar:', error);
+      throw error;
+    }
+  };
+
+  // Abrir seleção de localização no mapa
+  const abrirMapaSelecao = () => {
+    setIsMapOpen(true);
+  };
+
+  // Atualiza as coordenadas quando o usuário clica no mapa
+  const handleMapClick = async (location: { lat: number, lng: number }) => {
+    setCoordenadas(location);
+    
+    try {
+      setIsLoading(true);
+      const endereco = await obterEnderecoPorCoordenadas(location.lat, location.lng);
+      setLocal(endereco);
+      toast.success('Localização selecionada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao obter o endereço:', error);
+      setLocal(`Latitude: ${location.lat.toFixed(6)}, Longitude: ${location.lng.toFixed(6)}`);
+      toast.warning('Localização selecionada, mas não foi possível obter o endereço completo.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -197,31 +278,71 @@ export const OcorrenciaForm = () => {
               <MapPin className="h-4 w-4" />
               Local da Ocorrência
             </Label>
-            <div className="flex gap-2">
-              <Input
-                id="local"
-                value={local}
-                onChange={(e) => setLocal(e.target.value)}
-                placeholder="Digite o endereço completo"
-                className="flex-1"
-                required
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={capturarLocalizacao}
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                <Search className="h-4 w-4" />
-                Capturar Localização
-              </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <Input
+                  id="local"
+                  value={local}
+                  onChange={(e) => setLocal(e.target.value)}
+                  placeholder="Digite o endereço completo"
+                  className="w-full"
+                  required
+                />
+                {coordenadas && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Coordenadas GPS: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={capturarLocalizacao}
+                  disabled={isLoading}
+                  className="whitespace-nowrap"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Usar GPS
+                </Button>
+                
+                <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="whitespace-nowrap"
+                    >
+                      <MapIcon className="h-4 w-4 mr-2" />
+                      Selecionar no Mapa
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[700px]">
+                    <DialogHeader>
+                      <DialogTitle>Selecione a localização da ocorrência</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4">
+                      <LeafletMap 
+                        center={coordenadas ? [coordenadas.lat, coordenadas.lng] : [-23.550520, -46.633308]} 
+                        markers={mapMarkers}
+                        zoom={15}
+                        height="h-[400px]"
+                        onMapClick={handleMapClick}
+                        markerType="incident"
+                      />
+                      <p className="text-sm text-gray-500 mt-2">
+                        Clique no mapa para selecionar o local exato da ocorrência.
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button type="button" variant="outline" onClick={() => setIsMapOpen(false)}>
+                        Fechar
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
-            {coordenadas && (
-              <p className="text-xs text-gray-500 mt-1">
-                Coordenadas GPS: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
-              </p>
-            )}
           </div>
           
           {/* Tipo da Ocorrência */}

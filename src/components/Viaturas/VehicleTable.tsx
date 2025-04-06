@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Edit, Tool, AlertTriangle } from "lucide-react";
+import { Edit, Wrench, AlertTriangle } from "lucide-react";
 import { Vehicle } from "@/pages/Viaturas";
 
 interface VehicleTableProps {
@@ -72,7 +72,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                   <div className="flex items-center gap-1">
                     {new Date(vehicle.proximaManutencao).toLocaleDateString('pt-BR')}
                     {shouldShowMaintenanceWarning(vehicle) && (
-                      <AlertTriangle className="h-4 w-4 text-yellow-500" title="Manutenção próxima" />
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" aria-label="Manutenção próxima" />
                     )}
                   </div>
                 </TableCell>
@@ -93,7 +93,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                       onClick={() => onAddMaintenance(vehicle)}
                       className="h-8 px-2"
                     >
-                      <Tool className="h-4 w-4" />
+                      <Wrench className="h-4 w-4" />
                       <span className="sr-only">Manutenção</span>
                     </Button>
                   </div>

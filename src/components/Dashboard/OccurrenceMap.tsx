@@ -1,42 +1,232 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/use-toast";
+
+type DateRange = '3m' | '6m' | '12m';
+
+interface Occurrence {
+  id: string;
+  titulo: string;
+  local: string;
+  data: string;
+  latitude?: number;
+  longitude?: number;
+}
 
 const OccurrenceMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange>('3m');
+  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  const googleMap = useRef<google.maps.Map | null>(null);
+  const markers = useRef<google.maps.Marker[]>([]);
   
+  // Mock data for occurrences - in a real implementation, this would come from your database
+  const mockOccurrences: Occurrence[] = [
+    { 
+      id: '1', 
+      titulo: 'Perturbação do Sossego', 
+      local: 'Rua das Flores, 123, São Paulo', 
+      data: '2025-01-15T14:30:00',
+      latitude: -23.550520, 
+      longitude: -46.633308 
+    },
+    { 
+      id: '2', 
+      titulo: 'Acidente de Trânsito', 
+      local: 'Av. Paulista, 1000, São Paulo', 
+      data: '2025-02-20T13:15:00',
+      latitude: -23.561414, 
+      longitude: -46.655532 
+    },
+    { 
+      id: '3', 
+      titulo: 'Apoio ao Cidadão', 
+      local: 'Praça da Sé, São Paulo', 
+      data: '2024-12-01T12:45:00',
+      latitude: -23.549913, 
+      longitude: -46.633409 
+    },
+    { 
+      id: '4', 
+      titulo: 'Ocorrência Maria da Penha', 
+      local: 'Rua Augusta, 500, São Paulo', 
+      data: '2024-10-10T09:20:00',
+      latitude: -23.553105, 
+      longitude: -46.645935 
+    },
+    { 
+      id: '5', 
+      titulo: 'Fiscalização de Trânsito', 
+      local: 'Av. 23 de Maio, São Paulo', 
+      data: '2024-09-05T16:40:00',
+      latitude: -23.580855, 
+      longitude: -46.622703 
+    }
+  ];
+  
+  // Filter occurrences based on date range
   useEffect(() => {
-    // We'll use a dummy loader to simulate map loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    const loadMap = async () => {
-      try {
-        if (typeof window !== 'undefined' && mapRef.current) {
-          // In a real implementation, we would use the actual echarts library
-          // Since we don't have it installed, this is a placeholder
-          console.log("Map would be initialized here");
-
-          // Visualization would be created here
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Error loading map:", error);
-        setIsLoading(false);
+    const now = new Date();
+    let monthsAgo;
+    
+    switch (dateRange) {
+      case '3m':
+        monthsAgo = 3;
+        break;
+      case '6m':
+        monthsAgo = 6;
+        break;
+      case '12m':
+        monthsAgo = 12;
+        break;
+      default:
+        monthsAgo = 3;
+    }
+    
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(now.getMonth() - monthsAgo);
+    
+    const filtered = mockOccurrences.filter(occ => {
+      const occDate = new Date(occ.data);
+      return occDate >= cutoffDate;
+    });
+    
+    setOccurrences(filtered);
+  }, [dateRange]);
+  
+  // Initialize Google Maps
+  useEffect(() => {
+    if (!mapRef.current || !occurrences.length) return;
+    
+    const loadGoogleMaps = async () => {
+      if (!window.google) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        
+        script.onload = initializeMap;
+        document.head.appendChild(script);
+      } else {
+        initializeMap();
       }
     };
-    loadMap();
-    return () => clearTimeout(timer);
-  }, []);
+    
+    const initializeMap = () => {
+      setIsLoading(false);
+      if (!mapRef.current) return;
+      
+      // Clear existing markers
+      markers.current.forEach(marker => marker.setMap(null));
+      markers.current = [];
+      
+      // Find center point (average of all occurrences)
+      const validOccurrences = occurrences.filter(o => o.latitude && o.longitude);
+      
+      // Default to São Paulo coordinates if no valid occurrences
+      let center = { lat: -23.550520, lng: -46.633308 };
+      let zoom = 12;
+      
+      if (validOccurrences.length > 0) {
+        const sumLat = validOccurrences.reduce((sum, o) => sum + (o.latitude || 0), 0);
+        const sumLng = validOccurrences.reduce((sum, o) => sum + (o.longitude || 0), 0);
+        center = { 
+          lat: sumLat / validOccurrences.length, 
+          lng: sumLng / validOccurrences.length 
+        };
+        
+        // Adjust zoom based on number of occurrences
+        if (validOccurrences.length === 1) zoom = 15;
+        else if (validOccurrences.length <= 3) zoom = 13;
+        else zoom = 12;
+      }
+      
+      // Create or update map
+      if (!googleMap.current) {
+        googleMap.current = new google.maps.Map(mapRef.current, {
+          center,
+          zoom,
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          mapTypeControl: true,
+          fullscreenControl: true,
+          streetViewControl: false
+        });
+      } else {
+        googleMap.current.setCenter(center);
+        googleMap.current.setZoom(zoom);
+      }
+      
+      // Add markers for occurrences
+      validOccurrences.forEach(occurrence => {
+        if (occurrence.latitude && occurrence.longitude) {
+          const marker = new google.maps.Marker({
+            position: { lat: occurrence.latitude, lng: occurrence.longitude },
+            map: googleMap.current,
+            title: occurrence.titulo,
+            icon: {
+              url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+              scaledSize: new google.maps.Size(32, 32)
+            }
+          });
+          
+          // Add info window
+          const formattedDate = new Date(occurrence.data).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          const infoContent = `
+            <div style="padding: 10px; max-width: 200px;">
+              <h3 style="margin-top: 0; font-weight: bold;">${occurrence.titulo}</h3>
+              <p>${occurrence.local}</p>
+              <p>Data: ${formattedDate}</p>
+            </div>
+          `;
+          
+          const infoWindow = new google.maps.InfoWindow({
+            content: infoContent
+          });
+          
+          marker.addListener('click', () => {
+            infoWindow.open(googleMap.current, marker);
+          });
+          
+          markers.current.push(marker);
+        }
+      });
+    };
+    
+    loadGoogleMaps();
+  }, [occurrences]);
+  
+  const handleRangeChange = (value: string) => {
+    setDateRange(value as DateRange);
+  };
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
-      <div className="absolute top-4 left-4 z-10">
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
         <h2 className="text-lg font-semibold text-gray-800">Mapa de Ocorrências</h2>
+        <Select value={dateRange} onValueChange={handleRangeChange}>
+          <SelectTrigger className="w-[120px] h-8 text-sm bg-white">
+            <SelectValue placeholder="Período" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="3m">Últimos 3 meses</SelectItem>
+            <SelectItem value="6m">Últimos 6 meses</SelectItem>
+            <SelectItem value="12m">Últimos 12 meses</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       {isLoading ? (
@@ -49,26 +239,21 @@ const OccurrenceMap: React.FC = () => {
         <div 
           id="occurrenceMap" 
           ref={mapRef} 
-          className="w-full h-[300px] md:h-[400px] bg-gray-50" 
-          style={{
-            backgroundImage: "url('https://raw.githubusercontent.com/apache/echarts/master/map/json/brazil.json')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "grayscale(30%)"
-          }}
+          className="w-full h-[300px] md:h-[400px] relative"
         >
-          {/* This is a placeholder - in real implementation this would be rendered by echarts */}
-          <div className="w-full h-full relative p-4 pt-12">
-            <div className="absolute top-1/4 left-1/3 h-6 w-6 bg-gcm-500 rounded-full opacity-80 animate-pulse"></div>
-            <div className="absolute top-1/2 right-1/3 h-5 w-5 bg-gcm-600 rounded-full opacity-70 animate-pulse"></div>
-            <div className="absolute bottom-1/3 right-1/4 h-4 w-4 bg-gcm-700 rounded-full opacity-60 animate-pulse"></div>
-            
-            <div className="absolute w-full h-full flex items-center justify-center text-gray-400 font-light italic">
-              <p>{isMobile ? "Mapa de ocorrências" : "Mapa com localizações das ocorrências"}</p>
+          {occurrences.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80">
+              <p className="text-gray-600 italic">
+                Nenhuma ocorrência encontrada no período selecionado.
+              </p>
             </div>
-          </div>
+          )}
         </div>
       )}
+      
+      <div className="p-3 border-t bg-gray-50 text-xs text-gray-500 text-center">
+        Exibindo {occurrences.length} ocorrências dos últimos {dateRange === '3m' ? '3' : dateRange === '6m' ? '6' : '12'} meses.
+      </div>
     </Card>
   );
 };

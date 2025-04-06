@@ -4,10 +4,13 @@ import Header from '@/components/Dashboard/Header';
 import Navbar from '@/components/Dashboard/Navbar';
 import StatCard from '@/components/Dashboard/StatCard';
 import OccurrenceMap from '@/components/Dashboard/OccurrenceMap';
+import VehicleTrackingMap from '@/components/Dashboard/VehicleTrackingMap';
 import VehicleTable from '@/components/Dashboard/VehicleTable';
 import OccurrenceList from '@/components/Dashboard/OccurrenceList';
 import Footer from '@/components/Dashboard/Footer';
 import { Car, AlertTriangle, Users, Settings } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import Dashboard from '@/layouts/Dashboard';
 
 const Index = () => {
   // State
@@ -33,63 +36,69 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header notifications={notifications} />
-      <Navbar />
-      
-      <main className="flex-1 pt-32 pb-16">
-        <div className="p-6 h-full">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <StatCard 
-              title="Viaturas em Operação" 
-              value={12} 
-              icon={<Car className="h-5 w-5 text-gcm-600" />}
-              color="text-gcm-600"
-              className="animate-fade-up"
-            />
-            <StatCard 
-              title="Ocorrências Ativas" 
-              value={5} 
-              icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
-              color="text-red-600"
-              className="animate-fade-up"
-            />
-            <StatCard 
-              title="Efetivo em Serviço" 
-              value={28} 
-              icon={<Users className="h-5 w-5 text-green-600" />}
-              color="text-green-600"
-              className="animate-fade-up delay-75"
-            />
-            <StatCard 
-              title="Alertas de Manutenção" 
-              value={3} 
-              icon={<Settings className="h-5 w-5 text-amber-600" />}
-              color="text-amber-600"
-              className="animate-fade-up delay-100"
-            />
+    <Dashboard>
+      <div className="p-6 h-full">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <StatCard 
+            title="Viaturas em Operação" 
+            value={12} 
+            icon={<Car className="h-5 w-5 text-gcm-600" />}
+            color="text-gcm-600"
+            className="animate-fade-up"
+          />
+          <StatCard 
+            title="Ocorrências Ativas" 
+            value={5} 
+            icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+            color="text-red-600"
+            className="animate-fade-up"
+          />
+          <StatCard 
+            title="Efetivo em Serviço" 
+            value={28} 
+            icon={<Users className="h-5 w-5 text-green-600" />}
+            color="text-green-600"
+            className="animate-fade-up delay-75"
+          />
+          <StatCard 
+            title="Alertas de Manutenção" 
+            value={3} 
+            icon={<Settings className="h-5 w-5 text-amber-600" />}
+            color="text-amber-600"
+            className="animate-fade-up delay-100"
+          />
+        </div>
+        
+        {/* Maps with Tabs */}
+        <div className="mb-6">
+          <Tabs defaultValue="occurrences" className="w-full">
+            <TabsList className="w-full max-w-md mx-auto mb-4">
+              <TabsTrigger value="occurrences" className="flex-1">Mapa de Ocorrências</TabsTrigger>
+              <TabsTrigger value="vehicles" className="flex-1">Rastreamento de Viaturas</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="occurrences" className="mt-0">
+              <OccurrenceMap />
+            </TabsContent>
+            
+            <TabsContent value="vehicles" className="mt-0">
+              <VehicleTrackingMap />
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        {/* Tables and Lists */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <VehicleTable vehicles={viaturasData} maintenances={manutencaoData} />
           </div>
-          
-          {/* Map */}
-          <div className="mb-6">
-            <OccurrenceMap />
-          </div>
-          
-          {/* Tables and Lists */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <VehicleTable vehicles={viaturasData} maintenances={manutencaoData} />
-            </div>
-            <div>
-              <OccurrenceList occurrences={ocorrenciasData} />
-            </div>
+          <div>
+            <OccurrenceList occurrences={ocorrenciasData} />
           </div>
         </div>
-      </main>
-      
-      <Footer />
-    </div>
+      </div>
+    </Dashboard>
   );
 };
 

@@ -24,8 +24,8 @@ const OccurrenceMap: React.FC = () => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  const googleMapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
   
   // Mock data for occurrences - in a real implementation, this would come from your database
   const mockOccurrences: Occurrence[] = [

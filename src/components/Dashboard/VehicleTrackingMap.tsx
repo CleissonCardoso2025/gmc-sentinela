@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,8 +23,8 @@ const VehicleTrackingMap: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const { toast } = useToast();
   const googleMapsLoaded = useRef(false);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<{ [key: number]: google.maps.Marker }>({});
+  const googleMapRef = useRef<any>(null);
+  const markersRef = useRef<{ [key: number]: any }>({});
   
   // Get current vehicle locations from Supabase
   useEffect(() => {

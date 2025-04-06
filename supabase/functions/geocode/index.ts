@@ -37,9 +37,21 @@ Deno.serve(async (req) => {
     if (!apiKey) {
       console.error('Google Maps API key not found in environment variables')
       return new Response(
-        JSON.stringify({ error: 'API configuration error' }),
+        JSON.stringify({ 
+          error: 'API configuration error',
+          // Return coordinates in a formatted way that the frontend can still use
+          results: [{ 
+            formatted_address: reverse ? `Coordenadas: ${address}` : address,
+            geometry: {
+              location: reverse ? {
+                lat: parseFloat(address.split(',')[0]),
+                lng: parseFloat(address.split(',')[1])
+              } : null
+            }
+          }]
+        }),
         { 
-          status: 500, 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
@@ -63,6 +75,31 @@ Deno.serve(async (req) => {
     const data = await response.json()
     
     console.log(`Geocoding response status: ${data.status}`);
+    
+    // If the API call fails, still return a usable response with the coordinates
+    if (data.status !== 'OK') {
+      console.error(`Geocoding API error: ${data.status} - ${data.error_message || 'Unknown error'}`);
+      
+      // Return a formatted response that the frontend can still use
+      return new Response(
+        JSON.stringify({ 
+          error: data.error_message || 'Geocoding failed',
+          results: [{ 
+            formatted_address: reverse ? `Coordenadas: ${address}` : address,
+            geometry: {
+              location: reverse ? {
+                lat: parseFloat(address.split(',')[0]),
+                lng: parseFloat(address.split(',')[1])
+              } : null
+            }
+          }]
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
     
     // Return geocoding results
     return new Response(

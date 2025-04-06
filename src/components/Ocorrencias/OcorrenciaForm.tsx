@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,12 +12,7 @@ import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clo
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import LeafletMap from '@/components/Map/LeafletMap';
 import { MapMarker } from '@/types/maps';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  'https://rdkugzjrvlvcorfsbdaz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJka3Vnempydmx2Y29yZnNiZGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NjUyMjQsImV4cCI6MjA1OTA0MTIyNH0.6LW6CSBnYRUoGi4NabyQTWOcByg7NhUjnsheDGzU3VQ'
-);
+import { supabase } from '@/integrations/supabase/client';
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
 type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros';
@@ -25,6 +21,7 @@ export const OcorrenciaForm = () => {
   const [numero, setNumero] = useState<string>('');
   const [data, setData] = useState<string>(new Date().toISOString().slice(0, 16));
   const [local, setLocal] = useState<string>('');
+  const [enderecoCompleto, setEnderecoCompleto] = useState<string>('');
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null);
   const [tipo, setTipo] = useState<OcorrenciaTipo | ''>('');
   const [outroTipo, setOutroTipo] = useState<string>('');
@@ -49,14 +46,14 @@ export const OcorrenciaForm = () => {
           id: 'local-ocorrencia',
           position: [coordenadas.lat, coordenadas.lng],
           title: 'Local da Ocorrência',
-          content: local || 'Local selecionado',
+          content: local || enderecoCompleto || 'Local selecionado',
           icon: 'incident'
         }
       ]);
     } else {
       setMapMarkers([]);
     }
-  }, [coordenadas, local]);
+  }, [coordenadas, local, enderecoCompleto]);
 
   const gerarNumeroOcorrencia = () => {
     const date = new Date();
@@ -79,11 +76,23 @@ export const OcorrenciaForm = () => {
           
           try {
             const endereco = await obterEnderecoPorCoordenadas(latitude, longitude);
-            setLocal(endereco);
+            
+            // Separar o endereço completo do local mais curto
+            const partes = endereco.split(',');
+            if (partes.length > 1) {
+              setLocal(partes[0].trim());
+              setEnderecoCompleto(endereco);
+            } else {
+              setLocal(endereco);
+              setEnderecoCompleto(endereco);
+            }
+            
             toast.success('Localização capturada com sucesso!');
           } catch (error) {
             console.error('Erro ao obter o endereço:', error);
-            setLocal(`Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`);
+            const coordsText = `Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`;
+            setLocal('Local não identificado');
+            setEnderecoCompleto(coordsText);
             toast.warning('Localização capturada, mas não foi possível obter o endereço completo.');
           } finally {
             setIsLoading(false);
@@ -133,11 +142,23 @@ export const OcorrenciaForm = () => {
     try {
       setIsLoading(true);
       const endereco = await obterEnderecoPorCoordenadas(location.lat, location.lng);
-      setLocal(endereco);
+      
+      // Separar o endereço completo do local mais curto
+      const partes = endereco.split(',');
+      if (partes.length > 1) {
+        setLocal(partes[0].trim());
+        setEnderecoCompleto(endereco);
+      } else {
+        setLocal(endereco);
+        setEnderecoCompleto(endereco);
+      }
+      
       toast.success('Localização selecionada com sucesso!');
     } catch (error) {
       console.error('Erro ao obter o endereço:', error);
-      setLocal(`Latitude: ${location.lat.toFixed(6)}, Longitude: ${location.lng.toFixed(6)}`);
+      const coordsText = `Latitude: ${location.lat.toFixed(6)}, Longitude: ${location.lng.toFixed(6)}`;
+      setLocal('Local não identificado');
+      setEnderecoCompleto(coordsText);
       toast.warning('Localização selecionada, mas não foi possível obter o endereço completo.');
     } finally {
       setIsLoading(false);
@@ -192,6 +213,7 @@ export const OcorrenciaForm = () => {
       
       setDescricao('');
       setLocal('');
+      setEnderecoCompleto('');
       setCoordenadas(null);
       setTipo('');
       setOutroTipo('');
@@ -204,6 +226,7 @@ export const OcorrenciaForm = () => {
     if (window.confirm('Deseja realmente cancelar? Todas as alterações serão perdidas.')) {
       setDescricao('');
       setLocal('');
+      setEnderecoCompleto('');
       setCoordenadas(null);
       setTipo('');
       setOutroTipo('');
@@ -262,15 +285,10 @@ export const OcorrenciaForm = () => {
                   id="local"
                   value={local}
                   onChange={(e) => setLocal(e.target.value)}
-                  placeholder="Digite o endereço completo"
+                  placeholder="Digite o nome do local"
                   className="w-full"
                   required
                 />
-                {coordenadas && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Coordenadas GPS: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
-                  </p>
-                )}
               </div>
               <div className="flex gap-2">
                 <Button 
@@ -320,6 +338,26 @@ export const OcorrenciaForm = () => {
                   </DialogContent>
                 </Dialog>
               </div>
+            </div>
+            
+            {/* Novo campo para endereço completo */}
+            <div className="mt-3">
+              <Label htmlFor="enderecoCompleto" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Endereço Completo
+              </Label>
+              <Textarea
+                id="enderecoCompleto"
+                value={enderecoCompleto}
+                onChange={(e) => setEnderecoCompleto(e.target.value)}
+                placeholder="Digite o endereço completo do local da ocorrência"
+                className="mt-1 resize-none h-20"
+              />
+              {coordenadas && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Coordenadas GPS: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
+                </p>
+              )}
             </div>
           </div>
           

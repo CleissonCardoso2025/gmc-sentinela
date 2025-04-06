@@ -13,4 +13,3 @@ export interface MapMarker {
   content?: string;
   icon?: string;
 }
-

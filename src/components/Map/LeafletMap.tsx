@@ -114,7 +114,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         zoom={mapZoom} 
         style={{ height: '100%', width: '100%' }} 
         zoomControl={true}
-        whenCreated={map => {
+        whenCreated={(map) => {
           if (onMapClick) {
             map.on('click', (e) => {
               onMapClick(e.latlng);
@@ -148,4 +148,3 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 };
 
 export default LeafletMap;
-

@@ -8,7 +8,7 @@ import { DateRange, useOccurrenceData } from "@/hooks/use-occurrence-data";
 import { useToast } from '@/hooks/use-toast';
 import LeafletMap from '../Map/LeafletMap';
 import { MapMarker } from '@/types/maps';
-import { formatDateBR } from '@/utils/maps-utils';
+import { formatDateBR, calculateMapCenter, determineZoomLevel } from '@/utils/maps-utils';
 
 const OccurrenceMap: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRange>('3m');
@@ -40,33 +40,6 @@ const OccurrenceMap: React.FC = () => {
     icon: 'incident'
   }));
   
-  // Calculate center point
-  const calculateCenter = (): [number, number] => {
-    const validOccurrences = occurrences.filter(o => o.latitude && o.longitude);
-    
-    if (validOccurrences.length === 0) {
-      // Default to São Paulo if no valid coordinates
-      return [-23.550520, -46.633308];
-    }
-    
-    const sumLat = validOccurrences.reduce((sum, item) => sum + (item.latitude || 0), 0);
-    const sumLng = validOccurrences.reduce((sum, item) => sum + (item.longitude || 0), 0);
-    
-    return [
-      sumLat / validOccurrences.length,
-      sumLng / validOccurrences.length
-    ];
-  };
-  
-  // Determine the zoom level based on number of items
-  const determineZoom = (): number => {
-    const validOccurrences = occurrences.filter(o => o.latitude && o.longitude);
-    if (validOccurrences.length === 0) return 12;
-    if (validOccurrences.length === 1) return 15;
-    if (validOccurrences.length <= 3) return 13;
-    return 12;
-  };
-  
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
       <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
@@ -92,9 +65,9 @@ const OccurrenceMap: React.FC = () => {
       ) : (
         <div className="w-full relative">
           <LeafletMap 
-            center={calculateCenter()} 
+            center={calculateMapCenter(occurrences)} 
             markers={markers}
-            zoom={determineZoom()}
+            zoom={determineZoomLevel(markers.length)}
             height="h-[300px] md:h-[400px]"
             markerType="incident"
           />

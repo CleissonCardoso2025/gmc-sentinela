@@ -8,14 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const enableRealtimeForVehicleLocations = async () => {
   try {
     // Create and subscribe to a channel for vehicle monitoring
-    const channel = supabase.channel('vehicle-monitoring', {
-      config: {
-        broadcast: { self: true },
-        presence: {
-          key: 'vehicle-monitoring',
-        },
-      },
-    });
+    const channel = supabase.channel('vehicle-monitoring');
     
     // Subscribe to the channel
     channel.subscribe((status) => {

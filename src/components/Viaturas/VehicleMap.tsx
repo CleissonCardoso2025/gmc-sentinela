@@ -51,11 +51,19 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
       return;
     }
 
+    // Get the API key from localStorage
+    const apiKey = localStorage.getItem('googleMapsApiKey');
+    
+    if (!apiKey) {
+      console.warn('Google Maps API key not found. Please add it in the Settings page.');
+      return;
+    }
+
     // Load the API if not already loaded
     if (!document.getElementById('google-maps-script')) {
       const script = document.createElement('script');
       script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCgYRdHFm_wBz70Xgljgj-HVswvCGYLVHg&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => setMapLoaded(true);
@@ -205,6 +213,22 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId, vehicleInfo }) => {
     return (
       <div className="flex h-full w-full items-center justify-center text-red-500">
         Erro ao carregar localização
+      </div>
+    );
+  }
+
+  // Check if API key is set
+  const apiKey = localStorage.getItem('googleMapsApiKey');
+  if (!apiKey) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center p-4 text-center">
+        <div className="text-amber-500 mb-2">⚠️ Chave da API do Google Maps não configurada</div>
+        <p className="mb-4">
+          Para visualizar o mapa, você precisa configurar a chave da API do Google Maps nas configurações.
+        </p>
+        <a href="/configuracoes" className="text-blue-500 hover:underline">
+          Ir para Configurações
+        </a>
       </div>
     );
   }

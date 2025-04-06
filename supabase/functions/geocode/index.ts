@@ -56,9 +56,13 @@ Deno.serve(async (req) => {
       url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
     }
     
+    console.log(`Making geocoding request: ${reverse ? 'reverse' : 'forward'}`);
+    
     // Fetch from Google Maps Geocoding API
     const response = await fetch(url)
     const data = await response.json()
+    
+    console.log(`Geocoding response status: ${data.status}`);
     
     // Return geocoding results
     return new Response(

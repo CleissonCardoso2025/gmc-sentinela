@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,8 +14,8 @@ import { MapMarker } from '@/types/maps';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+  'https://rdkugzjrvlvcorfsbdaz.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJka3Vnempydmx2Y29yZnNiZGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NjUyMjQsImV4cCI6MjA1OTA0MTIyNH0.6LW6CSBnYRUoGi4NabyQTWOcByg7NhUjnsheDGzU3VQ'
 );
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
@@ -37,14 +36,12 @@ export const OcorrenciaForm = () => {
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
   
-  // Simulação de agentes da guarnição atual
   const guarnicaoAtual = [
     { id: '1', nome: 'Carlos Silva', patente: 'Guarda Civil' },
     { id: '2', nome: 'Mariana Santos', patente: 'Guarda Civil' },
     { id: '3', nome: 'João Oliveira', patente: 'Supervisor' },
   ];
 
-  // Atualiza os marcadores do mapa quando as coordenadas mudam
   useEffect(() => {
     if (coordenadas) {
       setMapMarkers([
@@ -61,7 +58,6 @@ export const OcorrenciaForm = () => {
     }
   }, [coordenadas, local]);
 
-  // Função para gerar número de ocorrência
   const gerarNumeroOcorrencia = () => {
     const date = new Date();
     const year = date.getFullYear();
@@ -72,7 +68,6 @@ export const OcorrenciaForm = () => {
     return `OCR-${year}${month}${day}-${random}`;
   };
 
-  // Capturar localização via GPS
   const capturarLocalizacao = () => {
     setIsLoading(true);
     
@@ -82,7 +77,6 @@ export const OcorrenciaForm = () => {
           const { latitude, longitude } = position.coords;
           setCoordenadas({ lat: latitude, lng: longitude });
           
-          // Buscar endereço usando geocodificação reversa
           try {
             const endereco = await obterEnderecoPorCoordenadas(latitude, longitude);
             setLocal(endereco);
@@ -107,14 +101,16 @@ export const OcorrenciaForm = () => {
     }
   };
 
-  // Obter endereço a partir de coordenadas (geocodificação reversa)
   const obterEnderecoPorCoordenadas = async (latitude: number, longitude: number): Promise<string> => {
     try {
       const { data, error } = await supabase.functions.invoke('geocode', {
         body: { address: `${latitude},${longitude}`, reverse: true }
       });
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message);
+      }
       
       if (data && data.results && data.results.length > 0) {
         return data.results[0].formatted_address;
@@ -127,12 +123,10 @@ export const OcorrenciaForm = () => {
     }
   };
 
-  // Abrir seleção de localização no mapa
   const abrirMapaSelecao = () => {
     setIsMapOpen(true);
   };
 
-  // Atualiza as coordenadas quando o usuário clica no mapa
   const handleMapClick = async (location: { lat: number, lng: number }) => {
     setCoordenadas(location);
     
@@ -150,12 +144,9 @@ export const OcorrenciaForm = () => {
     }
   };
 
-  // Correção automática de texto (simplificada para demonstração)
   const corrigirTexto = () => {
     setIsLoading(true);
     
-    // Em um cenário real, isso usaria uma API de correção ortográfica
-    // Aqui apenas simulamos com algumas correções básicas
     const textoCorrigido = descricao
       .replace(/\s+/g, ' ')
       .replace(/\s+\./g, '.')
@@ -169,7 +160,6 @@ export const OcorrenciaForm = () => {
     }, 1000);
   };
 
-  // Lidar com upload de anexos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
@@ -178,35 +168,28 @@ export const OcorrenciaForm = () => {
     }
   };
 
-  // Remover anexo
   const removeAnexo = (index: number) => {
     setAnexos(anexos.filter((_, i) => i !== index));
   };
 
-  // Salvar ocorrência
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Validação básica
     if (!local || !tipo || !descricao) {
       toast.error('Preencha todos os campos obrigatórios.');
       setIsLoading(false);
       return;
     }
     
-    // Gerar número de ocorrência se não existir
     if (!numero) {
       setNumero(gerarNumeroOcorrencia());
     }
     
-    // Simulando envio para API
     setTimeout(() => {
       toast.success('Ocorrência registrada com sucesso!');
       setIsLoading(false);
       
-      // Em um cenário real, redirecionaria para a lista ou detalhes da ocorrência
-      // No nosso exemplo, apenas limpa o formulário
       setDescricao('');
       setLocal('');
       setCoordenadas(null);
@@ -217,10 +200,8 @@ export const OcorrenciaForm = () => {
     }, 1500);
   };
 
-  // Cancelar e voltar
   const handleCancel = () => {
     if (window.confirm('Deseja realmente cancelar? Todas as alterações serão perdidas.')) {
-      // Em um cenário real, redirecionaria para a lista de ocorrências
       setDescricao('');
       setLocal('');
       setCoordenadas(null);
@@ -243,7 +224,6 @@ export const OcorrenciaForm = () => {
       
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Número da Ocorrência */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="numero">Número da Ocorrência</Label>
@@ -256,7 +236,6 @@ export const OcorrenciaForm = () => {
               />
             </div>
             
-            {/* Data e Hora */}
             <div className="space-y-2">
               <Label htmlFor="data" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
@@ -272,7 +251,6 @@ export const OcorrenciaForm = () => {
             </div>
           </div>
           
-          {/* Local da Ocorrência */}
           <div className="space-y-2">
             <Label htmlFor="local" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
@@ -345,7 +323,6 @@ export const OcorrenciaForm = () => {
             </div>
           </div>
           
-          {/* Tipo da Ocorrência */}
           <div className="space-y-2">
             <Label htmlFor="tipo" className="flex items-center gap-2">
               <List className="h-4 w-4" />
@@ -376,7 +353,6 @@ export const OcorrenciaForm = () => {
             )}
           </div>
           
-          {/* Descrição da Ocorrência */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="descricao" className="flex items-center gap-2">
@@ -405,7 +381,6 @@ export const OcorrenciaForm = () => {
             />
           </div>
           
-          {/* Agentes Envolvidos */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -438,7 +413,6 @@ export const OcorrenciaForm = () => {
             </div>
           </div>
           
-          {/* Evidências e Anexos */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Paperclip className="h-4 w-4" />
@@ -467,7 +441,6 @@ export const OcorrenciaForm = () => {
               </p>
             </div>
             
-            {/* Lista de anexos */}
             {anexos.length > 0 && (
               <div className="mt-4 space-y-2">
                 <p className="text-sm font-medium">Arquivos anexados:</p>
@@ -497,7 +470,6 @@ export const OcorrenciaForm = () => {
             )}
           </div>
           
-          {/* Status da Ocorrência */}
           <div className="space-y-2">
             <Label htmlFor="status" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
@@ -516,7 +488,6 @@ export const OcorrenciaForm = () => {
             </Select>
           </div>
           
-          {/* Botões de ação */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               type="submit"

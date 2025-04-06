@@ -66,7 +66,7 @@ const OccurrenceMap: React.FC = () => {
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
-      <div className="p-4 bg-white border-b z-20 relative">
+      <div className="p-4 bg-white border-b relative">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h2 className="text-lg font-semibold text-gray-800">Mapa de Ocorrências</h2>
           <div className="flex flex-wrap gap-2">
@@ -106,7 +106,7 @@ const OccurrenceMap: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="w-full relative">
+        <div className="w-full relative" style={{ zIndex: 0 }}>
           <LeafletMap 
             center={calculateMapCenter(filteredOccurrences)} 
             markers={markers}
@@ -116,7 +116,7 @@ const OccurrenceMap: React.FC = () => {
           />
           
           {markers.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80 z-[999]">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80">
               <p className="text-gray-600 italic">
                 Nenhuma ocorrência encontrada com os filtros selecionados.
               </p>

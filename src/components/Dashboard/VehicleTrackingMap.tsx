@@ -24,8 +24,8 @@ const VehicleTrackingMap: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const { toast } = useToast();
   const googleMapsLoaded = useRef(false);
-  const googleMap = useRef<google.maps.Map | null>(null);
-  const markers = useRef<{ [key: number]: google.maps.Marker }>({});
+  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<{ [key: number]: google.maps.Marker }>({});
   
   // Get current vehicle locations from Supabase
   useEffect(() => {
@@ -90,16 +90,28 @@ const VehicleTrackingMap: React.FC = () => {
     if (isLoading || googleMapsLoaded.current || !mapRef.current || vehicles.length === 0) return;
     
     const loadGoogleMaps = async () => {
-      if (!window.google) {
-        // Dynamically load the Google Maps script
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.GOOGLE_MAPS_API_KEY}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = initializeMap;
-        
-        document.head.appendChild(script);
+      if (typeof window.google === 'undefined') {
+        try {
+          // Define a callback function for when Google Maps loads
+          window.initMap = () => {
+            initializeMap();
+          };
+          
+          const script = document.createElement('script');
+          const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+          script.async = true;
+          script.defer = true;
+          
+          document.head.appendChild(script);
+        } catch (error) {
+          console.error("Error loading Google Maps:", error);
+          toast({
+            title: "Erro ao carregar o mapa",
+            description: "Não foi possível carregar o Google Maps.",
+            variant: "destructive"
+          });
+        }
       } else {
         initializeMap();
       }
@@ -126,65 +138,67 @@ const VehicleTrackingMap: React.FC = () => {
       }
       
       // Create map
-      googleMap.current = new google.maps.Map(mapRef.current, {
-        center,
-        zoom: 12,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        mapTypeControl: true,
-        fullscreenControl: true,
-        streetViewControl: false,
-        styles: [
-          {
-            featureType: "administrative",
-            elementType: "geometry",
-            stylers: [{ visibility: "on" }]
-          },
-          {
-            featureType: "poi",
-            stylers: [{ visibility: "off" }]
-          }
-        ]
-      });
-      
-      // Add markers for each vehicle
-      validVehicles.forEach(vehicle => {
-        if (vehicle.latitude && vehicle.longitude) {
-          const marker = new google.maps.Marker({
-            position: { lat: vehicle.latitude, lng: vehicle.longitude },
-            map: googleMap.current,
-            title: `${vehicle.placa} - ${vehicle.modelo || ""}`,
-            icon: {
-              url: "https://maps.google.com/mapfiles/ms/icons/police.png",
-              scaledSize: new google.maps.Size(32, 32)
+      if (typeof google !== 'undefined') {
+        googleMapRef.current = new google.maps.Map(mapRef.current, {
+          center,
+          zoom: 12,
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          mapTypeControl: true,
+          fullscreenControl: true,
+          streetViewControl: false,
+          styles: [
+            {
+              featureType: "administrative",
+              elementType: "geometry",
+              stylers: [{ visibility: "on" }]
+            },
+            {
+              featureType: "poi",
+              stylers: [{ visibility: "off" }]
             }
-          });
-          
-          // Add info window
-          const infoContent = `
-            <div style="padding: 10px; max-width: 200px;">
-              <h3 style="margin-top: 0; font-weight: bold;">${vehicle.placa}</h3>
-              <p>${vehicle.marca || ""} ${vehicle.modelo || ""}</p>
-              ${vehicle.condutor ? `<p>Condutor: ${vehicle.condutor}</p>` : ''}
-              ${vehicle.location_name ? `<p>Local: ${vehicle.location_name}</p>` : ''}
-              <p>Última atualização: ${formatDate(vehicle.lastUpdate || '')}</p>
-            </div>
-          `;
-          
-          const infoWindow = new google.maps.InfoWindow({
-            content: infoContent
-          });
-          
-          marker.addListener('click', () => {
-            infoWindow.open(googleMap.current, marker);
-          });
-          
-          markers.current[vehicle.id] = marker;
-        }
-      });
+          ]
+        });
+        
+        // Add markers for each vehicle
+        validVehicles.forEach(vehicle => {
+          if (vehicle.latitude && vehicle.longitude && googleMapRef.current) {
+            const marker = new google.maps.Marker({
+              position: { lat: vehicle.latitude, lng: vehicle.longitude },
+              map: googleMapRef.current,
+              title: `${vehicle.placa} - ${vehicle.modelo || ""}`,
+              icon: {
+                url: "https://maps.google.com/mapfiles/ms/icons/police.png",
+                scaledSize: new google.maps.Size(32, 32)
+              }
+            });
+            
+            // Add info window
+            const infoContent = `
+              <div style="padding: 10px; max-width: 200px;">
+                <h3 style="margin-top: 0; font-weight: bold;">${vehicle.placa}</h3>
+                <p>${vehicle.marca || ""} ${vehicle.modelo || ""}</p>
+                ${vehicle.condutor ? `<p>Condutor: ${vehicle.condutor}</p>` : ''}
+                ${vehicle.location_name ? `<p>Local: ${vehicle.location_name}</p>` : ''}
+                <p>Última atualização: ${formatDate(vehicle.lastUpdate || '')}</p>
+              </div>
+            `;
+            
+            const infoWindow = new google.maps.InfoWindow({
+              content: infoContent
+            });
+            
+            marker.addListener('click', () => {
+              infoWindow.open(googleMapRef.current, marker);
+            });
+            
+            markersRef.current[vehicle.id] = marker;
+          }
+        });
+      }
     };
     
     loadGoogleMaps();
-  }, [isLoading, vehicles]);
+  }, [isLoading, vehicles, toast]);
   
   // Helper function to format date
   const formatDate = (dateString: string): string => {
@@ -206,7 +220,7 @@ const VehicleTrackingMap: React.FC = () => {
   
   // Get location of the browser/user
   const getUserLocation = () => {
-    if (navigator.geolocation && googleMap.current) {
+    if (navigator.geolocation && googleMapRef.current) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const userPos = {
@@ -214,19 +228,21 @@ const VehicleTrackingMap: React.FC = () => {
             lng: position.coords.longitude
           };
           
-          googleMap.current?.setCenter(userPos);
-          googleMap.current?.setZoom(14);
+          googleMapRef.current?.setCenter(userPos);
+          googleMapRef.current?.setZoom(14);
           
           // Add a marker for user's position
-          new google.maps.Marker({
-            position: userPos,
-            map: googleMap.current,
-            title: "Sua localização",
-            icon: {
-              url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-              scaledSize: new google.maps.Size(32, 32)
-            }
-          });
+          if (typeof google !== 'undefined' && googleMapRef.current) {
+            new google.maps.Marker({
+              position: userPos,
+              map: googleMapRef.current,
+              title: "Sua localização",
+              icon: {
+                url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                scaledSize: new google.maps.Size(32, 32)
+              }
+            });
+          }
           
           toast({
             title: "Localização encontrada",

@@ -24,8 +24,8 @@ const OccurrenceMap: React.FC = () => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const googleMap = useRef<google.maps.Map | null>(null);
-  const markers = useRef<google.maps.Marker[]>([]);
+  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
   
   // Mock data for occurrences - in a real implementation, this would come from your database
   const mockOccurrences: Occurrence[] = [
@@ -106,14 +106,29 @@ const OccurrenceMap: React.FC = () => {
     if (!mapRef.current || !occurrences.length) return;
     
     const loadGoogleMaps = async () => {
-      if (!window.google) {
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.GOOGLE_MAPS_API_KEY}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = initializeMap;
-        document.head.appendChild(script);
+      if (typeof window.google === 'undefined') {
+        try {
+          // Define a callback function for when Google Maps loads
+          window.initMap = () => {
+            initializeMap();
+          };
+          
+          const script = document.createElement('script');
+          const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+          script.async = true;
+          script.defer = true;
+          
+          document.head.appendChild(script);
+        } catch (error) {
+          console.error("Error loading Google Maps:", error);
+          setIsLoading(false);
+          toast({
+            title: "Erro ao carregar o mapa",
+            description: "Não foi possível carregar o Google Maps.",
+            variant: "destructive"
+          });
+        }
       } else {
         initializeMap();
       }
@@ -124,8 +139,8 @@ const OccurrenceMap: React.FC = () => {
       if (!mapRef.current) return;
       
       // Clear existing markers
-      markers.current.forEach(marker => marker.setMap(null));
-      markers.current = [];
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
       
       // Find center point (average of all occurrences)
       const validOccurrences = occurrences.filter(o => o.latitude && o.longitude);
@@ -149,8 +164,8 @@ const OccurrenceMap: React.FC = () => {
       }
       
       // Create or update map
-      if (!googleMap.current) {
-        googleMap.current = new google.maps.Map(mapRef.current, {
+      if (!googleMapRef.current && typeof google !== 'undefined') {
+        googleMapRef.current = new google.maps.Map(mapRef.current, {
           center,
           zoom,
           mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -158,56 +173,58 @@ const OccurrenceMap: React.FC = () => {
           fullscreenControl: true,
           streetViewControl: false
         });
-      } else {
-        googleMap.current.setCenter(center);
-        googleMap.current.setZoom(zoom);
+      } else if (googleMapRef.current) {
+        googleMapRef.current.setCenter(center);
+        googleMapRef.current.setZoom(zoom);
       }
       
       // Add markers for occurrences
-      validOccurrences.forEach(occurrence => {
-        if (occurrence.latitude && occurrence.longitude) {
-          const marker = new google.maps.Marker({
-            position: { lat: occurrence.latitude, lng: occurrence.longitude },
-            map: googleMap.current,
-            title: occurrence.titulo,
-            icon: {
-              url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-              scaledSize: new google.maps.Size(32, 32)
-            }
-          });
-          
-          // Add info window
-          const formattedDate = new Date(occurrence.data).toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          
-          const infoContent = `
-            <div style="padding: 10px; max-width: 200px;">
-              <h3 style="margin-top: 0; font-weight: bold;">${occurrence.titulo}</h3>
-              <p>${occurrence.local}</p>
-              <p>Data: ${formattedDate}</p>
-            </div>
-          `;
-          
-          const infoWindow = new google.maps.InfoWindow({
-            content: infoContent
-          });
-          
-          marker.addListener('click', () => {
-            infoWindow.open(googleMap.current, marker);
-          });
-          
-          markers.current.push(marker);
-        }
-      });
+      if (typeof google !== 'undefined') {
+        validOccurrences.forEach(occurrence => {
+          if (occurrence.latitude && occurrence.longitude && googleMapRef.current) {
+            const marker = new google.maps.Marker({
+              position: { lat: occurrence.latitude, lng: occurrence.longitude },
+              map: googleMapRef.current,
+              title: occurrence.titulo,
+              icon: {
+                url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                scaledSize: new google.maps.Size(32, 32)
+              }
+            });
+            
+            // Add info window
+            const formattedDate = new Date(occurrence.data).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit', 
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            const infoContent = `
+              <div style="padding: 10px; max-width: 200px;">
+                <h3 style="margin-top: 0; font-weight: bold;">${occurrence.titulo}</h3>
+                <p>${occurrence.local}</p>
+                <p>Data: ${formattedDate}</p>
+              </div>
+            `;
+            
+            const infoWindow = new google.maps.InfoWindow({
+              content: infoContent
+            });
+            
+            marker.addListener('click', () => {
+              infoWindow.open(googleMapRef.current, marker);
+            });
+            
+            markersRef.current.push(marker);
+          }
+        });
+      }
     };
     
     loadGoogleMaps();
-  }, [occurrences]);
+  }, [occurrences, toast]);
   
   const handleRangeChange = (value: string) => {
     setDateRange(value as DateRange);

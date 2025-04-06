@@ -2,10 +2,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 
 interface VehicleMapProps {
   vehicleId: number;
 }
+
+type VehicleLocation = Database['public']['Tables']['vehicle_locations']['Row'];
 
 /**
  * This is a placeholder component that would use react-native-maps
@@ -24,7 +27,7 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleId }) => {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as VehicleLocation;
     }
   });
 

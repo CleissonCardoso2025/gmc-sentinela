@@ -1,5 +1,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from '@/integrations/supabase/types';
+
+type VehicleLocation = Database['public']['Tables']['vehicle_locations']['Insert'];
+type Vehicle = Database['public']['Tables']['vehicles']['Row'];
 
 interface LocationParams {
   vehicleId: number;

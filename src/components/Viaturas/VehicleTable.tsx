@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import VehicleMap from "./VehicleMap";
+import { Database } from '@/integrations/supabase/types';
 
 interface VehicleTableProps {
   vehicles: Vehicle[];
@@ -23,13 +23,13 @@ interface VehicleTableProps {
   onAddMaintenance: (vehicle: Vehicle) => void;
 }
 
-interface VehicleLocation {
+type VehicleLocation = {
   vehicle_id: number;
   latitude: number;
   longitude: number;
   recorded_at: string;
   location_name: string | null;
-}
+};
 
 const VehicleTable: React.FC<VehicleTableProps> = ({ 
   vehicles, 

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -34,7 +35,7 @@ const EscalaPreview: React.FC<EscalaPreviewProps> = ({
               {daysToDisplay.map((day, index) => (
                 <TableHead key={index} className="font-medium text-center whitespace-nowrap">
                   {format(day, "dd/MM")} <br />
-                  <span className="text-xs">{format(day, "EEE", { locale: require('date-fns/locale/pt-BR') })}</span>
+                  <span className="text-xs">{format(day, "EEE", { locale: ptBR })}</span>
                 </TableHead>
               ))}
             </TableRow>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import DashboardLayout from '@/layouts/Dashboard';
 import { WelcomeHeader } from '@/components/Dashboard/WelcomeHeader';
@@ -123,10 +122,7 @@ const Dashboard = () => {
           </div>
           
           <div className="md:col-span-1 space-y-6">
-            {/* Mural de Alertas */}
-            <AlertBoard maxDisplayedAlerts={2.5} />
-            
-            {/* Work Schedule Section - Below AlertBoard */}
+            {/* Work Schedule Section */}
             <Card className="shadow-md animate-fade-up" style={{ animationDelay: '300ms' }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-semibold flex items-center">
@@ -176,6 +172,9 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            {/* Mural de Alertas */}
+            <AlertBoard maxDisplayedAlerts={4} />
           </div>
         </div>
       </div>

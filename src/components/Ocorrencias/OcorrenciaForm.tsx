@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,11 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import LeafletMap from '@/components/Map/LeafletMap';
+import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { supabase } from '@/integrations/supabase/client';
-import { useForm } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
 type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros';
@@ -332,8 +329,8 @@ export const OcorrenciaForm = () => {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="mt-4">
-                      <LeafletMap 
-                        center={coordenadas ? [coordenadas.lat, coordenadas.lng] : [-23.550520, -46.633308]} 
+                      <GoogleMapComponent 
+                        center={coordenadas || undefined}
                         markers={mapMarkers}
                         zoom={15}
                         height="h-[400px]"

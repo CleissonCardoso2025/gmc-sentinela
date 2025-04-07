@@ -19,7 +19,25 @@ Deno.serve(async (req) => {
 
   try {
     // Extract the request data
-    const { address, reverse = false } = await req.json()
+    const requestData = await req.json();
+    
+    // Get API key from environment variable
+    const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    
+    // If the request is just asking for the API key, return it
+    if (requestData.getApiKey) {
+      return new Response(
+        JSON.stringify({ 
+          apiKey: apiKey
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+    
+    const { address, reverse = false } = requestData;
     
     if (!address) {
       return new Response(
@@ -30,9 +48,6 @@ Deno.serve(async (req) => {
         }
       )
     }
-    
-    // Get API key from environment variable
-    const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
     
     if (!apiKey) {
       console.error('Google Maps API key not found in environment variables')

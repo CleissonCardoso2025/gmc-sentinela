@@ -146,6 +146,7 @@ export const OcorrenciaForm = () => {
           try {
             const endereco = await obterEnderecoPorCoordenadas(latitude, longitude);
             
+            const partes = endereco.split(',');
             if (partes.length > 1) {
               setLocal(partes[0].trim());
               setEnderecoCompleto(endereco);
@@ -215,6 +216,7 @@ export const OcorrenciaForm = () => {
       setGeocodeStatus('loading');
       const endereco = await obterEnderecoPorCoordenadas(location.lat, location.lng);
       
+      const partes = endereco.split(',');
       if (partes.length > 1) {
         setLocal(partes[0].trim());
         setEnderecoCompleto(endereco);

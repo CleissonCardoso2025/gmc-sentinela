@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Table, 
@@ -32,7 +33,7 @@ const sindicancias = [
   {
     id: 'SIN-1234',
     dataAbertura: '10/08/2023',
-    gmcInvestigado: 'Carlos Eduardo Silva',
+    investigado: 'Carlos Eduardo Silva',
     motivo: 'Desvio de conduta durante abordagem',
     status: 'Em andamento',
     etapaAtual: 'Coleta de Testemunhos',
@@ -40,7 +41,7 @@ const sindicancias = [
   {
     id: 'SIN-1235',
     dataAbertura: '15/09/2023',
-    gmcInvestigado: 'Roberto Almeida',
+    investigado: 'Roberto Almeida',
     motivo: 'Uso indevido de viatura',
     status: 'Em andamento',
     etapaAtual: 'Investigação Inicial',
@@ -48,7 +49,7 @@ const sindicancias = [
   {
     id: 'SIN-1236',
     dataAbertura: '22/07/2023',
-    gmcInvestigado: 'Ana Paula Ferreira',
+    investigado: 'Ana Paula Ferreira',
     motivo: 'Abandono de posto',
     status: 'Concluída',
     etapaAtual: 'Parecer Final',
@@ -56,7 +57,7 @@ const sindicancias = [
   {
     id: 'SIN-1237',
     dataAbertura: '05/10/2023',
-    gmcInvestigado: 'Paulo Roberto Santos',
+    investigado: 'Paulo Roberto Santos',
     motivo: 'Desvio de equipamento',
     status: 'Arquivada',
     etapaAtual: 'Análise dos Fatos',
@@ -68,7 +69,7 @@ export function InvestigacaoList() {
   const [selectedInvestigacao, setSelectedInvestigacao] = useState<any>(null);
   
   const filteredSindicancias = sindicancias.filter(sindicancia => 
-    sindicancia.gmcInvestigado.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sindicancia.investigado.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sindicancia.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sindicancia.motivo.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -92,7 +93,7 @@ export function InvestigacaoList() {
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por GMC, número ou motivo da sindicância..."
+            placeholder="Buscar por investigado, número ou motivo da sindicância..."
             className="pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -116,7 +117,7 @@ export function InvestigacaoList() {
           <TableRow>
             <TableHead>Número</TableHead>
             <TableHead>Data de Abertura</TableHead>
-            <TableHead>GMC Investigado</TableHead>
+            <TableHead>Investigado</TableHead>
             <TableHead className="hidden md:table-cell">Motivo</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Etapa Atual</TableHead>
@@ -128,7 +129,7 @@ export function InvestigacaoList() {
             <TableRow key={sindicancia.id}>
               <TableCell className="font-medium">{sindicancia.id}</TableCell>
               <TableCell>{sindicancia.dataAbertura}</TableCell>
-              <TableCell>{sindicancia.gmcInvestigado}</TableCell>
+              <TableCell>{sindicancia.investigado}</TableCell>
               <TableCell className="hidden md:table-cell max-w-[250px] truncate">
                 {sindicancia.motivo}
               </TableCell>

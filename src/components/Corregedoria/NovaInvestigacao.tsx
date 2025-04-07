@@ -18,10 +18,26 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { FileUp, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+
+// Mock data for users dropdown
+const usuariosMock = [
+  { id: '1', nome: 'Carlos Eduardo Silva' },
+  { id: '2', nome: 'Roberto Almeida' },
+  { id: '3', nome: 'Ana Paula Ferreira' },
+  { id: '4', nome: 'Paulo Roberto Santos' },
+  { id: '5', nome: 'Maria Oliveira Costa' },
+];
 
 const formSchema = z.object({
   motivoInvestigacao: z.string().min(10, 'O motivo deve ter pelo menos 10 caracteres'),
-  gmcInvestigado: z.string().min(3, 'Nome do GMC deve ter pelo menos 3 caracteres'),
+  investigadoId: z.string().min(1, 'Selecione um investigado'),
   relatoInicial: z.string().min(20, 'O relato inicial deve ter pelo menos 20 caracteres'),
 });
 
@@ -37,7 +53,7 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       motivoInvestigacao: '',
-      gmcInvestigado: '',
+      investigadoId: '',
       relatoInicial: '',
     },
   });
@@ -47,9 +63,12 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
     console.log('Valores do formulário:', values);
     console.log('Arquivos anexados:', files);
     
+    // Find the selected user name
+    const selectedUser = usuariosMock.find(user => user.id === values.investigadoId);
+    
     toast({
       title: "Sindicância aberta com sucesso",
-      description: `Sindicância contra ${values.gmcInvestigado} registrada. Número: SIN-${Math.floor(Math.random() * 10000)}`,
+      description: `Sindicância contra ${selectedUser?.nome || 'Investigado'} registrada. Número: SIN-${Math.floor(Math.random() * 10000)}`,
     });
     
     form.reset();
@@ -100,12 +119,26 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
             <div>
               <FormField
                 control={form.control}
-                name="gmcInvestigado"
+                name="investigadoId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do GMC Investigado</FormLabel>
+                    <FormLabel>Nome Investigado</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome completo do GMC" {...field} />
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um investigado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuariosMock.map((usuario) => (
+                            <SelectItem key={usuario.id} value={usuario.id}>
+                              {usuario.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -10,6 +10,7 @@ import Inspetoria from "./pages/Inspetoria";
 import RecursosHumanos from "./pages/RecursosHumanos";
 import Ocorrencias from "./pages/Ocorrencias";
 import Corregedoria from "./pages/Corregedoria";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<Index />} />
           <Route path="/viaturas" element={<Viaturas />} />
           <Route path="/inspetoria" element={<Inspetoria />} />

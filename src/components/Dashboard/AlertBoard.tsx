@@ -24,7 +24,6 @@ interface AlertBoardProps {
 
 export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }) => {
   const { toast } = useToast();
-  const [showAllAlerts, setShowAllAlerts] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([
     {
       id: 1,
@@ -186,8 +185,8 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
   // Count unread alerts
   const unreadCount = alerts.filter(alert => !alert.read).length;
 
-  // Determine which alerts to display
-  const displayedAlerts = showAllAlerts ? alerts : alerts.slice(0, Math.floor(maxDisplayedAlerts));
+  // Limit displayed alerts
+  const displayedAlerts = alerts.slice(0, Math.floor(maxDisplayedAlerts));
   const hasMoreAlerts = alerts.length > displayedAlerts.length;
 
   return (
@@ -269,19 +268,9 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
               
               {hasMoreAlerts && (
                 <div className="text-center pt-2 pb-1">
-                  <Button 
-                    variant="outline" 
-                    className="bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs"
-                    onClick={() => setShowAllAlerts(!showAllAlerts)}
-                  >
-                    {showAllAlerts 
-                      ? "Mostrar menos" 
-                      : <>
-                          <Plus className="h-3 w-3 mr-1" />
-                          {alerts.length - displayedAlerts.length} mais alertas
-                        </>
-                    }
-                  </Button>
+                  <Badge variant="outline" className="bg-gray-50 cursor-pointer">
+                    + {alerts.length - displayedAlerts.length} mais alertas
+                  </Badge>
                 </div>
               )}
             </>

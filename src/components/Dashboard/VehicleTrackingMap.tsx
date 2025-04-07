@@ -122,10 +122,6 @@ const VehicleTrackingMap: React.FC = () => {
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
-      <div className="absolute top-4 left-4 z-10">
-        <h2 className="text-lg font-semibold text-gray-800">Rastreamento de Viaturas</h2>
-      </div>
-      
       {vehiclesLoading ? (
         <div className="w-full h-[300px] md:h-[400px] p-4 flex items-center justify-center">
           <div className="space-y-4 w-full">

@@ -28,7 +28,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
 }) => {
   const { toast } = useToast();
 
-  // Mock data for available agents, supervisors and vehicles
+  // Mock data for available agents and supervisors
   const availableAgents = [
     "Agente Carlos Pereira",
     "Agente Ana Melo",
@@ -48,16 +48,10 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
     "Sgt. Márcio Dias"
   ];
 
-  const availableVehicles = [
-    "GCM-1234 (Spin)",
-    "GCM-5678 (Hilux)",
-    "GCM-9012 (Duster)"
-  ];
-
   const [formData, setFormData] = useState({
+    name: guarnicao?.name || "",
     supervisor: guarnicao?.supervisor || "",
     selectedAgents: guarnicao?.team || [],
-    vehicle: guarnicao?.vehicle || "",
     observations: guarnicao?.observations || ""
   });
 
@@ -69,7 +63,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
     e.preventDefault();
     
     // Validate form
-    if (!formData.supervisor || selectedAgents.length < 2 || !formData.vehicle) {
+    if (!formData.name || !formData.supervisor || selectedAgents.length < 2) {
       toast({
         title: "Formulário incompleto",
         description: "Preencha todos os campos obrigatórios.",
@@ -96,6 +90,17 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+      <div className="space-y-2">
+        <Label htmlFor="name">Nome da Guarnição</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          placeholder="Digite o nome da guarnição"
+          className="transition-all duration-200 focus:border-primary"
+        />
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="supervisor">Supervisor</Label>
         <Select 
@@ -154,25 +159,6 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="vehicle">Viatura</Label>
-        <Select 
-          value={formData.vehicle}
-          onValueChange={(value) => setFormData({...formData, vehicle: value})}
-        >
-          <SelectTrigger className="transition-all duration-200 hover:border-primary">
-            <SelectValue placeholder="Selecione a viatura" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableVehicles.map((vehicle) => (
-              <SelectItem key={vehicle} value={vehicle}>
-                {vehicle}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="space-y-2">

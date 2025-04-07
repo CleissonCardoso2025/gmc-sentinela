@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,25 +24,25 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
   const guarnicoes = [
     {
       id: 1,
+      name: "Guarnição Centro",
       supervisor: "Sgt. Roberto Silva",
       team: ["Agente Carlos Pereira", "Agente Ana Melo", "Agente Paulo Santos"],
-      vehicle: "GCM-1234 (Spin)",
       status: "Ativo",
       date: "Hoje - Diurno"
     },
     {
       id: 2,
+      name: "Guarnição Norte",
       supervisor: "Sgt. Marcos Oliveira",
       team: ["Agente Juliana Campos", "Agente Ricardo Alves", "Agente Fernanda Lima"],
-      vehicle: "GCM-5678 (Hilux)",
       status: "Programado",
       date: "Hoje - Noturno"
     },
     {
       id: 3,
+      name: "Guarnição Sul",
       supervisor: "Sgt. Pedro Costa",
       team: ["Agente Lucas Martins", "Agente Carla Dias", "Agente Bruno Sousa"],
-      vehicle: "GCM-9012 (Duster)",
       status: "Programado",
       date: "Amanhã - Diurno"
     },
@@ -78,10 +79,10 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="font-medium">Nome</TableHead>
               <TableHead className="font-medium">Data/Período</TableHead>
               <TableHead className="font-medium">Supervisor</TableHead>
               <TableHead className="font-medium">Equipe</TableHead>
-              <TableHead className="font-medium">Viatura</TableHead>
               <TableHead className="font-medium">Status</TableHead>
               <TableHead className="font-medium">Ações</TableHead>
             </TableRow>
@@ -89,6 +90,7 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
           <TableBody>
             {guarnicoes.map((guarnicao) => (
               <TableRow key={guarnicao.id}>
+                <TableCell>{guarnicao.name}</TableCell>
                 <TableCell>{guarnicao.date}</TableCell>
                 <TableCell>{guarnicao.supervisor}</TableCell>
                 <TableCell>
@@ -100,7 +102,6 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
                     ))}
                   </div>
                 </TableCell>
-                <TableCell>{guarnicao.vehicle}</TableCell>
                 <TableCell>
                   <Badge className={getStatusColor(guarnicao.status)}>
                     {guarnicao.status}

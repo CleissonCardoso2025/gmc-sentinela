@@ -97,25 +97,25 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     mapRef.current = null;
   }, []);
   
-  // Define marker icons based on type
-  const getMarkerIcon = (type?: string): google.maps.Icon | undefined => {
+  // Define marker icons based on type - now only used inside the loaded map context
+  const getMarkerIcon = (type?: string) => {
     const iconType = type || markerType;
     
     switch (iconType) {
       case 'police':
         return {
           url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-          scaledSize: new google.maps.Size(40, 40)
+          scaledSize: new window.google.maps.Size(40, 40)
         };
       case 'incident':
         return {
           url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          scaledSize: new google.maps.Size(40, 40)
+          scaledSize: new window.google.maps.Size(40, 40)
         };
       default:
         return {
           url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-          scaledSize: new google.maps.Size(40, 40)
+          scaledSize: new window.google.maps.Size(40, 40)
         };
     }
   };
@@ -152,7 +152,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
                 lat: marker.position[0],
                 lng: marker.position[1]
               }}
-              icon={getMarkerIcon(marker.icon)}
+              icon={window.google && getMarkerIcon(marker.icon)}
               onClick={() => setSelectedMarker(marker)}
             />
           ))}

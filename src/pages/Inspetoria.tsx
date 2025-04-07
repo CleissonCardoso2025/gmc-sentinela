@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Dashboard from "@/layouts/Dashboard";
-import { Shield, Users, Calendar, FileText, Bell, Plus, Map } from "lucide-react";
+import { Shield, Users, Calendar, FileText, Bell, Plus, Map, AlertTriangle } from "lucide-react";
 import InspetoriaDashboard from "@/components/Inspetoria/InspetoriaDashboard";
 import GuarnicoesList from "@/components/Inspetoria/GuarnicoesList";
 import GuarnicaoForm from "@/components/Inspetoria/GuarnicaoForm";
@@ -11,6 +12,7 @@ import EscalaTrabalho from "@/components/Inspetoria/EscalaTrabalho";
 import RelatoriosOperacionais from "@/components/Inspetoria/RelatoriosOperacionais";
 import RotasList from "@/components/Inspetoria/RotasList";
 import RotaForm from "@/components/Inspetoria/RotaForm";
+import InspetoriaOccurrences from "@/components/Inspetoria/InspetoriaOccurrences";
 
 const InspetoriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -46,7 +48,7 @@ const InspetoriaPage: React.FC = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="overflow-x-auto">
-            <TabsList className="grid min-w-max w-full grid-cols-5">
+            <TabsList className="grid min-w-max w-full grid-cols-6">
               <TabsTrigger value="dashboard" className="flex items-center">
                 <Shield className="sm:mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Dashboard</span>
@@ -66,6 +68,10 @@ const InspetoriaPage: React.FC = () => {
               <TabsTrigger value="rotas" className="flex items-center">
                 <Map className="sm:mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Rotas</span>
+              </TabsTrigger>
+              <TabsTrigger value="ocorrencias" className="flex items-center">
+                <AlertTriangle className="sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Ocorrências</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -126,6 +132,13 @@ const InspetoriaPage: React.FC = () => {
                   <RotasList onCreateNew={() => setIsCreatingRota(true)} />
                 </>
               )}
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="ocorrencias">
+            <Card className="p-4 sm:p-6 animate-fade-in">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Ocorrências Cadastradas</h2>
+              <InspetoriaOccurrences />
             </Card>
           </TabsContent>
         </Tabs>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Users } from "lucide-react";
+import { Edit, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface GuarnicoesListProps {
@@ -70,15 +69,9 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center">
-          <Users className="h-5 w-5 mr-2 text-gcm-600" />
-          <h3 className="text-lg font-medium">Guarnições do Dia</h3>
-        </div>
-        <Button onClick={onCreateNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Guarnição
-        </Button>
+      <div className="flex items-center mb-4">
+        <Users className="h-5 w-5 mr-2 text-gcm-600" />
+        <h3 className="text-lg font-medium">Guarnições do Dia</h3>
       </div>
 
       <div className="rounded-md border overflow-hidden">

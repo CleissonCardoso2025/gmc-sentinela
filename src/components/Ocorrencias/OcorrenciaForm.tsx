@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon } from 'lucide-react';
+import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon, Wand2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
@@ -28,6 +28,7 @@ export const OcorrenciaForm = () => {
   const [agentes, setAgentes] = useState<string[]>([]);
   const [status, setStatus] = useState<OcorrenciaStatus>('Aberta');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isCorrigindoTexto, setIsCorrigindoTexto] = useState<boolean>(false);
   const [anexos, setAnexos] = useState<File[]>([]);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
@@ -173,20 +174,36 @@ export const OcorrenciaForm = () => {
     }
   };
 
-  const corrigirTexto = () => {
-    setIsLoading(true);
-    
-    const textoCorrigido = descricao
-      .replace(/\s+/g, ' ')
-      .replace(/\s+\./g, '.')
-      .replace(/\s+,/g, ',')
-      .trim();
-    
-    setTimeout(() => {
-      setDescricao(textoCorrigido);
-      toast.success('Texto corrigido com sucesso!');
-      setIsLoading(false);
-    }, 1000);
+  const corrigirTexto = async () => {
+    if (!descricao.trim()) {
+      toast.error('Não há texto para corrigir.');
+      return;
+    }
+
+    try {
+      setIsCorrigindoTexto(true);
+      
+      // Call the Supabase Edge Function for text correction
+      const { data, error } = await supabase.functions.invoke('text-correction', {
+        body: { text: descricao }
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (data?.correctedText) {
+        setDescricao(data.correctedText);
+        toast.success('Texto corrigido com sucesso!');
+      } else {
+        throw new Error('Não foi possível obter o texto corrigido.');
+      }
+    } catch (error) {
+      console.error('Erro ao corrigir texto:', error);
+      toast.error('Não foi possível corrigir o texto. Tente novamente mais tarde.');
+    } finally {
+      setIsCorrigindoTexto(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -427,11 +444,20 @@ export const OcorrenciaForm = () => {
                 variant="outline" 
                 size="sm"
                 onClick={corrigirTexto}
-                disabled={isLoading || !descricao}
+                disabled={isLoading || isCorrigindoTexto || !descricao}
                 className="flex items-center gap-1"
               >
-                <Check className="h-3 w-3" />
-                Corrigir Texto
+                {isCorrigindoTexto ? (
+                  <>
+                    <span className="animate-spin mr-1">⟳</span>
+                    Corrigindo...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-3 w-3" />
+                    Corrigir Texto
+                  </>
+                )}
               </Button>
             </div>
             <Textarea
@@ -554,7 +580,7 @@ export const OcorrenciaForm = () => {
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isCorrigindoTexto}
               className="flex-1 bg-gcm-600 hover:bg-gcm-700 text-white flex items-center justify-center gap-2"
             >
               <Save className="h-4 w-4" />
@@ -566,7 +592,7 @@ export const OcorrenciaForm = () => {
               type="button"
               variant="outline"
               onClick={handleCancel}
-              disabled={isLoading}
+              disabled={isLoading || isCorrigindoTexto}
               className="flex-1 flex items-center justify-center gap-2"
             >
               <X className="h-4 w-4" />

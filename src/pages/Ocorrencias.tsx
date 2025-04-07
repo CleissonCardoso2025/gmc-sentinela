@@ -5,6 +5,7 @@ import { OcorrenciaForm } from '@/components/Ocorrencias/OcorrenciaForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OcorrenciaList } from '@/components/Ocorrencias/OcorrenciaList';
 import { FileText, Plus } from 'lucide-react';
+import { Toaster } from 'sonner';
 
 const Ocorrencias = () => {
   return (
@@ -41,6 +42,8 @@ const Ocorrencias = () => {
             <OcorrenciaList />
           </TabsContent>
         </Tabs>
+        
+        <Toaster position="top-right" />
       </div>
     </Dashboard>
   );

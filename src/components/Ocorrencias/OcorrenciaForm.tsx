@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,7 +29,7 @@ import {
   Ambulance,
   ClipboardCheck,
   ClipboardList,
-  Police
+  Shield
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import GoogleMapComponent from '@/components/Map/GoogleMap';
@@ -79,7 +78,6 @@ export const OcorrenciaForm = () => {
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
   const [geocodeStatus, setGeocodeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
-  // New state for involved parties
   const [envolvidos, setEnvolvidos] = useState<Envolvido[]>([
     {
       nome: '',
@@ -94,7 +92,6 @@ export const OcorrenciaForm = () => {
     }
   ]);
 
-  // New state for actions taken
   const [providenciasTomadas, setProvidenciasTomadas] = useState<ProvidenciaTomada[]>([
     { id: 'orientacao', label: 'Orientação às partes', checked: false },
     { id: 'delegacia', label: 'Condução à Delegacia', checked: false },
@@ -149,8 +146,6 @@ export const OcorrenciaForm = () => {
           try {
             const endereco = await obterEnderecoPorCoordenadas(latitude, longitude);
             
-            // Separar o endereço completo do local mais curto
-            const partes = endereco.split(',');
             if (partes.length > 1) {
               setLocal(partes[0].trim());
               setEnderecoCompleto(endereco);
@@ -220,8 +215,6 @@ export const OcorrenciaForm = () => {
       setGeocodeStatus('loading');
       const endereco = await obterEnderecoPorCoordenadas(location.lat, location.lng);
       
-      // Separar o endereço completo do local mais curto
-      const partes = endereco.split(',');
       if (partes.length > 1) {
         setLocal(partes[0].trim());
         setEnderecoCompleto(endereco);
@@ -253,7 +246,6 @@ export const OcorrenciaForm = () => {
     try {
       setIsCorrigindoTexto(true);
       
-      // Call the Supabase Edge Function for text correction
       const { data, error } = await supabase.functions.invoke('text-correction', {
         body: { text: descricao }
       });
@@ -288,7 +280,6 @@ export const OcorrenciaForm = () => {
     setAnexos(anexos.filter((_, i) => i !== index));
   };
 
-  // New function to add a new involved party
   const adicionarEnvolvido = () => {
     setEnvolvidos([
       ...envolvidos,
@@ -307,7 +298,6 @@ export const OcorrenciaForm = () => {
     toast.success('Novo envolvido adicionado');
   };
 
-  // New function to remove an involved party
   const removerEnvolvido = (index: number) => {
     if (envolvidos.length === 1) {
       toast.error('É necessário pelo menos um envolvido');
@@ -320,7 +310,6 @@ export const OcorrenciaForm = () => {
     toast.success('Envolvido removido');
   };
 
-  // New function to update an involved party
   const atualizarEnvolvido = (index: number, campo: keyof Envolvido, valor: string) => {
     const novosEnvolvidos = [...envolvidos];
     novosEnvolvidos[index] = {
@@ -330,7 +319,6 @@ export const OcorrenciaForm = () => {
     setEnvolvidos(novosEnvolvidos);
   };
 
-  // New function to toggle an action taken
   const toggleProvidencia = (id: string) => {
     setProvidenciasTomadas(providenciasTomadas.map(item => 
       item.id === id ? { ...item, checked: !item.checked } : item
@@ -351,7 +339,6 @@ export const OcorrenciaForm = () => {
       setNumero(gerarNumeroOcorrencia());
     }
     
-    // Check if we have at least one valid involved party
     const hasValidInvolveds = envolvidos.some(env => env.nome.trim() !== '');
     if (!hasValidInvolveds) {
       toast.error('Adicione ao menos um envolvido com nome preenchido.');
@@ -623,7 +610,6 @@ export const OcorrenciaForm = () => {
             />
           </div>
           
-          {/* New section: Involved Parties (Envolvidos) */}
           <div className="space-y-4 border-t border-gray-200 pt-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium flex items-center gap-2">
@@ -779,7 +765,6 @@ export const OcorrenciaForm = () => {
             ))}
           </div>
           
-          {/* New section: Actions Taken (Providências Tomadas) */}
           <div className="space-y-4 border-t border-gray-200 pt-6">
             <h3 className="text-lg font-medium flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5 text-gcm-600" />
@@ -798,7 +783,7 @@ export const OcorrenciaForm = () => {
                     htmlFor={providencia.id} 
                     className="cursor-pointer flex items-center"
                   >
-                    {providencia.id === 'delegacia' && <Police className="h-4 w-4 mr-2 text-gcm-500" />}
+                    {providencia.id === 'delegacia' && <Shield className="h-4 w-4 mr-2 text-gcm-500" />}
                     {providencia.id === 'samu' && <Ambulance className="h-4 w-4 mr-2 text-gcm-500" />}
                     {providencia.label}
                   </Label>

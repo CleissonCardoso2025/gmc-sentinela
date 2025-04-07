@@ -71,7 +71,7 @@ const Dashboard = () => {
             <QuickActions />
             
             {/* Patrol Route Section */}
-            <Card>
+            <Card className="shadow-md animate-fade-up" style={{ animationDelay: '200ms' }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-semibold flex items-center">
                   <Route className="h-5 w-5 mr-2 text-gcm-600" />
@@ -126,7 +126,7 @@ const Dashboard = () => {
             <AlertBoard />
             
             {/* Work Schedule Section */}
-            <Card>
+            <Card className="shadow-md animate-fade-up" style={{ animationDelay: '300ms' }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-semibold flex items-center">
                   <CalendarDays className="h-5 w-5 mr-2 text-gcm-600" />
@@ -151,7 +151,7 @@ const Dashboard = () => {
                       </TableHeader>
                       <TableBody>
                         {workScheduleData.map((day) => (
-                          <TableRow key={day.id}>
+                          <TableRow key={day.id} className="animate-fade-up" style={{ animationDelay: `${400 + day.id * 50}ms` }}>
                             <TableCell>
                               <div className="font-medium">{day.date}</div>
                               <div className="text-xs text-gray-500">{day.dayOfWeek}</div>

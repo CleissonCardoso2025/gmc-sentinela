@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import LeafletMap from '@/components/Map/LeafletMap';
 import { MapMarker } from '@/types/maps';
 import { supabase } from '@/integrations/supabase/client';
+import { useForm } from 'react-hook-form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
 type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros';
@@ -32,6 +34,7 @@ export const OcorrenciaForm = () => {
   const [anexos, setAnexos] = useState<File[]>([]);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
+  const [geocodeStatus, setGeocodeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
   const guarnicaoAtual = [
     { id: '1', nome: 'Carlos Silva', patente: 'Guarda Civil' },
@@ -67,6 +70,7 @@ export const OcorrenciaForm = () => {
 
   const capturarLocalizacao = () => {
     setIsLoading(true);
+    setGeocodeStatus('loading');
     
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -87,12 +91,14 @@ export const OcorrenciaForm = () => {
               setEnderecoCompleto(endereco);
             }
             
+            setGeocodeStatus('success');
             toast.success('Localização capturada com sucesso!');
           } catch (error) {
             console.error('Erro ao obter o endereço:', error);
             const coordsText = `Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`;
             setLocal('Local não identificado');
             setEnderecoCompleto(coordsText);
+            setGeocodeStatus('error');
             toast.warning('Localização capturada, mas não foi possível obter o endereço completo.');
           } finally {
             setIsLoading(false);
@@ -100,11 +106,13 @@ export const OcorrenciaForm = () => {
         },
         (error) => {
           console.error('Erro ao capturar localização:', error);
+          setGeocodeStatus('error');
           toast.error('Não foi possível capturar a localização. Verifique as permissões.');
           setIsLoading(false);
         }
       );
     } else {
+      setGeocodeStatus('error');
       toast.error('Geolocalização não suportada por este navegador.');
       setIsLoading(false);
     }
@@ -141,6 +149,7 @@ export const OcorrenciaForm = () => {
     
     try {
       setIsLoading(true);
+      setGeocodeStatus('loading');
       const endereco = await obterEnderecoPorCoordenadas(location.lat, location.lng);
       
       // Separar o endereço completo do local mais curto
@@ -153,12 +162,14 @@ export const OcorrenciaForm = () => {
         setEnderecoCompleto(endereco);
       }
       
+      setGeocodeStatus('success');
       toast.success('Localização selecionada com sucesso!');
     } catch (error) {
       console.error('Erro ao obter o endereço:', error);
       const coordsText = `Latitude: ${location.lat.toFixed(6)}, Longitude: ${location.lng.toFixed(6)}`;
       setLocal('Local não identificado');
       setEnderecoCompleto(coordsText);
+      setGeocodeStatus('error');
       toast.warning('Localização selecionada, mas não foi possível obter o endereço completo.');
     } finally {
       setIsLoading(false);
@@ -316,6 +327,9 @@ export const OcorrenciaForm = () => {
                   <DialogContent className="sm:max-w-[700px]">
                     <DialogHeader>
                       <DialogTitle>Selecione a localização da ocorrência</DialogTitle>
+                      <DialogDescription>
+                        Clique no mapa para selecionar o local exato da ocorrência.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="mt-4">
                       <LeafletMap 
@@ -326,9 +340,6 @@ export const OcorrenciaForm = () => {
                         onMapClick={handleMapClick}
                         markerType="incident"
                       />
-                      <p className="text-sm text-gray-500 mt-2">
-                        Clique no mapa para selecionar o local exato da ocorrência.
-                      </p>
                     </div>
                     <div className="flex justify-end gap-2 mt-4">
                       <Button type="button" variant="outline" onClick={() => setIsMapOpen(false)}>
@@ -340,7 +351,6 @@ export const OcorrenciaForm = () => {
               </div>
             </div>
             
-            {/* Novo campo para endereço completo */}
             <div className="mt-3">
               <Label htmlFor="enderecoCompleto" className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
@@ -354,9 +364,27 @@ export const OcorrenciaForm = () => {
                 className="mt-1 resize-none h-20"
               />
               {coordenadas && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Coordenadas GPS: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
-                </p>
+                <div className="text-xs text-gray-500 mt-1 space-y-1">
+                  <p>
+                    Coordenadas GPS: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
+                  </p>
+                  {geocodeStatus === 'loading' && (
+                    <p className="text-amber-600 animate-pulse flex items-center">
+                      <span className="mr-1 inline-block h-2 w-2 bg-amber-500 rounded-full"></span>
+                      Buscando endereço...
+                    </p>
+                  )}
+                  {geocodeStatus === 'error' && (
+                    <p className="text-red-500">
+                      Não foi possível obter o endereço automático. Edite manualmente.
+                    </p>
+                  )}
+                  {geocodeStatus === 'success' && (
+                    <p className="text-green-600">
+                      Endereço obtido com sucesso. Você pode editar para refinar.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

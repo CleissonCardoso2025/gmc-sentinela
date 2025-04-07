@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DateRange, useOccurrenceData } from "@/hooks/use-occurrence-data";
 import { useToast } from '@/hooks/use-toast';
-import LeafletMap from '../Map/LeafletMap';
+import GoogleMapComponent from '../Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { formatDateBR, calculateMapCenter, determineZoomLevel } from '@/utils/maps-utils';
 import { Filter, Calendar, RefreshCcw } from 'lucide-react';
@@ -63,6 +63,9 @@ const OccurrenceMap: React.FC = () => {
     `,
     icon: 'incident'
   }));
+
+  // Calculate map center
+  const center = calculateMapCenter(filteredOccurrences);
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
@@ -107,8 +110,11 @@ const OccurrenceMap: React.FC = () => {
         </div>
       ) : (
         <div className="w-full relative" style={{ zIndex: 0 }}>
-          <LeafletMap 
-            center={calculateMapCenter(filteredOccurrences)} 
+          <GoogleMapComponent 
+            center={{
+              lat: center[0],
+              lng: center[1]
+            }}
             markers={markers}
             zoom={determineZoomLevel(markers.length)}
             height="h-[300px] md:h-[400px]"

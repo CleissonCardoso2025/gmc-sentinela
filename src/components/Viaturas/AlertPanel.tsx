@@ -53,7 +53,7 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ vehicles }) => {
       </CardHeader>
       <CardContent>
         {alerts.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-3 relative" style={{ zIndex: 5 }}>
             {alerts.map((alert, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
                 <div>

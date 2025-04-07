@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useVehicleLocations } from "@/hooks/use-vehicle-locations";
 import VehicleList from "./VehicleList";
 import { useToast } from "@/hooks/use-toast";
-import LeafletMap from '../Map/LeafletMap';
+import GoogleMapComponent from '../Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { formatDateBR } from '@/utils/maps-utils';
@@ -59,24 +59,27 @@ const VehicleTrackingMap: React.FC = () => {
   }
   
   // Calculate center point - prioritize user location if available
-  const calculateCenter = (): [number, number] => {
+  const calculateCenter = () => {
     if (geolocation.location.latitude && geolocation.location.longitude) {
-      return [geolocation.location.latitude, geolocation.location.longitude];
+      return {
+        lat: geolocation.location.latitude,
+        lng: geolocation.location.longitude
+      };
     }
     
     const validVehicles = vehicles.filter(v => v.latitude && v.longitude);
     if (validVehicles.length === 0) {
       // Default to São Paulo if no valid coordinates
-      return [-23.550520, -46.633308];
+      return { lat: -23.550520, lng: -46.633308 };
     }
     
     const sumLat = validVehicles.reduce((sum, v) => sum + (v.latitude || 0), 0);
     const sumLng = validVehicles.reduce((sum, v) => sum + (v.longitude || 0), 0);
     
-    return [
-      sumLat / validVehicles.length,
-      sumLng / validVehicles.length
-    ];
+    return {
+      lat: sumLat / validVehicles.length,
+      lng: sumLng / validVehicles.length
+    };
   };
   
   const handleRefresh = () => {
@@ -123,13 +126,14 @@ const VehicleTrackingMap: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="w-full">
-          <LeafletMap 
+        <div className="w-full" style={{ zIndex: -1, position: 'relative' }}>
+          <GoogleMapComponent 
             center={calculateCenter()} 
             markers={allMarkers}
             zoom={13}
             height="h-[300px] md:h-[400px]"
             markerType="police"
+            showUserLocation={true}
           />
           
           {vehicles.length === 0 && (

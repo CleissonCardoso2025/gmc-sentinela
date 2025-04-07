@@ -73,23 +73,23 @@ const Index = () => {
         {/* Maps with Tabs */}
         <div className="mb-6">
           <Tabs defaultValue="occurrences" className="w-full">
-            <TabsList className="w-full max-w-md mx-auto mb-4">
+            <TabsList className="w-full max-w-md mx-auto mb-4 relative z-20">
               <TabsTrigger value="occurrences" className="flex-1">Mapa de Ocorrências</TabsTrigger>
               <TabsTrigger value="vehicles" className="flex-1">Rastreamento de Viaturas</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="occurrences" className="mt-0">
+            <TabsContent value="occurrences" className="mt-0 relative z-10">
               <OccurrenceMap />
             </TabsContent>
             
-            <TabsContent value="vehicles" className="mt-0">
+            <TabsContent value="vehicles" className="mt-0" style={{ zIndex: -1, position: 'relative' }}>
               <VehicleTrackingMap />
             </TabsContent>
           </Tabs>
         </div>
         
         {/* Tables and Lists */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
           <div className="lg:col-span-2">
             <VehicleTable vehicles={viaturasData} maintenances={manutencaoData} />
           </div>

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GoogleMap, LoadScript, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker, InfoWindow, useJsApiLoader, Circle } from '@react-google-maps/api';
 import { MapMarker } from '@/types/maps';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -83,6 +83,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   
   // Update map center when the center prop changes
   useEffect(() => {
@@ -112,6 +113,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
         };
         
         setUserLocation(userPos);
+        setLocationAccuracy(position.coords.accuracy);
         console.log("User location set:", userPos, "Accuracy:", position.coords.accuracy);
         
         // If no center is provided and we have user location, center the map on user
@@ -199,24 +201,18 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
           zIndex={1000}
           title="Sua localização"
         />
-        {/* Add accuracy circle */}
-        {window.google && navigator.geolocation && (
-          <div style={{ display: 'none' }}>
-            {navigator.geolocation.getCurrentPosition((position) => {
-              if (mapRef.current && position.coords.accuracy) {
-                new window.google.maps.Circle({
-                  strokeColor: "#4285F4",
-                  strokeOpacity: 0.5,
-                  strokeWeight: 1,
-                  fillColor: "#4285F4",
-                  fillOpacity: 0.15,
-                  map: mapRef.current,
-                  center: userLocation,
-                  radius: position.coords.accuracy
-                });
-              }
-            })}
-          </div>
+        {locationAccuracy && (
+          <Circle
+            center={userLocation}
+            radius={locationAccuracy}
+            options={{
+              strokeColor: "#4285F4",
+              strokeOpacity: 0.5,
+              strokeWeight: 1,
+              fillColor: "#4285F4",
+              fillOpacity: 0.15,
+            }}
+          />
         )}
       </>
     );

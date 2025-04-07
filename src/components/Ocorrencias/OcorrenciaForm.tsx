@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,14 +8,58 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon, Wand2 } from 'lucide-react';
+import { 
+  MapPin, 
+  Search, 
+  FileText, 
+  Check, 
+  Users, 
+  Paperclip, 
+  Save, 
+  X, 
+  Camera, 
+  Clock, 
+  AlertTriangle, 
+  List, 
+  MapIcon, 
+  Wand2,
+  Plus,
+  Trash2,
+  Phone,
+  User,
+  Ambulance,
+  ClipboardCheck,
+  ClipboardList,
+  Police
+} from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { supabase } from '@/integrations/supabase/client';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
 type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros';
+type VinculoOcorrencia = 'Vítima' | 'Suspeito' | 'Testemunha';
+type EstadoAparente = 'Lúcido' | 'Alterado' | 'Ferido';
+
+interface Envolvido {
+  nome: string;
+  apelido?: string;
+  dataNascimento: string;
+  rg: string;
+  cpf: string;
+  endereco: string;
+  telefone: string;
+  vinculo: VinculoOcorrencia;
+  estadoAparente: EstadoAparente;
+}
+
+interface ProvidenciaTomada {
+  id: string;
+  label: string;
+  checked: boolean;
+}
 
 export const OcorrenciaForm = () => {
   const [numero, setNumero] = useState<string>('');
@@ -33,6 +78,31 @@ export const OcorrenciaForm = () => {
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
   const [geocodeStatus, setGeocodeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  
+  // New state for involved parties
+  const [envolvidos, setEnvolvidos] = useState<Envolvido[]>([
+    {
+      nome: '',
+      apelido: '',
+      dataNascimento: '',
+      rg: '',
+      cpf: '',
+      endereco: '',
+      telefone: '',
+      vinculo: 'Vítima',
+      estadoAparente: 'Lúcido'
+    }
+  ]);
+
+  // New state for actions taken
+  const [providenciasTomadas, setProvidenciasTomadas] = useState<ProvidenciaTomada[]>([
+    { id: 'orientacao', label: 'Orientação às partes', checked: false },
+    { id: 'delegacia', label: 'Condução à Delegacia', checked: false },
+    { id: 'samu', label: 'Acionamento do SAMU', checked: false },
+    { id: 'conselho', label: 'Encaminhamento ao Conselho Tutelar', checked: false },
+    { id: 'apoio', label: 'Apoio à PM / Polícia Civil', checked: false }
+  ]);
+  const [outrasProvidencias, setOutrasProvidencias] = useState<string>('');
   
   const guarnicaoAtual = [
     { id: '1', nome: 'Carlos Silva', patente: 'Guarda Civil' },
@@ -218,6 +288,55 @@ export const OcorrenciaForm = () => {
     setAnexos(anexos.filter((_, i) => i !== index));
   };
 
+  // New function to add a new involved party
+  const adicionarEnvolvido = () => {
+    setEnvolvidos([
+      ...envolvidos,
+      {
+        nome: '',
+        apelido: '',
+        dataNascimento: '',
+        rg: '',
+        cpf: '',
+        endereco: '',
+        telefone: '',
+        vinculo: 'Vítima',
+        estadoAparente: 'Lúcido'
+      }
+    ]);
+    toast.success('Novo envolvido adicionado');
+  };
+
+  // New function to remove an involved party
+  const removerEnvolvido = (index: number) => {
+    if (envolvidos.length === 1) {
+      toast.error('É necessário pelo menos um envolvido');
+      return;
+    }
+    
+    const novosEnvolvidos = [...envolvidos];
+    novosEnvolvidos.splice(index, 1);
+    setEnvolvidos(novosEnvolvidos);
+    toast.success('Envolvido removido');
+  };
+
+  // New function to update an involved party
+  const atualizarEnvolvido = (index: number, campo: keyof Envolvido, valor: string) => {
+    const novosEnvolvidos = [...envolvidos];
+    novosEnvolvidos[index] = {
+      ...novosEnvolvidos[index],
+      [campo]: valor
+    };
+    setEnvolvidos(novosEnvolvidos);
+  };
+
+  // New function to toggle an action taken
+  const toggleProvidencia = (id: string) => {
+    setProvidenciasTomadas(providenciasTomadas.map(item => 
+      item.id === id ? { ...item, checked: !item.checked } : item
+    ));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -232,6 +351,14 @@ export const OcorrenciaForm = () => {
       setNumero(gerarNumeroOcorrencia());
     }
     
+    // Check if we have at least one valid involved party
+    const hasValidInvolveds = envolvidos.some(env => env.nome.trim() !== '');
+    if (!hasValidInvolveds) {
+      toast.error('Adicione ao menos um envolvido com nome preenchido.');
+      setIsLoading(false);
+      return;
+    }
+    
     setTimeout(() => {
       toast.success('Ocorrência registrada com sucesso!');
       setIsLoading(false);
@@ -244,6 +371,19 @@ export const OcorrenciaForm = () => {
       setOutroTipo('');
       setAnexos([]);
       setNumero('');
+      setEnvolvidos([{
+        nome: '',
+        apelido: '',
+        dataNascimento: '',
+        rg: '',
+        cpf: '',
+        endereco: '',
+        telefone: '',
+        vinculo: 'Vítima',
+        estadoAparente: 'Lúcido'
+      }]);
+      setProvidenciasTomadas(providenciasTomadas.map(item => ({ ...item, checked: false })));
+      setOutrasProvidencias('');
     }, 1500);
   };
 
@@ -257,6 +397,19 @@ export const OcorrenciaForm = () => {
       setOutroTipo('');
       setAnexos([]);
       setNumero('');
+      setEnvolvidos([{
+        nome: '',
+        apelido: '',
+        dataNascimento: '',
+        rg: '',
+        cpf: '',
+        endereco: '',
+        telefone: '',
+        vinculo: 'Vítima',
+        estadoAparente: 'Lúcido'
+      }]);
+      setProvidenciasTomadas(providenciasTomadas.map(item => ({ ...item, checked: false })));
+      setOutrasProvidencias('');
       toast.info('Registro de ocorrência cancelado.');
     }
   };
@@ -468,6 +621,204 @@ export const OcorrenciaForm = () => {
               className="min-h-[150px]"
               required
             />
+          </div>
+          
+          {/* New section: Involved Parties (Envolvidos) */}
+          <div className="space-y-4 border-t border-gray-200 pt-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium flex items-center gap-2">
+                <Users className="h-5 w-5 text-gcm-600" />
+                Envolvidos
+              </h3>
+              <Button 
+                type="button" 
+                onClick={adicionarEnvolvido} 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar novo envolvido
+              </Button>
+            </div>
+            
+            {envolvidos.map((envolvido, index) => (
+              <div key={index} className="border rounded-lg p-4 space-y-4 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium flex items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    Envolvido {index + 1}
+                  </h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removerEnvolvido(index)}
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`nome-${index}`}>Nome completo</Label>
+                    <Input
+                      id={`nome-${index}`}
+                      value={envolvido.nome}
+                      onChange={(e) => atualizarEnvolvido(index, 'nome', e.target.value)}
+                      placeholder="Digite o nome completo"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`apelido-${index}`}>Apelido (opcional)</Label>
+                    <Input
+                      id={`apelido-${index}`}
+                      value={envolvido.apelido}
+                      onChange={(e) => atualizarEnvolvido(index, 'apelido', e.target.value)}
+                      placeholder="Digite o apelido (se houver)"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`data-nascimento-${index}`}>Data de nascimento</Label>
+                    <Input
+                      id={`data-nascimento-${index}`}
+                      type="date"
+                      value={envolvido.dataNascimento}
+                      onChange={(e) => atualizarEnvolvido(index, 'dataNascimento', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`telefone-${index}`} className="flex items-center gap-1">
+                      <Phone className="h-4 w-4" />
+                      Telefone
+                    </Label>
+                    <Input
+                      id={`telefone-${index}`}
+                      value={envolvido.telefone}
+                      onChange={(e) => atualizarEnvolvido(index, 'telefone', e.target.value)}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`rg-${index}`}>RG</Label>
+                    <Input
+                      id={`rg-${index}`}
+                      value={envolvido.rg}
+                      onChange={(e) => atualizarEnvolvido(index, 'rg', e.target.value)}
+                      placeholder="Digite o RG"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`cpf-${index}`}>CPF</Label>
+                    <Input
+                      id={`cpf-${index}`}
+                      value={envolvido.cpf}
+                      onChange={(e) => atualizarEnvolvido(index, 'cpf', e.target.value)}
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor={`endereco-${index}`} className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    Endereço completo
+                  </Label>
+                  <Textarea
+                    id={`endereco-${index}`}
+                    value={envolvido.endereco}
+                    onChange={(e) => atualizarEnvolvido(index, 'endereco', e.target.value)}
+                    placeholder="Digite o endereço completo"
+                    className="h-20 resize-none"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`vinculo-${index}`}>Vínculo com a ocorrência</Label>
+                    <Select 
+                      value={envolvido.vinculo} 
+                      onValueChange={(value: VinculoOcorrencia) => atualizarEnvolvido(index, 'vinculo', value)}
+                    >
+                      <SelectTrigger id={`vinculo-${index}`}>
+                        <SelectValue placeholder="Selecione o vínculo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Vítima">Vítima</SelectItem>
+                        <SelectItem value="Suspeito">Suspeito</SelectItem>
+                        <SelectItem value="Testemunha">Testemunha</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor={`estado-${index}`}>Estado aparente</Label>
+                    <Select 
+                      value={envolvido.estadoAparente} 
+                      onValueChange={(value: EstadoAparente) => atualizarEnvolvido(index, 'estadoAparente', value)}
+                    >
+                      <SelectTrigger id={`estado-${index}`}>
+                        <SelectValue placeholder="Selecione o estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Lúcido">Lúcido</SelectItem>
+                        <SelectItem value="Alterado">Alterado</SelectItem>
+                        <SelectItem value="Ferido">Ferido</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* New section: Actions Taken (Providências Tomadas) */}
+          <div className="space-y-4 border-t border-gray-200 pt-6">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-gcm-600" />
+              Providências Tomadas
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+              {providenciasTomadas.map((providencia) => (
+                <div key={providencia.id} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={providencia.id} 
+                    checked={providencia.checked}
+                    onCheckedChange={() => toggleProvidencia(providencia.id)}
+                  />
+                  <Label 
+                    htmlFor={providencia.id} 
+                    className="cursor-pointer flex items-center"
+                  >
+                    {providencia.id === 'delegacia' && <Police className="h-4 w-4 mr-2 text-gcm-500" />}
+                    {providencia.id === 'samu' && <Ambulance className="h-4 w-4 mr-2 text-gcm-500" />}
+                    {providencia.label}
+                  </Label>
+                </div>
+              ))}
+              
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="outras-providencias" className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  Outras providências
+                </Label>
+                <Textarea
+                  id="outras-providencias"
+                  value={outrasProvidencias}
+                  onChange={(e) => setOutrasProvidencias(e.target.value)}
+                  placeholder="Descreva outras providências tomadas (se houver)..."
+                  className="h-20 resize-none"
+                />
+              </div>
+            </div>
           </div>
           
           <div className="space-y-2">

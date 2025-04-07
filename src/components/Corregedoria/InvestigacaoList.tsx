@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Table, 
@@ -15,7 +14,6 @@ import {
   Eye, 
   FileText, 
   Search,
-  Plus,
   Filter
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -108,10 +106,6 @@ export function InvestigacaoList() {
           <Button variant="outline" size="sm">
             <FileText className="mr-2 h-4 w-4" />
             Relatório
-          </Button>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Sindicância
           </Button>
         </div>
       </div>

@@ -55,8 +55,6 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
   ];
 
   const [formData, setFormData] = useState({
-    date: guarnicao?.date || "",
-    period: guarnicao?.period || "diurno",
     supervisor: guarnicao?.supervisor || "",
     selectedAgents: guarnicao?.team || [],
     vehicle: guarnicao?.vehicle || "",
@@ -71,7 +69,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
     e.preventDefault();
     
     // Validate form
-    if (!formData.date || !formData.supervisor || selectedAgents.length < 2 || !formData.vehicle) {
+    if (!formData.supervisor || selectedAgents.length < 2 || !formData.vehicle) {
       toast({
         title: "Formulário incompleto",
         description: "Preencha todos os campos obrigatórios.",
@@ -97,43 +95,14 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="date">Data</Label>
-          <Input 
-            id="date" 
-            type="date" 
-            value={formData.date}
-            onChange={(e) => setFormData({...formData, date: e.target.value})}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="period">Período</Label>
-          <Select 
-            value={formData.period}
-            onValueChange={(value) => setFormData({...formData, period: value})}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="diurno">Diurno</SelectItem>
-              <SelectItem value="noturno">Noturno</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
       <div className="space-y-2">
         <Label htmlFor="supervisor">Supervisor</Label>
         <Select 
           value={formData.supervisor}
           onValueChange={(value) => setFormData({...formData, supervisor: value})}
         >
-          <SelectTrigger>
+          <SelectTrigger className="transition-all duration-200 hover:border-primary">
             <SelectValue placeholder="Selecione o supervisor" />
           </SelectTrigger>
           <SelectContent>
@@ -152,7 +121,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           {availableAgents.map((agent) => (
             <div 
               key={agent} 
-              className={`p-2 rounded-md flex items-center justify-between cursor-pointer ${
+              className={`p-2 rounded-md flex items-center justify-between cursor-pointer transition-colors duration-200 ${
                 selectedAgents.includes(agent) 
                   ? 'bg-gcm-50 border border-gcm-200' 
                   : 'hover:bg-gray-50'
@@ -171,7 +140,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
             <p className="text-sm text-gray-500 mb-2">Agentes selecionados ({selectedAgents.length}):</p>
             <div className="flex flex-wrap gap-2">
               {selectedAgents.map((agent) => (
-                <Badge key={agent} className="bg-gcm-100 text-gcm-800 hover:bg-gcm-200">
+                <Badge key={agent} className="bg-gcm-100 text-gcm-800 hover:bg-gcm-200 animate-fade-in">
                   {agent}
                   <X 
                     className="h-3 w-3 ml-1 cursor-pointer" 
@@ -193,7 +162,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           value={formData.vehicle}
           onValueChange={(value) => setFormData({...formData, vehicle: value})}
         >
-          <SelectTrigger>
+          <SelectTrigger className="transition-all duration-200 hover:border-primary">
             <SelectValue placeholder="Selecione a viatura" />
           </SelectTrigger>
           <SelectContent>
@@ -214,14 +183,23 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           onChange={(e) => setFormData({...formData, observations: e.target.value})}
           placeholder="Detalhes adicionais sobre a guarnição..."
           rows={3}
+          className="transition-all duration-200 focus:border-primary"
         />
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          className="transition-all duration-200 hover:bg-muted"
+        >
           Cancelar
         </Button>
-        <Button type="submit">
+        <Button 
+          type="submit"
+          className="transition-all duration-200 hover:bg-primary/90"
+        >
           <Save className="mr-2 h-4 w-4" />
           Salvar Guarnição
         </Button>

@@ -10,9 +10,14 @@ import { toast } from 'sonner';
 
 const RecursosHumanos = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isCreatingFuncionario, setIsCreatingFuncionario] = useState(false);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Reset creating state when changing tabs
+    if (value !== 'lista') {
+      setIsCreatingFuncionario(false);
+    }
   };
 
   const navigateToTab = (tab: string) => {
@@ -27,7 +32,6 @@ const RecursosHumanos = () => {
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="cadastrar">Cadastrar Funcionário</TabsTrigger>
             <TabsTrigger value="lista">Lista de Funcionários</TabsTrigger>
           </TabsList>
           
@@ -39,7 +43,10 @@ const RecursosHumanos = () => {
                 <div className="flex space-x-2">
                   <Button 
                     className="bg-gcm-600 text-white hover:bg-gcm-700 transition-colors"
-                    onClick={() => navigateToTab('cadastrar')}
+                    onClick={() => {
+                      navigateToTab('lista');
+                      setIsCreatingFuncionario(true);
+                    }}
                   >
                     Cadastrar Funcionário
                   </Button>
@@ -115,15 +122,15 @@ const RecursosHumanos = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="cadastrar">
-            <CadastrarFuncionario onSuccess={() => {
-              toast.success("Funcionário cadastrado com sucesso!");
-              navigateToTab('lista');
-            }} />
-          </TabsContent>
-          
           <TabsContent value="lista">
-            <ListaFuncionarios />
+            {isCreatingFuncionario ? (
+              <CadastrarFuncionario onSuccess={() => {
+                toast.success("Funcionário cadastrado com sucesso!");
+                setIsCreatingFuncionario(false);
+              }} />
+            ) : (
+              <ListaFuncionarios onCreateNew={() => setIsCreatingFuncionario(true)} />
+            )}
           </TabsContent>
         </Tabs>
       </div>

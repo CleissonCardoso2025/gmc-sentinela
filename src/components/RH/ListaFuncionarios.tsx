@@ -74,7 +74,11 @@ const funcionariosMock = [
   },
 ];
 
-export const ListaFuncionarios = () => {
+interface ListaFuncionariosProps {
+  onCreateNew?: () => void;
+}
+
+export const ListaFuncionarios = ({ onCreateNew }: ListaFuncionariosProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFuncionario, setSelectedFuncionario] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -105,7 +109,7 @@ export const ListaFuncionarios = () => {
           </div>
           <Button 
             className="flex items-center gap-2 bg-gcm-600 hover:bg-gcm-700"
-            onClick={() => toast.info("Função de adicionar novo funcionário disponível na aba 'Cadastrar Funcionário'")}
+            onClick={onCreateNew}
           >
             <UserPlus className="h-4 w-4" />
             Novo Funcionário

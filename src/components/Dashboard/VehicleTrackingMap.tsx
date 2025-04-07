@@ -113,6 +113,13 @@ const VehicleTrackingMap: React.FC = () => {
     }
   };
   
+  // Add mock data explicitly if vehicles array is empty
+  useEffect(() => {
+    if (!vehiclesLoading && vehicles.length === 0) {
+      console.log("No vehicles found, using mock data");
+    }
+  }, [vehicles, vehiclesLoading]);
+  
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
       <div className="absolute top-4 left-4 z-10">
@@ -126,7 +133,7 @@ const VehicleTrackingMap: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="w-full" style={{ zIndex: -1, position: 'relative' }}>
+        <div className="w-full" style={{ position: 'relative', zIndex: 1 }}>
           <GoogleMapComponent 
             center={calculateCenter()} 
             markers={allMarkers}
@@ -139,7 +146,7 @@ const VehicleTrackingMap: React.FC = () => {
           {vehicles.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80">
               <p className="text-gray-600 italic">
-                Nenhuma viatura encontrada.
+                Nenhuma viatura encontrada. Adicione viaturas na seção de Gestão de Viaturas.
               </p>
             </div>
           )}

@@ -82,8 +82,10 @@ const Index = () => {
               <OccurrenceMap />
             </TabsContent>
             
-            <TabsContent value="vehicles" className="mt-0" style={{ zIndex: -1, position: 'relative' }}>
-              <VehicleTrackingMap />
+            <TabsContent value="vehicles" className="mt-0">
+              <div className="relative z-0">
+                <VehicleTrackingMap />
+              </div>
             </TabsContent>
           </Tabs>
         </div>

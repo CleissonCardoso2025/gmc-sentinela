@@ -1,17 +1,18 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
   Car, 
-  Users, 
   AlertTriangle, 
   Settings,
   Shield,
   UserCog,
   ChevronLeft,
   ChevronRight,
-  GavelIcon
+  GavelIcon,
+  Home
 } from "lucide-react";
 
 interface SidebarProps {
@@ -23,6 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
   const location = useLocation();
   
   const menuItems = [
+    { icon: <Home className="h-5 w-5" />, text: 'Dashboard', path: '/' },
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },

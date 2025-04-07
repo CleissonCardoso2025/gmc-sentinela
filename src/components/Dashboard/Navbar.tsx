@@ -11,6 +11,7 @@ import {
   UserCog,
   GavelIcon,
   Menu,
+  Home
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -18,6 +19,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   
   const menuItems = [
+    { icon: <Home className="h-5 w-5" />, text: 'Dashboard', path: '/' },
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
@@ -35,7 +37,7 @@ const Navbar: React.FC = () => {
     <nav className="fixed top-16 left-0 right-0 bg-gcm-600 shadow-md z-30 animate-fade-in h-16 flex items-center px-4 justify-between">
       {/* Visible navigation items */}
       <div className="flex items-center space-x-1 overflow-x-auto hide-scrollbar">
-        {menuItems.slice(0, 3).map((item, index) => (
+        {menuItems.slice(0, 4).map((item, index) => (
           <Button
             key={index}
             variant="ghost"

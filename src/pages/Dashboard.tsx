@@ -123,9 +123,7 @@ const Dashboard = () => {
           </div>
           
           <div className="md:col-span-1 space-y-6">
-            <AlertBoard />
-            
-            {/* Work Schedule Section */}
+            {/* Work Schedule Section - Moved above AlertBoard */}
             <Card className="shadow-md animate-fade-up" style={{ animationDelay: '300ms' }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-semibold flex items-center">
@@ -175,6 +173,8 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            <AlertBoard />
           </div>
         </div>
       </div>

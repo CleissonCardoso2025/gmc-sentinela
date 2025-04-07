@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import GoogleMapComponent from '../Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { formatDateBR, calculateMapCenter, determineZoomLevel } from '@/utils/maps-utils';
-import { Filter, Calendar, RefreshCcw } from 'lucide-react';
+import { Filter, Calendar, RefreshCcw, MapPin } from 'lucide-react';
+import { useGeolocation } from '@/hooks/use-geolocation';
 
 // Define occurrence types
 type OccurrenceType = 'all' | 'transito' | 'crime' | 'apoio' | 'perturbacao';
@@ -20,6 +21,8 @@ const OccurrenceMap: React.FC = () => {
   const { occurrences, isLoading: dataLoading, refetchOccurrences } = useOccurrenceData(dateRange);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const geolocation = useGeolocation({ enableHighAccuracy: true });
+  const [centered, setCentered] = useState(false);
   
   const handleRangeChange = (value: string) => {
     setDateRange(value as DateRange);
@@ -31,11 +34,40 @@ const OccurrenceMap: React.FC = () => {
   
   const handleRefresh = useCallback(() => {
     refetchOccurrences();
+    geolocation.refreshPosition();
     toast({
       title: "Atualizando dados",
-      description: "Buscando as ocorrências mais recentes."
+      description: "Buscando as ocorrências mais recentes e sua localização."
     });
-  }, [refetchOccurrences, toast]);
+  }, [refetchOccurrences, geolocation, toast]);
+  
+  const handleGetUserLocation = useCallback(() => {
+    if (geolocation.error) {
+      toast({
+        title: "Erro de localização",
+        description: geolocation.error,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    geolocation.refreshPosition();
+    setCentered(true);
+    
+    if (geolocation.location.latitude && geolocation.location.longitude) {
+      toast({
+        title: "Localização encontrada",
+        description: `O mapa foi centralizado na sua localização atual. Precisão: ~${
+          geolocation.location.accuracy ? Math.round(geolocation.location.accuracy) : '?'
+        }m`,
+      });
+    } else {
+      toast({
+        title: "Obtendo localização",
+        description: "Aguarde enquanto obtemos sua localização atual."
+      });
+    }
+  }, [geolocation, toast]);
   
   // Filter occurrences by type
   const filteredOccurrences = occurrences.filter(occurrence => {
@@ -63,9 +95,51 @@ const OccurrenceMap: React.FC = () => {
     `,
     icon: 'incident'
   }));
+  
+  // Add user location marker if available
+  if (geolocation.location.latitude && geolocation.location.longitude) {
+    markers.push({
+      id: 'user-location',
+      position: [geolocation.location.latitude, geolocation.location.longitude],
+      title: 'Sua localização',
+      content: geolocation.location.accuracy 
+        ? `<p>Precisão: ~${Math.round(geolocation.location.accuracy)}m</p>` 
+        : '',
+      icon: 'default'
+    });
+  }
 
   // Calculate map center
-  const center = calculateMapCenter(filteredOccurrences);
+  const calculateMapCenter = useCallback(() => {
+    if (centered && geolocation.location.latitude && geolocation.location.longitude) {
+      return {
+        lat: geolocation.location.latitude,
+        lng: geolocation.location.longitude
+      };
+    }
+    
+    const validOccurrences = filteredOccurrences.filter(o => o.latitude && o.longitude);
+    
+    if (validOccurrences.length === 0) {
+      // If no occurrences but we have user location, use that
+      if (geolocation.location.latitude && geolocation.location.longitude) {
+        return {
+          lat: geolocation.location.latitude,
+          lng: geolocation.location.longitude
+        };
+      }
+      // Default to São Paulo if no valid coordinates
+      return { lat: -23.550520, lng: -46.633308 };
+    }
+    
+    const sumLat = validOccurrences.reduce((sum, o) => sum + (o.latitude || 0), 0);
+    const sumLng = validOccurrences.reduce((sum, o) => sum + (o.longitude || 0), 0);
+    
+    return {
+      lat: sumLat / validOccurrences.length,
+      lng: sumLng / validOccurrences.length
+    };
+  }, [filteredOccurrences, geolocation.location.latitude, geolocation.location.longitude, centered]);
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
@@ -111,17 +185,15 @@ const OccurrenceMap: React.FC = () => {
       ) : (
         <div className="w-full relative" style={{ zIndex: 0 }}>
           <GoogleMapComponent 
-            center={{
-              lat: center[0],
-              lng: center[1]
-            }}
+            center={calculateMapCenter()}
             markers={markers}
-            zoom={determineZoomLevel(markers.length)}
+            zoom={determineZoomLevel(filteredOccurrences.length)}
             height="h-[300px] md:h-[400px]"
             markerType="incident"
+            showUserLocation={true}
           />
           
-          {markers.length === 0 && (
+          {filteredOccurrences.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80">
               <p className="text-gray-600 italic">
                 Nenhuma ocorrência encontrada com os filtros selecionados.
@@ -129,9 +201,9 @@ const OccurrenceMap: React.FC = () => {
             </div>
           )}
           
-          <div className="p-3 border-t bg-gray-50 text-xs flex justify-between items-center">
+          <div className="p-3 border-t bg-gray-50 text-xs flex flex-wrap justify-between items-center gap-2">
             <span className="text-gray-500">
-              Exibindo {markers.length} ocorrências
+              Exibindo {filteredOccurrences.length} ocorrências
               {occurrenceType !== 'all' && (
                 <span> do tipo {
                   occurrenceType === 'transito' ? 'Trânsito' :
@@ -143,13 +215,23 @@ const OccurrenceMap: React.FC = () => {
               {' dos últimos '}
               {dateRange === '3m' ? '3' : dateRange === '6m' ? '6' : '12'} meses.
             </span>
-            <button 
-              className="text-xs bg-gray-600 text-white px-3 py-1 rounded-md hover:bg-gray-700 transition-colors flex items-center gap-1"
-              onClick={handleRefresh}
-            >
-              <RefreshCcw className="h-3 w-3" />
-              Atualizar
-            </button>
+            <div className="flex gap-2">
+              <button 
+                className="text-xs bg-gcm-600 text-white px-3 py-1 rounded-md hover:bg-gcm-700 transition-colors flex items-center"
+                onClick={handleGetUserLocation}
+                disabled={geolocation.loading}
+              >
+                <MapPin className="h-3 w-3 mr-1" />
+                {geolocation.loading ? "Localizando..." : "Minha localização"}
+              </button>
+              <button 
+                className="text-xs bg-gray-600 text-white px-3 py-1 rounded-md hover:bg-gray-700 transition-colors flex items-center gap-1"
+                onClick={handleRefresh}
+              >
+                <RefreshCcw className="h-3 w-3" />
+                Atualizar
+              </button>
+            </div>
           </div>
         </div>
       )}

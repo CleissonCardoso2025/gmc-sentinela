@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVehicleLocations } from "@/hooks/use-vehicle-locations";
@@ -9,12 +9,14 @@ import GoogleMapComponent from '../Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { formatDateBR } from '@/utils/maps-utils';
+import { MapPin } from 'lucide-react';
 
 const VehicleTrackingMap: React.FC = () => {
   const { vehicles, isLoading: vehiclesLoading, refetchVehicles } = useVehicleLocations();
   const { toast } = useToast();
   const [retryCount, setRetryCount] = useState(0);
-  const geolocation = useGeolocation();
+  const geolocation = useGeolocation({ enableHighAccuracy: true });
+  const [centered, setCentered] = useState(false);
   
   // If failed to load vehicles, retry with exponential backoff
   useEffect(() => {
@@ -54,13 +56,16 @@ const VehicleTrackingMap: React.FC = () => {
       id: 'user-location',
       position: [geolocation.location.latitude, geolocation.location.longitude],
       title: 'Sua localização',
+      content: geolocation.location.accuracy 
+        ? `<p>Precisão: ~${Math.round(geolocation.location.accuracy)}m</p>` 
+        : '',
       icon: 'default'
     });
   }
   
   // Calculate center point - prioritize user location if available
-  const calculateCenter = () => {
-    if (geolocation.location.latitude && geolocation.location.longitude) {
+  const calculateCenter = useCallback(() => {
+    if (centered && geolocation.location.latitude && geolocation.location.longitude) {
       return {
         lat: geolocation.location.latitude,
         lng: geolocation.location.longitude
@@ -69,6 +74,13 @@ const VehicleTrackingMap: React.FC = () => {
     
     const validVehicles = vehicles.filter(v => v.latitude && v.longitude);
     if (validVehicles.length === 0) {
+      // If no vehicles but we have user location, use that
+      if (geolocation.location.latitude && geolocation.location.longitude) {
+        return {
+          lat: geolocation.location.latitude,
+          lng: geolocation.location.longitude
+        };
+      }
       // Default to São Paulo if no valid coordinates
       return { lat: -23.550520, lng: -46.633308 };
     }
@@ -80,17 +92,18 @@ const VehicleTrackingMap: React.FC = () => {
       lat: sumLat / validVehicles.length,
       lng: sumLng / validVehicles.length
     };
-  };
+  }, [vehicles, geolocation.location.latitude, geolocation.location.longitude, centered]);
   
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     refetchVehicles();
+    geolocation.refreshPosition();
     toast({
       title: "Atualizando dados",
-      description: "Buscando a localização mais recente das viaturas."
+      description: "Buscando a localização mais recente das viaturas e sua posição."
     });
-  };
+  }, [refetchVehicles, geolocation, toast]);
   
-  const handleGetUserLocation = () => {
+  const handleGetUserLocation = useCallback(() => {
     if (geolocation.error) {
       toast({
         title: "Erro de localização",
@@ -100,10 +113,15 @@ const VehicleTrackingMap: React.FC = () => {
       return;
     }
     
+    geolocation.refreshPosition();
+    setCentered(true);
+    
     if (geolocation.location.latitude && geolocation.location.longitude) {
       toast({
         title: "Localização encontrada",
-        description: "O mapa foi centralizado na sua localização atual."
+        description: `O mapa foi centralizado na sua localização atual. Precisão: ~${
+          geolocation.location.accuracy ? Math.round(geolocation.location.accuracy) : '?'
+        }m`,
       });
     } else {
       toast({
@@ -111,14 +129,7 @@ const VehicleTrackingMap: React.FC = () => {
         description: "Aguarde enquanto obtemos sua localização atual."
       });
     }
-  };
-  
-  // Add mock data explicitly if vehicles array is empty
-  useEffect(() => {
-    if (!vehiclesLoading && vehicles.length === 0) {
-      console.log("No vehicles found, using mock data");
-    }
-  }, [vehicles, vehiclesLoading]);
+  }, [geolocation, toast]);
   
   return (
     <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
@@ -149,13 +160,14 @@ const VehicleTrackingMap: React.FC = () => {
           
           <VehicleList vehicles={vehicles} />
           
-          <div className="p-4 pt-0 flex space-x-2">
+          <div className="p-4 pt-0 flex flex-wrap space-x-2">
             <button 
               onClick={handleGetUserLocation}
-              className="text-xs bg-gcm-600 text-white px-3 py-1 rounded-md hover:bg-gcm-700 transition-colors"
+              className="text-xs bg-gcm-600 text-white px-3 py-1 rounded-md hover:bg-gcm-700 transition-colors flex items-center"
               disabled={geolocation.loading}
             >
-              Ir para minha localização
+              <MapPin className="h-3 w-3 mr-1" />
+              {geolocation.loading ? "Localizando..." : "Ir para minha localização"}
             </button>
             <button 
               onClick={handleRefresh}
@@ -163,6 +175,11 @@ const VehicleTrackingMap: React.FC = () => {
             >
               Atualizar dados
             </button>
+            {geolocation.location.accuracy && (
+              <span className="text-xs text-gray-600 ml-2 flex items-center">
+                Precisão: ~{Math.round(geolocation.location.accuracy)}m
+              </span>
+            )}
           </div>
         </div>
       )}

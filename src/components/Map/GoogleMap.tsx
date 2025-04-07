@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api';
 import { MapMarker } from '@/types/maps';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,23 +26,10 @@ interface GoogleMapComponentProps {
   showUserLocation?: boolean;
 }
 
-const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
-  center,
-  markers = [],
-  zoom = 12,
-  height = 'h-[400px]',
-  className = '',
-  onMapClick,
-  markerType = 'default',
-  showUserLocation = false
-}) => {
-  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(center || defaultCenter);
-  const [mapZoom, setMapZoom] = useState<number>(zoom);
-  const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
+// Optimize map loading with useJsApiLoader
+const MapWrapper: React.FC<GoogleMapComponentProps> = (props) => {
   const [apiKey, setApiKey] = useState<string>('');
-  const mapRef = useRef<google.maps.Map | null>(null);
   
-  // Fetch Google Maps API key from Supabase Edge Function
   useEffect(() => {
     async function fetchApiKey() {
       try {
@@ -66,6 +53,37 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     fetchApiKey();
   }, []);
   
+  if (!apiKey) {
+    return (
+      <div className={`${props.height} w-full ${props.className} flex items-center justify-center bg-gray-100`}>
+        <p className="text-gray-500">Carregando mapa...</p>
+      </div>
+    );
+  }
+  
+  return (
+    <LoadScript googleMapsApiKey={apiKey} loadingElement={<div className="h-full w-full flex items-center justify-center"><p>Carregando Google Maps...</p></div>}>
+      <GoogleMapComponent {...props} />
+    </LoadScript>
+  );
+};
+
+const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
+  center,
+  markers = [],
+  zoom = 12,
+  height = 'h-[400px]',
+  className = '',
+  onMapClick,
+  markerType = 'default',
+  showUserLocation = false
+}) => {
+  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(center || defaultCenter);
+  const [mapZoom, setMapZoom] = useState<number>(zoom);
+  const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
+  
   // Update map center when the center prop changes
   useEffect(() => {
     if (center) {
@@ -77,6 +95,47 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   useEffect(() => {
     setMapZoom(zoom);
   }, [zoom]);
+  
+  // Get user's location if showUserLocation is true
+  useEffect(() => {
+    if (showUserLocation && navigator.geolocation) {
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      };
+      
+      const successCallback = (position: GeolocationPosition) => {
+        const userPos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        
+        setUserLocation(userPos);
+        console.log("User location set:", userPos, "Accuracy:", position.coords.accuracy);
+        
+        // If no center is provided and we have user location, center the map on user
+        if (!center && mapRef.current) {
+          mapRef.current.panTo(userPos);
+          setMapCenter(userPos);
+        }
+      };
+      
+      const errorCallback = (error: GeolocationPositionError) => {
+        console.error("Error getting user location:", error.message);
+      };
+      
+      const watchId = navigator.geolocation.watchPosition(
+        successCallback,
+        errorCallback,
+        options
+      );
+      
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+      };
+    }
+  }, [showUserLocation, center]);
   
   // Handle map click event
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
@@ -90,6 +149,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   // Handle map load
   const onLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
+    console.log("Map loaded successfully");
   }, []);
   
   // Handle map unmount
@@ -97,7 +157,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     mapRef.current = null;
   }, []);
   
-  // Define marker icons based on type - now only used inside the loaded map context
+  // Define marker icons based on type
   const getMarkerIcon = (type?: string) => {
     const iconType = type || markerType;
     
@@ -120,65 +180,101 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     }
   };
   
-  if (!apiKey) {
+  // Add user location circle to show accuracy radius
+  const renderUserLocationMarker = () => {
+    if (!userLocation || !window.google) return null;
+    
     return (
-      <div className={`${height} w-full ${className} flex items-center justify-center bg-gray-100`}>
-        <p className="text-gray-500">Carregando mapa...</p>
-      </div>
+      <>
+        <Marker
+          position={userLocation}
+          icon={{
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeColor: "white",
+            strokeWeight: 2,
+          }}
+          zIndex={1000}
+          title="Sua localização"
+        />
+        {/* Add accuracy circle */}
+        {window.google && navigator.geolocation && (
+          <div style={{ display: 'none' }}>
+            {navigator.geolocation.getCurrentPosition((position) => {
+              if (mapRef.current && position.coords.accuracy) {
+                new window.google.maps.Circle({
+                  strokeColor: "#4285F4",
+                  strokeOpacity: 0.5,
+                  strokeWeight: 1,
+                  fillColor: "#4285F4",
+                  fillOpacity: 0.15,
+                  map: mapRef.current,
+                  center: userLocation,
+                  radius: position.coords.accuracy
+                });
+              }
+            })}
+          </div>
+        )}
+      </>
     );
-  }
+  };
   
   return (
     <div className={`${height} w-full ${className}`}>
-      <LoadScript googleMapsApiKey={apiKey}>
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={mapCenter}
-          zoom={mapZoom}
-          options={{
-            streetViewControl: false,
-            mapTypeControl: true,
-            fullscreenControl: true,
-            zoomControl: true,
-          }}
-          onClick={handleMapClick}
-          onLoad={onLoad}
-          onUnmount={onUnmount}
-        >
-          {markers.map((marker) => (
-            <Marker
-              key={marker.id}
-              position={{
-                lat: marker.position[0],
-                lng: marker.position[1]
-              }}
-              icon={window.google && getMarkerIcon(marker.icon)}
-              onClick={() => setSelectedMarker(marker)}
-            />
-          ))}
-          
-          {selectedMarker && (
-            <InfoWindow
-              position={{
-                lat: selectedMarker.position[0],
-                lng: selectedMarker.position[1]
-              }}
-              onCloseClick={() => setSelectedMarker(null)}
-            >
-              <div className="p-2">
-                <h3 className="font-semibold text-gray-800">{selectedMarker.title}</h3>
-                {selectedMarker.content && (
-                  <div className="text-sm text-gray-600 mt-1" 
-                    dangerouslySetInnerHTML={{ __html: selectedMarker.content }} 
-                  />
-                )}
-              </div>
-            </InfoWindow>
-          )}
-        </GoogleMap>
-      </LoadScript>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={mapCenter}
+        zoom={mapZoom}
+        options={{
+          streetViewControl: false,
+          mapTypeControl: true,
+          fullscreenControl: true,
+          zoomControl: true,
+          disableDefaultUI: false,
+          clickableIcons: false
+        }}
+        onClick={handleMapClick}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+      >
+        {markers.map((marker) => (
+          <Marker
+            key={marker.id}
+            position={{
+              lat: marker.position[0],
+              lng: marker.position[1]
+            }}
+            icon={window.google && getMarkerIcon(marker.icon)}
+            onClick={() => setSelectedMarker(marker)}
+          />
+        ))}
+        
+        {showUserLocation && userLocation && renderUserLocationMarker()}
+        
+        {selectedMarker && (
+          <InfoWindow
+            position={{
+              lat: selectedMarker.position[0],
+              lng: selectedMarker.position[1]
+            }}
+            onCloseClick={() => setSelectedMarker(null)}
+          >
+            <div className="p-2">
+              <h3 className="font-semibold text-gray-800">{selectedMarker.title}</h3>
+              {selectedMarker.content && (
+                <div className="text-sm text-gray-600 mt-1" 
+                  dangerouslySetInnerHTML={{ __html: selectedMarker.content }} 
+                />
+              )}
+            </div>
+          </InfoWindow>
+        )}
+      </GoogleMap>
     </div>
   );
 };
 
-export default GoogleMapComponent;
+export default MapWrapper;

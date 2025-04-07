@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BarChart, LineChart, PieChart } from "recharts";
 import { 
   FileText, 
   Download, 
@@ -35,6 +34,22 @@ import {
   AlertCircle 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  BarChart, 
+  Bar, 
+  LineChart, 
+  Line, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from "recharts";
+import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart";
 
 const RelatoriosOperacionais: React.FC = () => {
   const { toast } = useToast();
@@ -66,17 +81,34 @@ const RelatoriosOperacionais: React.FC = () => {
   ];
 
   const viaturasData = [
-    { name: 'Em operação', value: 6 },
-    { name: 'Em manutenção', value: 2 },
-    { name: 'Inoperantes', value: 1 },
+    { name: 'Em operação', value: 6, color: '#22c55e' },
+    { name: 'Em manutenção', value: 2, color: '#f59e0b' },
+    { name: 'Inoperantes', value: 1, color: '#ef4444' },
   ];
 
   const faltasData = [
-    { name: 'Presentes', value: 28 },
-    { name: 'Faltas', value: 2 },
-    { name: 'Licenças', value: 4 },
-    { name: 'Férias', value: 3 },
+    { name: 'Presentes', value: 28, color: '#3b82f6' },
+    { name: 'Faltas', value: 2, color: '#ef4444' },
+    { name: 'Licenças', value: 4, color: '#a855f7' },
+    { name: 'Férias', value: 3, color: '#06b6d4' },
   ];
+
+  const chartConfig = {
+    plantoes: {
+      label: "Plantões",
+      theme: {
+        light: "#3b82f6",
+        dark: "#60a5fa",
+      },
+    },
+    ocorrencias: {
+      label: "Ocorrências",
+      theme: {
+        light: "#f97316",
+        dark: "#fb923c",
+      },
+    },
+  };
 
   const handleExportPDF = () => {
     toast({
@@ -170,10 +202,24 @@ const RelatoriosOperacionais: React.FC = () => {
                 <CardDescription>Quantidade de plantões realizados por dia</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* This is a placeholder for the actual chart component */}
-                <div className="h-80 w-full bg-gray-50 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Gráfico de Barras: Plantões por Dia</p>
-                </div>
+                <ChartContainer className="h-80" config={chartConfig}>
+                  <BarChart data={plantoesData} className="animate-fade-in">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent labelKey="name" labelClassName="font-medium" />} 
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="plantoes" 
+                      name="Plantões" 
+                      fill="var(--color-plantoes)" 
+                      radius={[4, 4, 0, 0]}
+                      animationDuration={1500}
+                    />
+                  </BarChart>
+                </ChartContainer>
               </CardContent>
             </Card>
 
@@ -216,10 +262,27 @@ const RelatoriosOperacionais: React.FC = () => {
                 <CardDescription>Número de ocorrências registradas diariamente</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* This is a placeholder for the actual chart component */}
-                <div className="h-80 w-full bg-gray-50 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Gráfico de Linhas: Ocorrências por Dia</p>
-                </div>
+                <ChartContainer className="h-80" config={chartConfig}>
+                  <LineChart data={ocorrenciasData} className="animate-fade-in">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent labelKey="name" labelClassName="font-medium" />} 
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="ocorrencias" 
+                      name="Ocorrências" 
+                      stroke="var(--color-ocorrencias)" 
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      animationDuration={1500}
+                    />
+                  </LineChart>
+                </ChartContainer>
               </CardContent>
             </Card>
 
@@ -262,9 +325,30 @@ const RelatoriosOperacionais: React.FC = () => {
                 <CardDescription>Distribuição das viaturas por status operacional</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* This is a placeholder for the actual chart component */}
-                <div className="h-80 w-full bg-gray-50 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Gráfico de Pizza: Status das Viaturas</p>
+                <div className="h-80 animate-fade-in">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={viaturasData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={120}
+                        paddingAngle={5}
+                        dataKey="value"
+                        animationBegin={0}
+                        animationDuration={1500}
+                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {viaturasData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value, name) => [value, name]} />
+                      <Legend formatter={(value) => <span className="text-sm">{value}</span>} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
@@ -308,9 +392,27 @@ const RelatoriosOperacionais: React.FC = () => {
                 <CardDescription>Distribuição de presenças, faltas e licenças</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* This is a placeholder for the actual chart component */}
-                <div className="h-80 w-full bg-gray-50 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Gráfico de Pizza: Presença dos Agentes</p>
+                <div className="h-80 animate-fade-in">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={faltasData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={120}
+                        dataKey="value"
+                        animationBegin={0}
+                        animationDuration={1500}
+                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {faltasData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value, name) => [value, name]} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>

@@ -71,7 +71,11 @@ const cargosInfo: Record<Cargo, { titulo: string, descricao: string }> = {
   }
 };
 
-export const CadastrarFuncionario = () => {
+interface CadastrarFuncionarioProps {
+  onSuccess?: () => void;
+}
+
+export const CadastrarFuncionario = ({ onSuccess }: CadastrarFuncionarioProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -89,9 +93,13 @@ export const CadastrarFuncionario = () => {
   const selectedCargo = form.watch('cargo') as Cargo | undefined;
   
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+    console.log("Funcionário cadastrado:", values);
     toast.success("Funcionário cadastrado com sucesso!");
     form.reset();
+    
+    if (onSuccess) {
+      onSuccess();
+    }
   };
 
   return (

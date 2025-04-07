@@ -18,7 +18,11 @@ interface Alert {
   read: boolean;
 }
 
-export const AlertBoard: React.FC = () => {
+interface AlertBoardProps {
+  maxDisplayedAlerts?: number;
+}
+
+export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }) => {
   const { toast } = useToast();
   const [alerts, setAlerts] = useState<Alert[]>([
     {
@@ -181,8 +185,12 @@ export const AlertBoard: React.FC = () => {
   // Count unread alerts
   const unreadCount = alerts.filter(alert => !alert.read).length;
 
+  // Limit displayed alerts
+  const displayedAlerts = alerts.slice(0, Math.floor(maxDisplayedAlerts));
+  const hasMoreAlerts = alerts.length > displayedAlerts.length;
+
   return (
-    <Card className="shadow-md h-full animate-fade-up" style={{ animationDelay: '200ms' }}>
+    <Card className="shadow-md animate-fade-up" style={{ animationDelay: '200ms' }}>
       <CardHeader className="p-6 border-b flex flex-row items-center justify-between">
         <div className="flex items-center">
           <Megaphone className="h-5 w-5 mr-2 text-gcm-600" />
@@ -196,66 +204,76 @@ export const AlertBoard: React.FC = () => {
       </CardHeader>
       
       <CardContent className="p-0">
-        <div className="max-h-[500px] overflow-y-auto p-4 space-y-3">
-          {alerts.length > 0 ? (
-            alerts.map((alert, index) => {
-              const colors = getAlertColor(alert.type);
-              return (
-                <div 
-                  key={alert.id} 
-                  className={cn(
-                    "rounded-lg p-4 transition-all duration-300 relative",
-                    colors.bg,
-                    colors.border,
-                    alert.read ? "opacity-80" : "shadow-sm",
-                    "animate-fade-up"
-                  )}
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1">
-                      {getAlertIcon(alert.type)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium text-gray-900">{alert.title}</h3>
-                        <Badge variant="outline" className={colors.badge}>
-                          {getAlertTypeName(alert.type)}
-                        </Badge>
+        <div className="h-[250px] overflow-y-auto p-4 space-y-3">
+          {displayedAlerts.length > 0 ? (
+            <>
+              {displayedAlerts.map((alert, index) => {
+                const colors = getAlertColor(alert.type);
+                return (
+                  <div 
+                    key={alert.id} 
+                    className={cn(
+                      "rounded-lg p-4 transition-all duration-300 relative",
+                      colors.bg,
+                      colors.border,
+                      alert.read ? "opacity-80" : "shadow-sm",
+                      "animate-fade-up"
+                    )}
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1">
+                        {getAlertIcon(alert.type)}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
-                      <div className="flex justify-between items-center mt-3 text-xs text-gray-500">
-                        <div>
-                          <p>Por: {alert.author}</p>
-                          <p className="mt-1">{formatDate(alert.createdAt)}</p>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-medium text-gray-900">{alert.title}</h3>
+                          <Badge variant="outline" className={colors.badge}>
+                            {getAlertTypeName(alert.type)}
+                          </Badge>
                         </div>
-                        <div className="flex gap-2">
-                          {!alert.read && (
+                        <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
+                        <div className="flex justify-between items-center mt-3 text-xs text-gray-500">
+                          <div>
+                            <p>Por: {alert.author}</p>
+                            <p className="mt-1">{formatDate(alert.createdAt)}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            {!alert.read && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 text-xs bg-white"
+                                onClick={() => handleMarkAsRead(alert.id)}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Marcar como lido
+                              </Button>
+                            )}
                             <Button 
-                              variant="outline" 
+                              variant="ghost" 
                               size="sm" 
-                              className="h-8 text-xs bg-white"
-                              onClick={() => handleMarkAsRead(alert.id)}
+                              className="h-8 text-xs text-gray-500"
+                              onClick={() => handleDismiss(alert.id)}
                             >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Marcar como lido
+                              <X className="h-3 w-3" />
                             </Button>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 text-xs text-gray-500"
-                            onClick={() => handleDismiss(alert.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
+                );
+              })}
+              
+              {hasMoreAlerts && (
+                <div className="text-center pt-2 pb-1">
+                  <Badge variant="outline" className="bg-gray-50 cursor-pointer">
+                    + {alerts.length - displayedAlerts.length} mais alertas
+                  </Badge>
                 </div>
-              );
-            })
+              )}
+            </>
           ) : (
             <div className="text-center py-8 text-gray-500">
               <CheckCircle className="h-10 w-10 mx-auto mb-2 text-green-500" />

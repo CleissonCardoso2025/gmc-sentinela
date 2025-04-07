@@ -2,7 +2,7 @@
 import React from 'react';
 import DashboardLayout from '@/layouts/Dashboard';
 import { useToast } from "@/hooks/use-toast";
-import { User, Shield, FileText, Lock, Mail, Phone, Id, Calendar } from 'lucide-react';
+import { User, Shield, FileText, Lock, Mail, Phone, IdentificationBadge, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +84,7 @@ const UserProfile = () => {
               <CardContent className="pt-4">
                 <div className="space-y-4">
                   <div className="flex items-center">
-                    <Id className="h-5 w-5 text-gcm-500 mr-3" />
+                    <IdentificationBadge className="h-5 w-5 text-gcm-500 mr-3" />
                     <div>
                       <p className="text-sm text-gray-500">Matrícula</p>
                       <p className="font-medium">{userData.registrationNumber}</p>

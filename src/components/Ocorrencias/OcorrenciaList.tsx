@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ interface Ocorrencia {
 }
 
 export const OcorrenciaList = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OcorrenciaStatus>('Todas');
   const [tipoFilter, setTipoFilter] = useState<OcorrenciaTipo>('Todas');
@@ -146,6 +147,11 @@ export const OcorrenciaList = () => {
     }
   };
 
+  // Função para navegar para a página de detalhes da ocorrência
+  const handleViewDetails = (id: string) => {
+    navigate(`/ocorrencias/${id}`);
+  };
+
   // Título do card com contagem de resultados
   const getCardTitle = () => {
     const total = filteredOcorrencias.length;
@@ -258,7 +264,12 @@ export const OcorrenciaList = () => {
                     </p>
                   </div>
                   
-                  <Button variant="ghost" size="sm" className="mt-2 md:mt-0 hover:bg-gcm-50">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="mt-2 md:mt-0 hover:bg-gcm-50"
+                    onClick={() => handleViewDetails(ocorrencia.id)}
+                  >
                     <Eye className="h-4 w-4 mr-1" />
                     Ver Detalhes
                   </Button>

@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { EscalaItem, GuarnicaoOption, RotaOption, ViaturaOption, ScheduleDay } from "@/types/database";
+import { EscalaItem, GuarnicaoOption, RotaOption, ViaturaOption } from "@/types/database";
 import { toast } from "sonner";
 
 // Get all escala items
@@ -12,25 +12,31 @@ export const getEscalaItems = async (): Promise<EscalaItem[]> => {
 
     if (error) {
       console.error("Error fetching escala items:", error);
-      toast.error("Erro ao buscar escalas");
+      toast.error("Erro ao buscar itens de escala");
       return [];
     }
 
-    // Parse the JSON schedule data
     return data.map(item => ({
-      ...item,
-      schedule: typeof item.schedule === 'string' 
-        ? JSON.parse(item.schedule) 
-        : item.schedule
-    })) as EscalaItem[];
+      id: item.id,
+      guarnicao: item.guarnicao,
+      supervisor: item.supervisor,
+      rota: item.rota,
+      viatura: item.viatura,
+      periodo: item.periodo,
+      agent: item.agent,
+      role: item.role,
+      schedule: item.schedule as unknown as any[],
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }));
   } catch (error) {
     console.error("Exception fetching escala items:", error);
-    toast.error("Erro ao buscar escalas");
+    toast.error("Erro ao buscar itens de escala");
     return [];
   }
 };
 
-// Get guarnicoes for dropdown options
+// Get all guarnicoes
 export const getGuarnicoes = async (): Promise<GuarnicaoOption[]> => {
   try {
     const { data, error } = await supabase
@@ -43,7 +49,11 @@ export const getGuarnicoes = async (): Promise<GuarnicaoOption[]> => {
       return [];
     }
 
-    return data as GuarnicaoOption[];
+    return data.map(item => ({
+      id: item.id,
+      nome: item.nome,
+      supervisor: item.supervisor
+    }));
   } catch (error) {
     console.error("Exception fetching guarnicoes:", error);
     toast.error("Erro ao buscar guarnições");
@@ -51,7 +61,7 @@ export const getGuarnicoes = async (): Promise<GuarnicaoOption[]> => {
   }
 };
 
-// Get rotas for dropdown options
+// Get all rotas
 export const getRotas = async (): Promise<RotaOption[]> => {
   try {
     const { data, error } = await supabase
@@ -64,7 +74,10 @@ export const getRotas = async (): Promise<RotaOption[]> => {
       return [];
     }
 
-    return data as RotaOption[];
+    return data.map(item => ({
+      id: item.id,
+      nome: item.nome
+    }));
   } catch (error) {
     console.error("Exception fetching rotas:", error);
     toast.error("Erro ao buscar rotas");
@@ -72,7 +85,7 @@ export const getRotas = async (): Promise<RotaOption[]> => {
   }
 };
 
-// Get viaturas for dropdown options
+// Get all viaturas
 export const getViaturas = async (): Promise<ViaturaOption[]> => {
   try {
     const { data, error } = await supabase
@@ -85,7 +98,11 @@ export const getViaturas = async (): Promise<ViaturaOption[]> => {
       return [];
     }
 
-    return data as ViaturaOption[];
+    return data.map(item => ({
+      id: item.id,
+      codigo: item.codigo,
+      modelo: item.modelo
+    }));
   } catch (error) {
     console.error("Exception fetching viaturas:", error);
     toast.error("Erro ao buscar viaturas");
@@ -104,20 +121,26 @@ export const getEscalaItemById = async (id: string): Promise<EscalaItem | null> 
 
     if (error) {
       console.error("Error fetching escala item by ID:", error);
-      toast.error("Erro ao buscar escala");
+      toast.error("Erro ao buscar item de escala");
       return null;
     }
 
-    // Parse the JSON schedule data
     return {
-      ...data,
-      schedule: typeof data.schedule === 'string' 
-        ? JSON.parse(data.schedule) 
-        : data.schedule
-    } as EscalaItem;
+      id: data.id,
+      guarnicao: data.guarnicao,
+      supervisor: data.supervisor,
+      rota: data.rota,
+      viatura: data.viatura,
+      periodo: data.periodo,
+      agent: data.agent,
+      role: data.role,
+      schedule: data.schedule as unknown as any[],
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
   } catch (error) {
     console.error("Exception fetching escala item by ID:", error);
-    toast.error("Erro ao buscar escala");
+    toast.error("Erro ao buscar item de escala");
     return null;
   }
 };
@@ -125,37 +148,44 @@ export const getEscalaItemById = async (id: string): Promise<EscalaItem | null> 
 // Create new escala item
 export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Promise<EscalaItem | null> => {
   try {
-    // Ensure schedule is stored as JSONB
-    const itemToInsert = {
-      ...escalaItem,
-      schedule: typeof escalaItem.schedule === 'string' 
-        ? escalaItem.schedule 
-        : JSON.stringify(escalaItem.schedule)
-    };
-
     const { data, error } = await supabase
       .from('escala_items')
-      .insert([itemToInsert])
+      .insert([{
+        guarnicao: escalaItem.guarnicao,
+        supervisor: escalaItem.supervisor,
+        rota: escalaItem.rota,
+        viatura: escalaItem.viatura,
+        periodo: escalaItem.periodo,
+        agent: escalaItem.agent,
+        role: escalaItem.role,
+        schedule: escalaItem.schedule
+      }])
       .select()
       .single();
 
     if (error) {
       console.error("Error creating escala item:", error);
-      toast.error(`Erro ao criar escala: ${error.message}`);
+      toast.error(`Erro ao criar item de escala: ${error.message}`);
       return null;
     }
 
-    toast.success("Escala criada com sucesso");
-    
+    toast.success("Item de escala criado com sucesso");
     return {
-      ...data,
-      schedule: typeof data.schedule === 'string' 
-        ? JSON.parse(data.schedule) 
-        : data.schedule
-    } as EscalaItem;
+      id: data.id,
+      guarnicao: data.guarnicao,
+      supervisor: data.supervisor,
+      rota: data.rota,
+      viatura: data.viatura,
+      periodo: data.periodo,
+      agent: data.agent,
+      role: data.role,
+      schedule: data.schedule as unknown as any[],
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
   } catch (error) {
     console.error("Exception creating escala item:", error);
-    toast.error("Erro ao criar escala");
+    toast.error("Erro ao criar item de escala");
     return null;
   }
 };
@@ -163,44 +193,45 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
 // Update escala item
 export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaItem | null> => {
   try {
-    // Ensure schedule is stored as JSONB
-    const itemToUpdate = {
-      guarnicao: escalaItem.guarnicao,
-      supervisor: escalaItem.supervisor,
-      rota: escalaItem.rota,
-      viatura: escalaItem.viatura,
-      periodo: escalaItem.periodo,
-      agent: escalaItem.agent,
-      role: escalaItem.role,
-      schedule: typeof escalaItem.schedule === 'string' 
-        ? escalaItem.schedule 
-        : JSON.stringify(escalaItem.schedule)
-    };
-
     const { data, error } = await supabase
       .from('escala_items')
-      .update(itemToUpdate)
+      .update({
+        guarnicao: escalaItem.guarnicao,
+        supervisor: escalaItem.supervisor,
+        rota: escalaItem.rota,
+        viatura: escalaItem.viatura,
+        periodo: escalaItem.periodo,
+        agent: escalaItem.agent,
+        role: escalaItem.role,
+        schedule: escalaItem.schedule
+      })
       .eq('id', escalaItem.id)
       .select()
       .single();
 
     if (error) {
       console.error("Error updating escala item:", error);
-      toast.error(`Erro ao atualizar escala: ${error.message}`);
+      toast.error(`Erro ao atualizar item de escala: ${error.message}`);
       return null;
     }
 
-    toast.success("Escala atualizada com sucesso");
-    
+    toast.success("Item de escala atualizado com sucesso");
     return {
-      ...data,
-      schedule: typeof data.schedule === 'string' 
-        ? JSON.parse(data.schedule) 
-        : data.schedule
-    } as EscalaItem;
+      id: data.id,
+      guarnicao: data.guarnicao,
+      supervisor: data.supervisor,
+      rota: data.rota,
+      viatura: data.viatura,
+      periodo: data.periodo,
+      agent: data.agent,
+      role: data.role,
+      schedule: data.schedule as unknown as any[],
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
   } catch (error) {
     console.error("Exception updating escala item:", error);
-    toast.error("Erro ao atualizar escala");
+    toast.error("Erro ao atualizar item de escala");
     return null;
   }
 };
@@ -215,15 +246,15 @@ export const deleteEscalaItem = async (id: string): Promise<boolean> => {
 
     if (error) {
       console.error("Error deleting escala item:", error);
-      toast.error(`Erro ao excluir escala: ${error.message}`);
+      toast.error(`Erro ao excluir item de escala: ${error.message}`);
       return false;
     }
 
-    toast.success("Escala excluída com sucesso");
+    toast.success("Item de escala excluído com sucesso");
     return true;
   } catch (error) {
     console.error("Exception deleting escala item:", error);
-    toast.error("Erro ao excluir escala");
+    toast.error("Erro ao excluir item de escala");
     return false;
   }
 };

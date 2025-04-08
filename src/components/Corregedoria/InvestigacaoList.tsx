@@ -30,7 +30,7 @@ import { DetalhesInvestigacao } from './DetalhesInvestigacao';
 import { Investigacao } from '@/types/database';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { getInvestigacoes } from '@/services/investigacaoService/apiInvestigacaoService';
 
 export function InvestigacaoList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,15 +46,8 @@ export function InvestigacaoList() {
   const fetchInvestigacoes = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('investigacoes')
-        .select('*');
-        
-      if (error) {
-        throw error;
-      }
-      
-      setInvestigacoes(data as Investigacao[]);
+      const data = await getInvestigacoes();
+      setInvestigacoes(data);
     } catch (error) {
       console.error('Error fetching investigacoes:', error);
       toast.error('Não foi possível carregar as sindicâncias');

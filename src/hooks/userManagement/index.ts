@@ -13,7 +13,7 @@ export const useUserManagement = (): UserManagementHook => {
   const userProfile = mockCurrentUserProfile.perfil;
 
   // Combine all the hooks
-  const { users, setUsers, isLoading } = useUserData();
+  const { users, setUsers, isLoading, refetchUsers } = useUserData();
   
   const { 
     filteredUsers, 
@@ -40,7 +40,7 @@ export const useUserManagement = (): UserManagementHook => {
     confirmDeleteUser,
     handleAddNewUser,
     handleCloseUserDialog
-  } = useUserActions(users, setUsers);
+  } = useUserActions(users, setUsers, refetchUsers);
   
   const {
     showAccessDialog,
@@ -81,7 +81,8 @@ export const useUserManagement = (): UserManagementHook => {
     handleOpenAccessControl,
     handleSavePageAccess,
     pageAccessSettings,
-    isLoadingAccess
+    isLoadingAccess,
+    refetchUsers
   };
 };
 

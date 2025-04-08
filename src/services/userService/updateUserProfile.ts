@@ -5,22 +5,42 @@ import { toast } from "sonner";
 export const updateUserProfile = async (email: string, newProfile: string): Promise<boolean> => {
   try {
     // First, find the user by email
-    const { data: user, error: findError } = await supabase
+    const { data: users, error: findError } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email)
-      .single();
+      .eq('email', email);
     
     if (findError) {
       console.error("Error finding user:", findError);
-      toast.error(`Usuário com e-mail ${email} não encontrado`);
+      toast.error(`Erro ao buscar usuário com e-mail ${email}`);
       return false;
     }
     
-    if (!user) {
-      toast.error(`Usuário com e-mail ${email} não encontrado`);
-      return false;
+    if (!users || users.length === 0) {
+      console.log(`Usuário com e-mail ${email} não encontrado. Tentando criar...`);
+      
+      // If user doesn't exist, create it
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert([{ 
+          email, 
+          perfil: newProfile, 
+          nome: email.split('@')[0],
+          status: true 
+        }])
+        .select();
+      
+      if (createError) {
+        console.error("Error creating user:", createError);
+        toast.error(`Erro ao criar usuário: ${createError.message}`);
+        return false;
+      }
+      
+      toast.success(`Usuário ${email} criado com perfil ${newProfile}`);
+      return true;
     }
+    
+    const user = users[0];
     
     // Then update the user's profile
     const { error: updateError } = await supabase

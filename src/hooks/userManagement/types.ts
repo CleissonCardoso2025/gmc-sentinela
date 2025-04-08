@@ -1,33 +1,28 @@
 
-import { User } from '@/types/database';
-import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
-import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
+import { User } from "@/types/database";
+import { UserFormData } from "@/components/Configuracoes/UserManagement/types";
+import { PageAccessSettings } from "@/components/Configuracoes/PageAccessControl";
 
-export interface UserManagementState {
+export interface UserManagementHook {
   users: User[];
   filteredUsers: User[];
   isLoading: boolean;
   searchTerm: string;
+  setSearchTerm: (term: string) => void;
   profileFilter: string;
+  setProfileFilter: (filter: string) => void;
   statusFilter: string;
+  setStatusFilter: (filter: string) => void;
   showUserDialog: boolean;
+  setShowUserDialog: (show: boolean) => void;
   showAccessDialog: boolean;
+  setShowAccessDialog: (show: boolean) => void;
   editingUser: UserFormData | null;
   userToDelete: string | null;
   showDeleteDialog: boolean;
-  pageAccessSettings: PageAccess[];
-  isLoadingAccess: boolean;
-}
-
-export interface UserManagementActions {
-  setSearchTerm: (term: string) => void;
-  setProfileFilter: (filter: string) => void;
-  setStatusFilter: (filter: string) => void;
-  setShowUserDialog: (show: boolean) => void;
-  setShowAccessDialog: (show: boolean) => void;
   setShowDeleteDialog: (show: boolean) => void;
-  handleCreateUser: (userData: UserFormData) => Promise<void>;
-  handleUpdateUser: (userData: UserFormData) => Promise<void>;
+  handleCreateUser: (data: UserFormData) => Promise<void>;
+  handleUpdateUser: (data: UserFormData) => Promise<void>;
   handleEditUser: (user: User) => void;
   handleToggleStatus: (userId: string) => Promise<void>;
   handleDeleteUser: (userId: string) => void;
@@ -35,7 +30,8 @@ export interface UserManagementActions {
   handleAddNewUser: () => void;
   handleCloseUserDialog: () => void;
   handleOpenAccessControl: () => void;
-  handleSavePageAccess: (pages: PageAccess[]) => void;
+  handleSavePageAccess: (settings: PageAccessSettings) => Promise<void>;
+  pageAccessSettings: PageAccessSettings;
+  isLoadingAccess: boolean;
+  refetchUsers: () => Promise<void>;
 }
-
-export type UserManagementHook = UserManagementState & UserManagementActions;

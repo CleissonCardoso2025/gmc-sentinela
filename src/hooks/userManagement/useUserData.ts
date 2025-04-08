@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/types/database';
 import { getUsers } from '@/services/userService/apiUserService';
@@ -10,7 +10,7 @@ export const useUserData = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getUsers();
@@ -25,7 +25,7 @@ export const useUserData = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchUsers();
@@ -64,11 +64,12 @@ export const useUserData = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchUsers, toast]);
 
   return {
     users,
     setUsers,
-    isLoading
+    isLoading,
+    refetchUsers: fetchUsers
   };
 };

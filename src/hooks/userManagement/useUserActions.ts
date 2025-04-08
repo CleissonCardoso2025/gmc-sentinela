@@ -5,7 +5,7 @@ import { User } from '@/types/database';
 import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
 import { createUser, updateUser, deleteUser, toggleUserStatus } from '@/services/userService/apiUserService';
 
-export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevUsers: User[]) => User[])) => void) => {
+export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevUsers: User[]) => User[])) => void, refetchUsers: () => Promise<void>) => {
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<UserFormData | null>(null);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
@@ -16,7 +16,7 @@ export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevU
     try {
       const newUser = await createUser(userData);
       if (newUser) {
-        setUsers([...users, newUser]);
+        await refetchUsers(); // Refresh the user list after creating a user
         setShowUserDialog(false);
         toast({
           title: "Usuário criado",
@@ -39,9 +39,7 @@ export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevU
     try {
       const updatedUser = await updateUser(userData as User);
       if (updatedUser) {
-        setUsers((prevUsers: User[]) => 
-          prevUsers.map(user => user.id === updatedUser.id ? updatedUser : user)
-        );
+        await refetchUsers(); // Refresh the user list after updating a user
         setShowUserDialog(false);
         toast({
           title: "Usuário atualizado",
@@ -80,9 +78,7 @@ export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevU
       
       const updatedUser = await toggleUserStatus(userId, user.status);
       if (updatedUser) {
-        setUsers((prevUsers: User[]) => 
-          prevUsers.map(u => u.id === userId ? updatedUser : u)
-        );
+        await refetchUsers(); // Refresh the user list after toggling status
         
         toast({
           title: user.status ? "Usuário desativado" : "Usuário ativado",
@@ -111,7 +107,7 @@ export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevU
         const success = await deleteUser(userToDelete);
         
         if (success) {
-          setUsers(users.filter(user => user.id !== userToDelete));
+          await refetchUsers(); // Refresh the user list after deleting a user
           setShowDeleteDialog(false);
           setUserToDelete(null);
           

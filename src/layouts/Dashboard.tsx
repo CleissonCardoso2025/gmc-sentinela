@@ -1,17 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { ReactNode } from 'react';
 import Header from "@/components/Dashboard/Header";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import Navbar from "@/components/Dashboard/Navbar";
 import Footer from "@/components/Dashboard/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface DashboardProps {
-  children: React.ReactNode;
+interface DashboardLayoutProps {
+  children: ReactNode;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ children }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(true);
   const isMobile = useIsMobile();
 
   return (
@@ -33,4 +33,4 @@ const Dashboard: React.FC<DashboardProps> = ({ children }) => {
   );
 };
 
-export default Dashboard;
+export default DashboardLayout;

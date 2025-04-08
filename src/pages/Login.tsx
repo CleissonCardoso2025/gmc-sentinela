@@ -40,7 +40,7 @@ const Login = () => {
     
     if (isAuthenticated === "true" && userProfile) {
       // Redirect based on user profile
-      if (userProfile === "Inspetor") {
+      if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
         navigate("/index");
       } else {
         navigate("/dashboard");
@@ -90,7 +90,7 @@ const Login = () => {
       
       // Redirect based on user profile
       setTimeout(() => {
-        if (userProfile === "Inspetor") {
+        if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
           navigate("/index");
         } else {
           navigate("/dashboard");

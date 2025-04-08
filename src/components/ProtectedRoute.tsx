@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthorization } from '@/hooks/use-authorization';
@@ -46,9 +45,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     const storedUserProfile = localStorage.getItem('userProfile');
     
     // If there's a logged in user and they're at the root path
-    if (storedUserProfile && location.pathname === '/index') {
-      // Only redirect non-Inspetor and non-Subinspetor users to dashboard
-      if (storedUserProfile !== 'Inspetor' && storedUserProfile !== 'Subinspetor') {
+    if (storedUserProfile && location.pathname === '/') {
+      // If user is Inspetor or Subinspetor, redirect to index
+      if (storedUserProfile === 'Inspetor' || storedUserProfile === 'Subinspetor') {
+        navigate('/index');
+      } else {
+        // Other users go to dashboard
         navigate('/dashboard');
       }
     }

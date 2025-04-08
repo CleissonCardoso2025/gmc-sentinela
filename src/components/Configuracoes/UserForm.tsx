@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+
+import React from 'react';
 import { UserFormData } from './UserManagement';
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, isValid, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useUserForm } from '@/hooks/use-user-form';
+
+// Import form field components
+import NameField from './FormFields/NameField';
+import EmailField from './FormFields/EmailField';
+import MatriculaField from './FormFields/MatriculaField';
+import DateField from './FormFields/DateField';
+import ProfileField from './FormFields/ProfileField';
+import StatusField from './FormFields/StatusField';
+import FormActions from './FormFields/FormActions';
 
 interface UserFormProps {
   initialData?: UserFormData;
@@ -17,230 +20,20 @@ interface UserFormProps {
   readOnly?: boolean;
 }
 
-interface FormErrors {
-  nome: string;
-  email: string;
-  matricula: string;
-  data_nascimento: string;
-}
-
-type RealtimeChangePayload = {
-  new: Record<string, any>;
-  old: Record<string, any> | null;
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-};
-
 const UserForm: React.FC<UserFormProps> = ({ 
   initialData, 
   onSubmit,
   onCancel,
   readOnly = false
 }) => {
-  const [formData, setFormData] = useState<UserFormData>(
-    initialData || {
-      nome: '',
-      email: '',
-      matricula: '',
-      data_nascimento: '',
-      perfil: 'Agente',
-      status: true
-    }
-  );
-  
-  const [errors, setErrors] = useState<FormErrors>({
-    nome: '',
-    email: '',
-    matricula: '',
-    data_nascimento: ''
-  });
-
-  const [isEmailChecking, setIsEmailChecking] = useState(false);
-  const [isMatriculaChecking, setIsMatriculaChecking] = useState(false);
-
-  useEffect(() => {
-    if (readOnly) return;
-    
-    const checkEmailExists = async () => {
-      if (initialData && initialData.email === formData.email) {
-        return;
-      }
-
-      if (formData.email && !errors.email) {
-        setIsEmailChecking(true);
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', formData.email)
-            .maybeSingle();
-
-          if (error) throw error;
-          
-          if (data) {
-            setErrors(prev => ({
-              ...prev,
-              email: 'Este email já está em uso'
-            }));
-          }
-        } catch (error) {
-          console.error('Erro ao verificar email:', error);
-        } finally {
-          setIsEmailChecking(false);
-        }
-      }
-    };
-
-    const debounce = setTimeout(checkEmailExists, 500);
-    return () => clearTimeout(debounce);
-  }, [formData.email, initialData, readOnly, errors.email]);
-
-  useEffect(() => {
-    if (readOnly) return;
-    
-    const checkMatriculaExists = async () => {
-      if (initialData && initialData.matricula === formData.matricula) {
-        return;
-      }
-
-      if (formData.matricula && !errors.matricula) {
-        setIsMatriculaChecking(true);
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('id')
-            .eq('matricula', formData.matricula)
-            .maybeSingle();
-
-          if (error) throw error;
-          
-          if (data) {
-            setErrors(prev => ({
-              ...prev,
-              matricula: 'Esta matrícula já está em uso'
-            }));
-          }
-        } catch (error) {
-          console.error('Erro ao verificar matrícula:', error);
-        } finally {
-          setIsMatriculaChecking(false);
-        }
-      }
-    };
-
-    const debounce = setTimeout(checkMatriculaExists, 500);
-    return () => clearTimeout(debounce);
-  }, [formData.matricula, initialData, readOnly, errors.matricula]);
-
-  useEffect(() => {
-    if (readOnly) return;
-    
-    const channel = supabase
-      .channel('users-changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'users' 
-        }, 
-        (payload: any) => {
-          const typedPayload = payload as unknown as RealtimeChangePayload;
-          
-          if (typedPayload.new && !initialData) {
-            if (typedPayload.new.email === formData.email) {
-              setErrors(prev => ({
-                ...prev,
-                email: 'Este email acabou de ser registrado por outro usuário'
-              }));
-              toast.error("Este email acabou de ser registrado por outro usuário");
-            }
-            if (typedPayload.new.matricula === formData.matricula) {
-              setErrors(prev => ({
-                ...prev,
-                matricula: 'Esta matrícula acabou de ser registrada por outro usuário'
-              }));
-              toast.error("Esta matrícula acabou de ser registrada por outro usuário");
-            }
-          }
-        })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [formData.email, formData.matricula, initialData, readOnly]);
-
-  const validateForm = () => {
-    let valid = true;
-    const newErrors = {
-      nome: '',
-      email: '',
-      matricula: '',
-      data_nascimento: ''
-    };
-
-    if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
-      valid = false;
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-      valid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
-      valid = false;
-    }
-
-    if (!formData.matricula?.trim()) {
-      newErrors.matricula = 'Matrícula é obrigatória';
-      valid = false;
-    }
-
-    if (!formData.data_nascimento?.trim()) {
-      newErrors.data_nascimento = 'Data de nascimento é obrigatória';
-      valid = false;
-    } else {
-      const parsedDate = parse(formData.data_nascimento, 'dd/MM/yyyy', new Date());
-      if (!isValid(parsedDate)) {
-        newErrors.data_nascimento = 'Data inválida. Use o formato DD/MM/YYYY';
-        valid = false;
-      }
-    }
-
-    setErrors(newErrors);
-    return valid;
-  };
-
-  const handleChange = (field: keyof UserFormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    if (field === 'nome' || field === 'email' || field === 'matricula' || field === 'data_nascimento') {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
-
-  const formatDateInput = (input: string) => {
-    const numbers = input.replace(/\D/g, '');
-    
-    if (numbers.length <= 2) {
-      return numbers;
-    } else if (numbers.length <= 4) {
-      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
-    } else {
-      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
-    }
-  };
-
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatDateInput(e.target.value);
-    handleChange('data_nascimento', formatted);
-  };
+  const {
+    formData,
+    errors,
+    isEmailChecking,
+    isMatriculaChecking,
+    validateForm,
+    handleChange
+  } = useUserForm(initialData, readOnly);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,116 +47,53 @@ const UserForm: React.FC<UserFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="nome">Nome</Label>
-        <Input
-          id="nome"
-          value={formData.nome}
-          onChange={(e) => handleChange('nome', e.target.value)}
-          placeholder="Nome completo"
-          readOnly={readOnly}
-          className={readOnly ? "bg-gray-100" : ""}
-        />
-        {errors.nome && (
-          <p className="text-sm text-red-500">{errors.nome}</p>
-        )}
-      </div>
+      <NameField 
+        value={formData.nome}
+        onChange={(value) => handleChange('nome', value)}
+        error={errors.nome}
+        readOnly={readOnly}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          placeholder="email@example.com"
-          readOnly={readOnly}
-          className={readOnly ? "bg-gray-100" : ""}
-        />
-        {errors.email && (
-          <p className="text-sm text-red-500">{errors.email}</p>
-        )}
-        {isEmailChecking && (
-          <p className="text-sm text-blue-500">Verificando email...</p>
-        )}
-      </div>
+      <EmailField 
+        value={formData.email}
+        onChange={(value) => handleChange('email', value)}
+        error={errors.email}
+        isChecking={isEmailChecking}
+        readOnly={readOnly}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="matricula">Matrícula</Label>
-        <Input
-          id="matricula"
-          value={formData.matricula}
-          onChange={(e) => handleChange('matricula', e.target.value)}
-          placeholder="Número de matrícula"
-          readOnly={readOnly}
-          className={readOnly ? "bg-gray-100" : ""}
-        />
-        {errors.matricula && (
-          <p className="text-sm text-red-500">{errors.matricula}</p>
-        )}
-        {isMatriculaChecking && (
-          <p className="text-sm text-blue-500">Verificando matrícula...</p>
-        )}
-      </div>
+      <MatriculaField 
+        value={formData.matricula}
+        onChange={(value) => handleChange('matricula', value)}
+        error={errors.matricula}
+        isChecking={isMatriculaChecking}
+        readOnly={readOnly}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="data_nascimento">Data de Nascimento</Label>
-        <Input
-          id="data_nascimento"
-          value={formData.data_nascimento}
-          onChange={handleDateChange}
-          placeholder="DD/MM/AAAA"
-          maxLength={10}
-          readOnly={readOnly}
-          className={readOnly ? "bg-gray-100" : ""}
-        />
-        {errors.data_nascimento && (
-          <p className="text-sm text-red-500">{errors.data_nascimento}</p>
-        )}
-      </div>
+      <DateField 
+        value={formData.data_nascimento}
+        onChange={(value) => handleChange('data_nascimento', value)}
+        error={errors.data_nascimento}
+        readOnly={readOnly}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="perfil">Perfil</Label>
-        <Select
-          value={formData.perfil}
-          onValueChange={(value) => handleChange('perfil', value)}
-          disabled={readOnly}
-        >
-          <SelectTrigger id="perfil" className={readOnly ? "bg-gray-100" : ""}>
-            <SelectValue placeholder="Selecione um perfil" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Inspetor">Inspetor</SelectItem>
-            <SelectItem value="Subinspetor">Subinspetor</SelectItem>
-            <SelectItem value="Supervisor">Supervisor</SelectItem>
-            <SelectItem value="Corregedor">Corregedor</SelectItem>
-            <SelectItem value="Agente">Agente</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <ProfileField 
+        value={formData.perfil}
+        onChange={(value) => handleChange('perfil', value)}
+        readOnly={readOnly}
+      />
 
-      {!readOnly && (
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="status"
-            checked={formData.status}
-            onCheckedChange={(checked) => handleChange('status', checked)}
-            disabled={readOnly}
-          />
-          <Label htmlFor="status">Usuário ativo</Label>
-        </div>
-      )}
+      <StatusField 
+        checked={formData.status}
+        onChange={(checked) => handleChange('status', checked)}
+        readOnly={readOnly}
+      />
 
-      {!readOnly && (
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button type="submit">
-            {initialData ? 'Salvar' : 'Criar Usuário'}
-          </Button>
-        </div>
-      )}
+      <FormActions 
+        onCancel={onCancel}
+        isEditing={!!initialData}
+        readOnly={readOnly}
+      />
     </form>
   );
 };

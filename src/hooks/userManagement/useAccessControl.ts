@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useAuthorization } from '@/hooks/use-authorization';
 import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
-import { PageAccessSettings } from './types';
 import { toast } from 'sonner';
 
 export const useAccessControl = (userProfile: string) => {
@@ -18,7 +17,7 @@ export const useAccessControl = (userProfile: string) => {
     setShowAccessDialog(true);
   };
 
-  const handleSavePageAccess = async (pages: PageAccessSettings): Promise<void> => {
+  const handleSavePageAccess = async (pages: PageAccess[]): Promise<void> => {
     try {
       const success = updatePageAccess(pages);
       if (success) {

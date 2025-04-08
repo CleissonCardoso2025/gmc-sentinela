@@ -2,14 +2,14 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import PageAccessControl from '@/components/Configuracoes/PageAccessControl';
-import { PageAccessSettings } from '@/hooks/userManagement/types';
+import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 
 interface AccessControlDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  pageAccessSettings: PageAccessSettings;
+  pageAccessSettings: PageAccess[];
   isLoading: boolean;
-  onSave: (pages: PageAccessSettings) => Promise<void>;
+  onSave: (pages: PageAccess[]) => Promise<void>;
 }
 
 const AccessControlDialog: React.FC<AccessControlDialogProps> = ({

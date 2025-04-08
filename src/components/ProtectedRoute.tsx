@@ -14,12 +14,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   const navigate = useNavigate();
   const { hasAccessToPage } = useAuthorization(userProfile);
   
+  // Check if user is authenticated
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
   // Check if the stored profile should be redirected
   useEffect(() => {
     const storedUserProfile = localStorage.getItem('userProfile');
     
     // If there's a logged in user and they're at the root path
-    if (storedUserProfile && location.pathname === '/') {
+    if (storedUserProfile && location.pathname === '/index') {
       // Only redirect non-inspetors to dashboard
       if (storedUserProfile !== 'Inspetor') {
         navigate('/dashboard');

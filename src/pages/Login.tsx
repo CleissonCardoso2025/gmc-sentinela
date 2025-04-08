@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // Define form schema with validation
 const formSchema = z.object({
@@ -32,6 +33,21 @@ const Login = () => {
     },
   });
 
+  // Check if user is already authenticated on component mount
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem("isAuthenticated");
+    const userProfile = localStorage.getItem("userProfile");
+    
+    if (isAuthenticated === "true" && userProfile) {
+      // Redirect based on user profile
+      if (userProfile === "Inspetor") {
+        navigate("/index");
+      } else {
+        navigate("/dashboard");
+      }
+    }
+  }, [navigate]);
+
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     
@@ -41,6 +57,12 @@ const Login = () => {
       
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Set user as authenticated
+      localStorage.setItem("isAuthenticated", "true");
+      
+      // Store username
+      localStorage.setItem("userName", data.username);
       
       // Mock user profile - in a real app, this would come from your authentication service
       // For demonstration, we'll set a profile based on username
@@ -57,7 +79,7 @@ const Login = () => {
         userProfile = "Corregedor";
       }
       
-      // Store the user profile in localStorage (in a real app, this might be in a secure cookie or state management)
+      // Store the user profile in localStorage
       localStorage.setItem("userProfile", userProfile);
       
       // Success notification
@@ -69,9 +91,9 @@ const Login = () => {
       // Redirect based on user profile
       setTimeout(() => {
         if (userProfile === "Inspetor") {
-          navigate("/"); // Inspetor goes to index
+          navigate("/index");
         } else {
-          navigate("/dashboard"); // Others go to dashboard
+          navigate("/dashboard");
         }
       }, 1000);
       

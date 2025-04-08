@@ -27,12 +27,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     return <Navigate to="/login" replace />;
   }
   
-  // Simular o ID do usuário atual para o exemplo
+  // Store user email and ID for auth checks
   useEffect(() => {
-    // Este é o ID do Inspetor, que tem acesso total ao sistema
+    // This is the ID of the Inspetor, which has access to all pages in the system
     const userId = localStorage.getItem('userId') || 'e632890d-208e-489b-93a3-eae0dd0a9a08';
     localStorage.setItem('currentUserId', userId);
-  }, []);
+    
+    // Make sure email is also stored for email-based access checks
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail && userProfile === 'Inspetor') {
+      // For testing, if no email is set but user is an Inspetor, use the default email
+      localStorage.setItem('userEmail', 'gcmribeiradopombal@hotmail.com');
+    }
+  }, [userProfile]);
   
   // Check if the stored profile should be redirected
   useEffect(() => {

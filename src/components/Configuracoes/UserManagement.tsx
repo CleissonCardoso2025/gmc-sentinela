@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import UserTable from './UserTable';
@@ -12,8 +11,19 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-// Mock user data until connected to Supabase
-const mockUsers = [
+// Define the user type
+export type User = {
+  id: number;
+  nome: string;
+  email: string;
+  perfil: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente';
+  status: boolean;
+};
+
+export type UserFormData = Omit<User, 'id'> & { id?: number };
+
+// Mock user data with proper typing
+const mockUsers: User[] = [
   { id: 1, nome: 'Carlos Silva', email: 'carlos.silva@gcm.gov.br', perfil: 'Inspetor', status: true },
   { id: 2, nome: 'Maria Oliveira', email: 'maria.oliveira@gcm.gov.br', perfil: 'Subinspetor', status: true },
   { id: 3, nome: 'João Santos', email: 'joao.santos@gcm.gov.br', perfil: 'Supervisor', status: true },
@@ -25,16 +35,6 @@ const mockUsers = [
 const mockCurrentUserProfile = {
   perfil: 'Inspetor' // Change this to test access control
 };
-
-export type User = {
-  id: number;
-  nome: string;
-  email: string;
-  perfil: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente';
-  status: boolean;
-};
-
-export type UserFormData = Omit<User, 'id'> & { id?: number };
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>(mockUsers);

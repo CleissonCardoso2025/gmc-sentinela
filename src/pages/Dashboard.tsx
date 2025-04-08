@@ -65,11 +65,19 @@ const Dashboard = () => {
       <div className="container mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
         <WelcomeHeader userName="Carlos Silva" role="Guarda Civil Municipal" />
         
+        {/* First section - Stats and Quick Actions */}
+        <div className="space-y-6">
+          <QuickStats />
+          <QuickActions />
+        </div>
+        
+        {/* Alert Board - Now horizontal and below first section */}
+        <div className="w-full">
+          <AlertBoard maxDisplayedAlerts={3} />
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <QuickStats />
-            <QuickActions />
-            
             {/* Patrol Route Section */}
             <Card className="shadow-md animate-fade-up" style={{ animationDelay: '200ms' }}>
               <CardHeader className="pb-3">
@@ -123,10 +131,7 @@ const Dashboard = () => {
           </div>
           
           <div className="md:col-span-1 space-y-6">
-            {/* Mural de Alertas */}
-            <AlertBoard maxDisplayedAlerts={2.5} />
-            
-            {/* Work Schedule Section - Below AlertBoard */}
+            {/* Work Schedule Section */}
             <Card className="shadow-md animate-fade-up" style={{ animationDelay: '300ms' }}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-semibold flex items-center">

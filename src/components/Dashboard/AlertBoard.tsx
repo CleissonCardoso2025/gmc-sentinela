@@ -191,7 +191,7 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
 
   return (
     <Card className="shadow-md animate-fade-up" style={{ animationDelay: '200ms' }}>
-      <CardHeader className="p-6 border-b flex flex-row items-center justify-between">
+      <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
         <div className="flex items-center">
           <Megaphone className="h-5 w-5 mr-2 text-gcm-600" />
           <h2 className="text-lg font-semibold text-gcm-700">Mural de Alertas</h2>
@@ -204,16 +204,16 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
       </CardHeader>
       
       <CardContent className="p-0">
-        <div className="h-[250px] overflow-y-auto p-4 space-y-3">
+        <div className="overflow-x-auto p-4">
           {displayedAlerts.length > 0 ? (
-            <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedAlerts.map((alert, index) => {
                 const colors = getAlertColor(alert.type);
                 return (
                   <div 
                     key={alert.id} 
                     className={cn(
-                      "rounded-lg p-4 transition-all duration-300 relative",
+                      "rounded-lg p-4 transition-all duration-300 relative h-full",
                       colors.bg,
                       colors.border,
                       alert.read ? "opacity-80" : "shadow-sm",
@@ -221,63 +221,66 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
                     )}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1">
-                        {getAlertIcon(alert.type)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-medium text-gray-900">{alert.title}</h3>
-                          <Badge variant="outline" className={colors.badge}>
-                            {getAlertTypeName(alert.type)}
-                          </Badge>
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 flex-shrink-0">
+                          {getAlertIcon(alert.type)}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
-                        <div className="flex justify-between items-center mt-3 text-xs text-gray-500">
-                          <div>
-                            <p>Por: {alert.author}</p>
-                            <p className="mt-1">{formatDate(alert.createdAt)}</p>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start flex-wrap">
+                            <h3 className="font-medium text-gray-900">{alert.title}</h3>
+                            <Badge variant="outline" className={colors.badge}>
+                              {getAlertTypeName(alert.type)}
+                            </Badge>
                           </div>
-                          <div className="flex gap-2">
-                            {!alert.read && (
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="h-8 text-xs bg-white"
-                                onClick={() => handleMarkAsRead(alert.id)}
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Marcar como lido
-                              </Button>
-                            )}
+                          <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-auto pt-3 text-xs text-gray-500">
+                        <div>
+                          <p>Por: {alert.author}</p>
+                          <p className="mt-1">{formatDate(alert.createdAt)}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          {!alert.read && (
                             <Button 
-                              variant="ghost" 
+                              variant="outline" 
                               size="sm" 
-                              className="h-8 text-xs text-gray-500"
-                              onClick={() => handleDismiss(alert.id)}
+                              className="h-8 text-xs bg-white"
+                              onClick={() => handleMarkAsRead(alert.id)}
                             >
-                              <X className="h-3 w-3" />
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Lido
                             </Button>
-                          </div>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs text-gray-500"
+                            onClick={() => handleDismiss(alert.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </div>
                 );
               })}
-              
-              {hasMoreAlerts && (
-                <div className="text-center pt-2 pb-1">
-                  <Badge variant="outline" className="bg-gray-50 cursor-pointer">
-                    + {alerts.length - displayedAlerts.length} mais alertas
-                  </Badge>
-                </div>
-              )}
-            </>
+            </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 text-gray-500">
               <CheckCircle className="h-10 w-10 mx-auto mb-2 text-green-500" />
               <p>Não há alertas para exibir.</p>
+            </div>
+          )}
+          
+          {hasMoreAlerts && (
+            <div className="text-center pt-4">
+              <Badge variant="outline" className="bg-gray-50 cursor-pointer">
+                + {alerts.length - displayedAlerts.length} mais alertas
+              </Badge>
             </div>
           )}
         </div>

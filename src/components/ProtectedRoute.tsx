@@ -33,8 +33,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     
     // If there's a logged in user and they're at the root path
     if (storedUserProfile && location.pathname === '/index') {
-      // Only redirect non-inspetors to dashboard
-      if (storedUserProfile !== 'Inspetor') {
+      // Only redirect non-Inspetor and non-Subinspetor users to dashboard
+      if (storedUserProfile !== 'Inspetor' && storedUserProfile !== 'Subinspetor') {
         navigate('/dashboard');
       }
     }

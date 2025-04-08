@@ -47,8 +47,8 @@ export const useUserForm = ({ initialData, onSubmit, onCancel }: UseUserFormProp
     try {
       // Combine form data with existing user ID if editing
       const userData: UserFormData = {
-        ...data,
         ...(initialData?.id ? { id: initialData.id } : {}),
+        ...data
       };
       
       await onSubmit(userData);

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, isValid, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UserFormProps {
   initialData?: UserFormData;
@@ -22,6 +23,13 @@ interface FormErrors {
   email: string;
   matricula: string;
   data_nascimento: string;
+}
+
+// Define a type for the payload we receive from Supabase realtime
+interface RealtimePayload {
+  new: Record<string, any>;
+  old: Record<string, any> | null;
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
 }
 
 const UserForm: React.FC<UserFormProps> = ({ 
@@ -126,7 +134,7 @@ const UserForm: React.FC<UserFormProps> = ({
 
   // Sincronização em tempo real para verificar mudanças no banco
   useEffect(() => {
-    const channel = supabase
+    const channel: RealtimeChannel = supabase
       .channel('users-changes')
       .on('postgres_changes', 
         { 
@@ -134,10 +142,10 @@ const UserForm: React.FC<UserFormProps> = ({
           schema: 'public', 
           table: 'users' 
         }, 
-        (payload) => {
+        (payload: RealtimePayload) => {
           // Verificar se a alteração afeta o email ou matrícula sendo inserido
           if (payload.new && !initialData) {
-            const newData = payload.new as Record<string, any>;
+            const newData = payload.new;
             if (newData.email === formData.email) {
               setErrors(prev => ({
                 ...prev,

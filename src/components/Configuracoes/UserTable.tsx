@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Table, 
@@ -16,16 +15,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Edit, Power } from 'lucide-react';
+import { MoreHorizontal, Edit, Power, Trash2 } from 'lucide-react';
 import { User } from './UserManagement';
 
 interface UserTableProps {
   users: User[];
   onEdit: (user: User) => void;
   onToggleStatus: (userId: number) => void;
+  onDelete: (userId: number) => void;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onToggleStatus }) => {
+const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onToggleStatus, onDelete }) => {
   const getStatusBadge = (status: boolean) => {
     if (status) {
       return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Ativo</Badge>;
@@ -92,6 +92,13 @@ const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onToggleStatus }) 
                     <DropdownMenuItem onClick={() => onToggleStatus(user.id)}>
                       <Power className="mr-2 h-4 w-4" />
                       {user.status ? 'Desativar' : 'Ativar'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onDelete(user.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

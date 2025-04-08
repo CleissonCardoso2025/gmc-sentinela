@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import UserTable from './UserTable';
@@ -10,10 +9,18 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search, Filter, Shield } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// Define the user type
 export type User = {
   id: number;
   nome: string;
@@ -24,7 +31,6 @@ export type User = {
 
 export type UserFormData = Omit<User, 'id'> & { id?: number };
 
-// Mock user data with proper typing
 const mockUsers: User[] = [
   { id: 1, nome: 'Carlos Silva', email: 'carlos.silva@gcm.gov.br', perfil: 'Inspetor', status: true },
   { id: 2, nome: 'Maria Oliveira', email: 'maria.oliveira@gcm.gov.br', perfil: 'Subinspetor', status: true },
@@ -33,9 +39,8 @@ const mockUsers: User[] = [
   { id: 5, nome: 'Pedro Lima', email: 'pedro.lima@gcm.gov.br', perfil: 'Agente', status: true },
 ];
 
-// Mock profile data for the current user
 const mockCurrentUserProfile = {
-  perfil: 'Inspetor' // Change this to test access control
+  perfil: 'Inspetor'
 };
 
 const UserManagement = () => {
@@ -47,13 +52,13 @@ const UserManagement = () => {
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [showAccessDialog, setShowAccessDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<UserFormData | null>(null);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
-  // Check if current user has access to this page
   const userProfile = mockCurrentUserProfile.perfil;
   const hasAccess = userProfile === 'Inspetor';
 
-  // Apply filters whenever filter states change
   useEffect(() => {
     let result = users;
     
@@ -125,6 +130,27 @@ const UserManagement = () => {
     }
   };
 
+  const handleDeleteUser = (userId: number) => {
+    setUserToDelete(userId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteUser = () => {
+    if (userToDelete) {
+      setUsers(prev => prev.filter(user => user.id !== userToDelete));
+      setShowDeleteDialog(false);
+      
+      const user = users.find(u => u.id === userToDelete);
+      if (user) {
+        toast({
+          title: "Usuário excluído",
+          description: `${user.nome} foi excluído com sucesso.`,
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   const handleAddNewUser = () => {
     setEditingUser(null);
     setShowUserDialog(true);
@@ -140,8 +166,6 @@ const UserManagement = () => {
   };
 
   const handleSavePageAccess = (pages: PageAccess[]) => {
-    // In a real application, this would save to a database
-    // For now, we just show a toast notification
     toast({
       title: "Permissões atualizadas",
       description: "As permissões de acesso foram atualizadas com sucesso."
@@ -239,10 +263,10 @@ const UserManagement = () => {
       <UserTable 
         users={filteredUsers} 
         onEdit={handleEditUser} 
-        onToggleStatus={handleToggleStatus} 
+        onToggleStatus={handleToggleStatus}
+        onDelete={handleDeleteUser}
       />
 
-      {/* User Form Dialog */}
       <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -258,7 +282,6 @@ const UserManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Page Access Control Dialog */}
       <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
@@ -270,6 +293,23 @@ const UserManagement = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

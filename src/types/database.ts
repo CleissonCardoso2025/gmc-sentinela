@@ -1,3 +1,4 @@
+
 // Database types for the application
 
 export interface User {
@@ -6,8 +7,6 @@ export interface User {
   email: string;
   perfil: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente';
   status: boolean;
-  matricula?: string;
-  dataNascimento?: Date | string;
   created_at?: string;
   updated_at?: string;
 }

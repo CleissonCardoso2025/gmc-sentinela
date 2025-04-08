@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({
 
   return <header className="fixed w-full h-16 z-50 px-3 sm:px-6 flex items-center justify-between shadow-md animate-fade-in bg-zinc-950">
       <div className="flex items-center">
-        <Link to="/dashboard">
+        <Link to={localStorage.getItem("userProfile") === "Inspetor" ? "/index" : "/dashboard"}>
           <img alt="Logo GCM" className="h-8 sm:h-10 mr-2 sm:mr-4 rounded-sm" src="/lovable-uploads/d563df95-6038-43c8-80a6-882d66215f63.png" />
         </Link>
         <h1 className="text-white text-base sm:text-xl font-semibold hidden xs:block">GCM Sentinela</h1>

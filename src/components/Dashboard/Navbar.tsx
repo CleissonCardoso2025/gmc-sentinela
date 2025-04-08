@@ -10,7 +10,8 @@ import {
   Shield,
   GavelIcon,
   Menu,
-  Home
+  Home,
+  Command
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthorization } from '@/hooks/use-authorization';
@@ -23,6 +24,7 @@ const Navbar: React.FC = () => {
   
   const menuItems = [
     { icon: <Home className="h-5 w-5" />, text: 'Dashboard', path: '/dashboard' },
+    { icon: <Command className="h-5 w-5" />, text: 'Centro de Comando', path: '/index', roles: ['Inspetor', 'Subinspetor'] },
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
@@ -42,6 +44,7 @@ const Navbar: React.FC = () => {
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && (location.pathname === '/dashboard' || location.pathname === '/')) return true;
+    if (path === '/index' && location.pathname === '/index') return true;
     return location.pathname.startsWith(path);
   };
   

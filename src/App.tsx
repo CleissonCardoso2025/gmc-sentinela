@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import UserProfile from "./pages/UserProfile";
 import OccurrenceDetails from "./pages/OccurrenceDetails";
@@ -49,6 +50,11 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             
             {/* Protected Routes */}
+            <Route path="/index" element={
+              <ProtectedRoute userProfile={userProfile}>
+                <Index />
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard" element={
               <ProtectedRoute userProfile={userProfile}>
                 <Dashboard />

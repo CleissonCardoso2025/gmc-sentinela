@@ -17,6 +17,13 @@ interface UserFormProps {
   onCancel: () => void;
 }
 
+interface FormErrors {
+  nome: string;
+  email: string;
+  matricula: string;
+  data_nascimento: string;
+}
+
 const UserForm: React.FC<UserFormProps> = ({ 
   initialData, 
   onSubmit,
@@ -33,7 +40,7 @@ const UserForm: React.FC<UserFormProps> = ({
     }
   );
   
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<FormErrors>({
     nome: '',
     email: '',
     matricula: '',
@@ -130,14 +137,15 @@ const UserForm: React.FC<UserFormProps> = ({
         (payload) => {
           // Verificar se a alteração afeta o email ou matrícula sendo inserido
           if (payload.new && !initialData) {
-            if (payload.new.email === formData.email) {
+            const newData = payload.new as Record<string, any>;
+            if (newData.email === formData.email) {
               setErrors(prev => ({
                 ...prev,
                 email: 'Este email acabou de ser registrado por outro usuário'
               }));
               toast.error("Este email acabou de ser registrado por outro usuário");
             }
-            if (payload.new.matricula === formData.matricula) {
+            if (newData.matricula === formData.matricula) {
               setErrors(prev => ({
                 ...prev,
                 matricula: 'Esta matrícula acabou de ser registrada por outro usuário'

@@ -28,12 +28,13 @@ const Navbar: React.FC = () => {
   ];
 
   const isActive = (path: string) => {
-    if (path === '/dashboard' && location.pathname === '/dashboard') return true;
+    if (path === '/dashboard' && (location.pathname === '/dashboard' || location.pathname === '/')) return true;
     if (path === '/index' && location.pathname === '/index') return true;
     return location.pathname.startsWith(path);
   };
   
   const handleNavigate = (path: string) => {
+    console.log("Mobile: Navegando para:", path);
     navigate(path);
   };
 

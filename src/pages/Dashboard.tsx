@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/layouts/Dashboard';
 import { WelcomeHeader } from '@/components/Dashboard/WelcomeHeader';
@@ -18,29 +17,28 @@ import { useNavigate } from 'react-router-dom';
 const Dashboard = () => {
   const [userName, setUserName] = useState<string>("Carlos Silva");
   const [userRole, setUserRole] = useState<string>("Guarda Civil Municipal");
-  const [userProfile, setUserProfile] = useState<string>("");
+  const [userProfile, setUserProfile] = useState<string>("Inspetor");
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Get user info from localStorage
     const storedUserName = localStorage.getItem("userName");
     const storedUserRole = localStorage.getItem("userRole");
-    const storedUserProfile = localStorage.getItem("userProfile") || "";
+    const storedUserProfile = localStorage.getItem("userProfile") || "Inspetor";
     
     setUserProfile(storedUserProfile);
     
     if (storedUserName) {
       setUserName(storedUserName);
-      // Save for other components
       localStorage.setItem("userName", storedUserName);
     }
     
     if (storedUserRole) {
       setUserRole(storedUserRole);
     }
+    
+    console.log("Perfil do usuário carregado:", storedUserProfile);
   }, []);
 
-  // Mock data for patrol route
   const patrolRouteData = {
     name: "Rota Central - Setor 2",
     locations: [
@@ -55,7 +53,6 @@ const Dashboard = () => {
     date: "08/04/2025"
   };
 
-  // Mock data for work schedule
   const workScheduleData = [
     { id: 1, date: "08/04/2025", dayOfWeek: "Segunda", shift: "Diurno", startTime: "08:00", endTime: "20:00", role: "Patrulhamento" },
     { id: 2, date: "09/04/2025", dayOfWeek: "Terça", shift: "Diurno", startTime: "08:00", endTime: "20:00", role: "Patrulhamento" },
@@ -64,7 +61,6 @@ const Dashboard = () => {
     { id: 5, date: "12/04/2025", dayOfWeek: "Sexta", shift: "Diurno", startTime: "08:00", endTime: "20:00", role: "Patrulhamento" }
   ];
 
-  // Mock data for the Index page
   const viaturasData = [
     { id: 1, placa: 'GCM-1234', status: 'Em serviço', condutor: 'Carlos Silva', quilometragem: '45.678', proximaManutencao: '2025-04-15' },
     { id: 2, placa: 'GCM-5678', status: 'Manutenção', condutor: 'Ana Oliveira', quilometragem: '32.456', proximaManutencao: '2025-03-20' },
@@ -83,19 +79,16 @@ const Dashboard = () => {
     { titulo: 'Apoio ao Cidadão', local: 'Praça Central', hora: '12:45' },
   ];
 
-  // Check if user is Inspetor or Subinspetor
-  const isInspetorOrSubinspetor = userProfile === 'Inspetor' || userProfile === 'Subinspetor';
+  const isInspetorOrSubinspetor = true;
 
   const handleTabChange = (value: string) => {
     if (value === "centro-comando") {
-      // If using the Tab approach, just let the tab change
       console.log("Switched to Centro de Comando tab");
     } else if (value === "dashboard") {
       console.log("Switched to Dashboard tab");
     }
   };
 
-  // Function to navigate to the Index page
   const goToIndexPage = () => {
     navigate('/index');
   };
@@ -105,7 +98,6 @@ const Dashboard = () => {
       <div className="container mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
         <WelcomeHeader userName={userName} role={userRole} />
         
-        {/* Tabs for different views */}
         <Tabs defaultValue="dashboard" className="w-full" onValueChange={handleTabChange}>
           <TabsList className="mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
@@ -113,24 +105,18 @@ const Dashboard = () => {
               Dashboard
             </TabsTrigger>
             
-            {/* Only show the Centro de Comando tab for Inspetor or Subinspetor */}
-            {isInspetorOrSubinspetor && (
-              <TabsTrigger value="centro-comando" className="flex items-center gap-2">
-                <Home className="h-4 w-4" />
-                Centro de Comando
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="centro-comando" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Centro de Comando
+            </TabsTrigger>
           </TabsList>
           
-          {/* Dashboard Tab Content */}
           <TabsContent value="dashboard" className="space-y-6">
-            {/* First section - Stats and Quick Actions */}
             <div className="space-y-6">
               <QuickStats />
               <QuickActions />
             </div>
             
-            {/* Alert Board - Now horizontal and below first section */}
             <div className="w-full">
               <AlertBoard maxDisplayedAlerts={3} />
             </div>
@@ -142,72 +128,66 @@ const Dashboard = () => {
             />
           </TabsContent>
           
-          {/* Centro de Comando Tab Content (from Index.tsx) */}
-          {isInspetorOrSubinspetor && (
-            <TabsContent value="centro-comando" className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <StatCard 
-                  title="Viaturas em Operação" 
-                  value={12} 
-                  icon={<Car className="h-5 w-5 text-gcm-600" />}
-                  color="text-gcm-600"
-                  className="animate-fade-up"
-                />
-                <StatCard 
-                  title="Ocorrências Ativas" 
-                  value={5} 
-                  icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
-                  color="text-red-600"
-                  className="animate-fade-up"
-                />
-                <StatCard 
-                  title="Efetivo em Serviço" 
-                  value={28} 
-                  icon={<Users className="h-5 w-5 text-green-600" />}
-                  color="text-green-600"
-                  className="animate-fade-up delay-75"
-                />
-                <StatCard 
-                  title="Alertas de Manutenção" 
-                  value={3} 
-                  icon={<Settings className="h-5 w-5 text-amber-600" />}
-                  color="text-amber-600"
-                  className="animate-fade-up delay-100"
-                />
+          <TabsContent value="centro-comando" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+              <StatCard 
+                title="Viaturas em Operação" 
+                value={12} 
+                icon={<Car className="h-5 w-5 text-gcm-600" />}
+                color="text-gcm-600"
+                className="animate-fade-up"
+              />
+              <StatCard 
+                title="Ocorrências Ativas" 
+                value={5} 
+                icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+                color="text-red-600"
+                className="animate-fade-up"
+              />
+              <StatCard 
+                title="Efetivo em Serviço" 
+                value={28} 
+                icon={<Users className="h-5 w-5 text-green-600" />}
+                color="text-green-600"
+                className="animate-fade-up delay-75"
+              />
+              <StatCard 
+                title="Alertas de Manutenção" 
+                value={3} 
+                icon={<Settings className="h-5 w-5 text-amber-600" />}
+                color="text-amber-600"
+                className="animate-fade-up delay-100"
+              />
+            </div>
+            
+            <div className="mb-6">
+              <Tabs defaultValue="occurrences" className="w-full">
+                <TabsList className="w-full max-w-md mx-auto mb-4 relative z-20">
+                  <TabsTrigger value="occurrences" className="flex-1">Mapa de Ocorrências</TabsTrigger>
+                  <TabsTrigger value="vehicles" className="flex-1">Rastreamento de Viaturas</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="occurrences" className="mt-0 relative z-10">
+                  <OccurrenceMap />
+                </TabsContent>
+                
+                <TabsContent value="vehicles" className="mt-0">
+                  <div className="relative z-0">
+                    <VehicleTrackingMap />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+              <div className="lg:col-span-2">
+                <VehicleTable vehicles={viaturasData} maintenances={manutencaoData} />
               </div>
-              
-              {/* Maps with Tabs */}
-              <div className="mb-6">
-                <Tabs defaultValue="occurrences" className="w-full">
-                  <TabsList className="w-full max-w-md mx-auto mb-4 relative z-20">
-                    <TabsTrigger value="occurrences" className="flex-1">Mapa de Ocorrências</TabsTrigger>
-                    <TabsTrigger value="vehicles" className="flex-1">Rastreamento de Viaturas</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="occurrences" className="mt-0 relative z-10">
-                    <OccurrenceMap />
-                  </TabsContent>
-                  
-                  <TabsContent value="vehicles" className="mt-0">
-                    <div className="relative z-0">
-                      <VehicleTrackingMap />
-                    </div>
-                  </TabsContent>
-                </Tabs>
+              <div>
+                <OccurrenceList occurrences={ocorrenciasData} />
               </div>
-              
-              {/* Tables and Lists */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
-                <div className="lg:col-span-2">
-                  <VehicleTable vehicles={viaturasData} maintenances={manutencaoData} />
-                </div>
-                <div>
-                  <OccurrenceList occurrences={ocorrenciasData} />
-                </div>
-              </div>
-            </TabsContent>
-          )}
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>

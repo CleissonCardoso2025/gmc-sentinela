@@ -51,12 +51,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   ];
   
   const isActive = (path: string) => {
-    if (path === '/dashboard' && location.pathname === '/dashboard') return true;
+    if (path === '/dashboard' && (location.pathname === '/dashboard' || location.pathname === '/')) return true;
     if (path === '/index' && location.pathname === '/index') return true;
+    // Tratamento especial para a página index que agora está no dashboard
     return location.pathname.startsWith(path);
   };
   
   const handleNavigate = (path: string) => {
+    console.log("Navegando para:", path);
     navigate(path);
   };
 

@@ -18,13 +18,24 @@ const Header: React.FC<HeaderProps> = ({
   const isMobile = useIsMobile();
   const [showSearch, setShowSearch] = React.useState(false);
   const [userName, setUserName] = useState<string>("Usuário");
+  const [userEmail, setUserEmail] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
     // Get username from localStorage
     const storedUserName = localStorage.getItem("userName");
+    const storedUserEmail = localStorage.getItem("userEmail");
+    
     if (storedUserName) {
       setUserName(storedUserName);
+    }
+    
+    if (storedUserEmail) {
+      setUserEmail(storedUserEmail);
+    } else {
+      // Set a default email if none exists
+      localStorage.setItem("userEmail", "carlos.silva@gcm.gov.br");
+      setUserEmail("carlos.silva@gcm.gov.br");
     }
   }, []);
 
@@ -33,6 +44,7 @@ const Header: React.FC<HeaderProps> = ({
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("userProfile");
     localStorage.removeItem("userName");
+    localStorage.removeItem("userEmail");
     toast.success("Logout realizado com sucesso");
     navigate("/login");
   };

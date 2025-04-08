@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +15,7 @@ interface UserFormProps {
   initialData?: UserFormData;
   onSubmit: (data: UserFormData) => void;
   onCancel: () => void;
+  readOnly?: boolean;
 }
 
 interface FormErrors {
@@ -35,7 +35,8 @@ interface RealtimePayload {
 const UserForm: React.FC<UserFormProps> = ({ 
   initialData, 
   onSubmit,
-  onCancel
+  onCancel,
+  readOnly = false
 }) => {
   const [formData, setFormData] = useState<UserFormData>(
     initialData || {
@@ -60,6 +61,9 @@ const UserForm: React.FC<UserFormProps> = ({
 
   // Efeito para verificar se o email já existe quando o usuário digita
   useEffect(() => {
+    // Skip checks if in readOnly mode
+    if (readOnly) return;
+    
     const checkEmailExists = async () => {
       // Ignorar checks se o email for o mesmo do dado inicial (caso de edição)
       if (initialData && initialData.email === formData.email) {
@@ -93,10 +97,13 @@ const UserForm: React.FC<UserFormProps> = ({
 
     const debounce = setTimeout(checkEmailExists, 500);
     return () => clearTimeout(debounce);
-  }, [formData.email, initialData]);
+  }, [formData.email, initialData, readOnly]);
 
   // Efeito para verificar se a matrícula já existe quando o usuário digita
   useEffect(() => {
+    // Skip checks if in readOnly mode
+    if (readOnly) return;
+    
     const checkMatriculaExists = async () => {
       // Ignorar checks se a matrícula for a mesma do dado inicial (caso de edição)
       if (initialData && initialData.matricula === formData.matricula) {
@@ -130,10 +137,13 @@ const UserForm: React.FC<UserFormProps> = ({
 
     const debounce = setTimeout(checkMatriculaExists, 500);
     return () => clearTimeout(debounce);
-  }, [formData.matricula, initialData]);
+  }, [formData.matricula, initialData, readOnly]);
 
   // Sincronização em tempo real para verificar mudanças no banco
   useEffect(() => {
+    // Skip real-time updates if in readOnly mode
+    if (readOnly) return;
+    
     const channel: RealtimeChannel = supabase
       .channel('users-changes')
       .on('postgres_changes', 
@@ -167,7 +177,7 @@ const UserForm: React.FC<UserFormProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [formData.email, formData.matricula, initialData]);
+  }, [formData.email, formData.matricula, initialData, readOnly]);
 
   const validateForm = () => {
     let valid = true;
@@ -269,6 +279,8 @@ const UserForm: React.FC<UserFormProps> = ({
           value={formData.nome}
           onChange={(e) => handleChange('nome', e.target.value)}
           placeholder="Nome completo"
+          readOnly={readOnly}
+          className={readOnly ? "bg-gray-100" : ""}
         />
         {errors.nome && (
           <p className="text-sm text-red-500">{errors.nome}</p>
@@ -283,6 +295,8 @@ const UserForm: React.FC<UserFormProps> = ({
           value={formData.email}
           onChange={(e) => handleChange('email', e.target.value)}
           placeholder="email@example.com"
+          readOnly={readOnly}
+          className={readOnly ? "bg-gray-100" : ""}
         />
         {errors.email && (
           <p className="text-sm text-red-500">{errors.email}</p>
@@ -299,6 +313,8 @@ const UserForm: React.FC<UserFormProps> = ({
           value={formData.matricula}
           onChange={(e) => handleChange('matricula', e.target.value)}
           placeholder="Número de matrícula"
+          readOnly={readOnly}
+          className={readOnly ? "bg-gray-100" : ""}
         />
         {errors.matricula && (
           <p className="text-sm text-red-500">{errors.matricula}</p>
@@ -316,6 +332,8 @@ const UserForm: React.FC<UserFormProps> = ({
           onChange={handleDateChange}
           placeholder="DD/MM/AAAA"
           maxLength={10}
+          readOnly={readOnly}
+          className={readOnly ? "bg-gray-100" : ""}
         />
         {errors.data_nascimento && (
           <p className="text-sm text-red-500">{errors.data_nascimento}</p>
@@ -327,8 +345,9 @@ const UserForm: React.FC<UserFormProps> = ({
         <Select
           value={formData.perfil}
           onValueChange={(value) => handleChange('perfil', value)}
+          disabled={readOnly}
         >
-          <SelectTrigger id="perfil">
+          <SelectTrigger id="perfil" className={readOnly ? "bg-gray-100" : ""}>
             <SelectValue placeholder="Selecione um perfil" />
           </SelectTrigger>
           <SelectContent>
@@ -341,23 +360,28 @@ const UserForm: React.FC<UserFormProps> = ({
         </Select>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="status"
-          checked={formData.status}
-          onCheckedChange={(checked) => handleChange('status', checked)}
-        />
-        <Label htmlFor="status">Usuário ativo</Label>
-      </div>
+      {!readOnly && (
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="status"
+            checked={formData.status}
+            onCheckedChange={(checked) => handleChange('status', checked)}
+            disabled={readOnly}
+          />
+          <Label htmlFor="status">Usuário ativo</Label>
+        </div>
+      )}
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit">
-          {initialData ? 'Salvar' : 'Criar Usuário'}
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit">
+            {initialData ? 'Salvar' : 'Criar Usuário'}
+          </Button>
+        </div>
+      )}
     </form>
   );
 };

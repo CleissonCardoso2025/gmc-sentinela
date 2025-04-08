@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, isValid, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 interface UserFormProps {
   initialData?: UserFormData;
@@ -25,11 +25,18 @@ interface FormErrors {
   data_nascimento: string;
 }
 
-// Define a type for the payload we receive from Supabase realtime
-interface RealtimePayload {
-  new: Record<string, any>;
-  old: Record<string, any> | null;
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+// Define a more specific type for the payload we receive from Supabase realtime
+interface RealtimeUserPayload extends RealtimePostgresChangesPayload<{
+  [key: string]: any;
+}> {
+  new: {
+    email?: string;
+    matricula?: string;
+    [key: string]: any;
+  };
+  old: {
+    [key: string]: any;
+  } | null;
 }
 
 const UserForm: React.FC<UserFormProps> = ({ 
@@ -144,7 +151,7 @@ const UserForm: React.FC<UserFormProps> = ({
     // Skip real-time updates if in readOnly mode
     if (readOnly) return;
     
-    const channel: RealtimeChannel = supabase
+    const channel = supabase
       .channel('users-changes')
       .on('postgres_changes', 
         { 
@@ -152,18 +159,17 @@ const UserForm: React.FC<UserFormProps> = ({
           schema: 'public', 
           table: 'users' 
         }, 
-        (payload: RealtimePayload) => {
+        (payload: RealtimeUserPayload) => {
           // Verificar se a alteração afeta o email ou matrícula sendo inserido
           if (payload.new && !initialData) {
-            const newData = payload.new;
-            if (newData.email === formData.email) {
+            if (payload.new.email === formData.email) {
               setErrors(prev => ({
                 ...prev,
                 email: 'Este email acabou de ser registrado por outro usuário'
               }));
               toast.error("Este email acabou de ser registrado por outro usuário");
             }
-            if (newData.matricula === formData.matricula) {
+            if (payload.new.matricula === formData.matricula) {
               setErrors(prev => ({
                 ...prev,
                 matricula: 'Esta matrícula acabou de ser registrada por outro usuário'

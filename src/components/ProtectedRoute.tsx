@@ -14,6 +14,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   const navigate = useNavigate();
   const { hasAccessToPage } = useAuthorization(userProfile);
   
+  // Login page should always be accessible
+  if (location.pathname === '/login') {
+    return <>{children}</>;
+  }
+  
   // Check if user is authenticated
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
   

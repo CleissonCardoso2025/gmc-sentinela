@@ -41,6 +41,7 @@ const App = () => {
             {/* Redirect root to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
             
+            {/* Login route is accessible by anyone */}
             <Route path="/login" element={<Login />} />
             
             {/* Protected Routes */}

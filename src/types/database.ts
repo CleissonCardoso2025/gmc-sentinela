@@ -47,6 +47,7 @@ export interface ScheduleDay {
   day: string;
   shift: string;
   status: string;
+  [key: string]: string; // Add index signature to make it compatible with Json type
 }
 
 export interface EscalaItem {

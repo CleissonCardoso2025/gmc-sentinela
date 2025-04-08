@@ -30,16 +30,10 @@ import {
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Investigacao } from '@/types/database';
 
 interface DetalhesInvestigacaoProps {
-  sindicancia: {
-    id: string;
-    dataAbertura: string;
-    gmcInvestigado: string;
-    motivo: string;
-    status: string;
-    etapaAtual: string;
-  };
+  sindicancia: Investigacao;
 }
 
 const novaEtapaSchema = z.object({
@@ -158,7 +152,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">{sindicancia.id}</h2>
+          <h2 className="text-2xl font-bold">{sindicancia.numero}</h2>
           <p className="text-muted-foreground">Aberta em {sindicancia.dataAbertura}</p>
         </div>
         <div className="flex gap-2">
@@ -193,7 +187,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="font-semibold mb-1">GMC Investigado</h3>
-              <p>{sindicancia.gmcInvestigado}</p>
+              <p>{sindicancia.investigado}</p>
             </div>
             
             <div>
@@ -204,9 +198,8 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
             <div className="md:col-span-2">
               <h3 className="font-semibold mb-1">Relato Inicial</h3>
               <p className="text-sm">
-                O GMC foi observado em possível desvio de conduta durante abordagem a um cidadão na Praça Central. 
-                Segundo relatos de testemunhas, houve excesso de força e tratamento desrespeitoso. O GMC alega que 
-                a abordagem seguiu os protocolos padrão e que o cidadão estava alterado e apresentou resistência.
+                {sindicancia.relatoInicial || 
+                "O GMC foi observado em possível desvio de conduta durante abordagem a um cidadão na Praça Central. Segundo relatos de testemunhas, houve excesso de força e tratamento desrespeitoso. O GMC alega que a abordagem seguiu os protocolos padrão e que o cidadão estava alterado e apresentou resistência."}
               </p>
             </div>
           </div>

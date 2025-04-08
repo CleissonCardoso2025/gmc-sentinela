@@ -13,11 +13,13 @@ import VehicleTrackingMap from '@/components/Dashboard/VehicleTrackingMap';
 import VehicleTable from '@/components/Dashboard/VehicleTable';
 import OccurrenceList from '@/components/Dashboard/OccurrenceList';
 import { Car, AlertTriangle, Users, Settings, LayoutDashboard, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const [userName, setUserName] = useState<string>("Carlos Silva");
   const [userRole, setUserRole] = useState<string>("Guarda Civil Municipal");
   const [userProfile, setUserProfile] = useState<string>("");
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Get user info from localStorage
@@ -84,13 +86,27 @@ const Dashboard = () => {
   // Check if user is Inspetor or Subinspetor
   const isInspetorOrSubinspetor = userProfile === 'Inspetor' || userProfile === 'Subinspetor';
 
+  const handleTabChange = (value: string) => {
+    if (value === "centro-comando") {
+      // If using the Tab approach, just let the tab change
+      console.log("Switched to Centro de Comando tab");
+    } else if (value === "dashboard") {
+      console.log("Switched to Dashboard tab");
+    }
+  };
+
+  // Function to navigate to the Index page
+  const goToIndexPage = () => {
+    navigate('/index');
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
         <WelcomeHeader userName={userName} role={userRole} />
         
         {/* Tabs for different views */}
-        <Tabs defaultValue="dashboard" className="w-full">
+        <Tabs defaultValue="dashboard" className="w-full" onValueChange={handleTabChange}>
           <TabsList className="mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <LayoutDashboard className="h-4 w-4" />

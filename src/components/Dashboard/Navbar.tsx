@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
@@ -15,9 +16,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   
   const menuItems = [
-    { icon: <Home className="h-5 w-5" />, text: 'Dashboard', path: '/' },
+    { icon: <Home className="h-5 w-5" />, text: 'Dashboard', path: '/dashboard' },
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
@@ -26,8 +28,13 @@ const Navbar: React.FC = () => {
   ];
 
   const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === '/dashboard' && location.pathname === '/dashboard') return true;
+    if (path === '/index' && location.pathname === '/index') return true;
     return location.pathname.startsWith(path);
+  };
+  
+  const handleNavigate = (path: string) => {
+    navigate(path);
   };
 
   return (
@@ -42,14 +49,12 @@ const Navbar: React.FC = () => {
               "flex items-center justify-center text-white hover:bg-gcm-700 border-none",
               isActive(item.path) ? "bg-gcm-700" : "bg-opacity-0"
             )}
-            asChild
+            onClick={() => handleNavigate(item.path)}
           >
-            <Link to={item.path} className="whitespace-nowrap">
-              <span className="flex items-center">
-                {item.icon}
-                <span className="ml-1 text-xs font-medium">{item.text}</span>
-              </span>
-            </Link>
+            <span className="flex items-center whitespace-nowrap">
+              {item.icon}
+              <span className="ml-1 text-xs font-medium">{item.text}</span>
+            </span>
           </Button>
         ))}
       </div>
@@ -78,14 +83,12 @@ const Navbar: React.FC = () => {
                       "w-full flex items-center justify-start text-white hover:bg-gcm-700 border-none rounded-none h-14 px-4 transition-all duration-300",
                       isActive(item.path) ? "bg-gcm-700" : "bg-opacity-0"
                     )}
-                    asChild
+                    onClick={() => handleNavigate(item.path)}
                   >
-                    <Link to={item.path}>
-                      <span className="flex items-center gap-3">
-                        {item.icon}
-                        <span className="font-medium">{item.text}</span>
-                      </span>
-                    </Link>
+                    <span className="flex items-center gap-3">
+                      {item.icon}
+                      <span className="font-medium">{item.text}</span>
+                    </span>
                   </Button>
                 </li>
               ))}

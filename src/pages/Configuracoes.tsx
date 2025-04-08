@@ -11,7 +11,12 @@ import { useAuthorization } from '@/hooks/use-authorization';
 const Configuracoes = () => {
   // Get the user profile from localStorage
   const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
-  const { pageAccessSettings, updatePageAccess, isLoading: isLoadingAccess } = useAuthorization(userProfile);
+  const { pageAccessSettings, updatePageAccess, isLoading: isLoadingAccess, hasAccessToPage } = useAuthorization(userProfile);
+
+  // Check if the user has Inspetor permissions (either by profile or by special access)
+  const isInspetor = userProfile === 'Inspetor' || 
+                     localStorage.getItem('userEmail') === 'gcmribeiradopombal@hotmail.com' ||
+                     localStorage.getItem('currentUserId') === 'e632890d-208e-489b-93a3-eae0dd0a9a08';
 
   const handleSavePageAccess = async (pages: typeof pageAccessSettings): Promise<void> => {
     try {
@@ -58,7 +63,7 @@ const Configuracoes = () => {
                 <CardTitle>Controle de Acesso às Páginas</CardTitle>
               </CardHeader>
               <CardContent>
-                {userProfile === 'Inspetor' ? (
+                {isInspetor ? (
                   <PageAccessControl
                     initialPages={pageAccessSettings}
                     isLoading={isLoadingAccess}

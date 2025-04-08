@@ -51,15 +51,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     }
   }, [location.pathname, navigate]);
   
-  // Special check for /index path - only Inspetor or Subinspetor can access
-  if (location.pathname === '/index') {
-    const canAccess = userProfile === 'Inspetor' || userProfile === 'Subinspetor';
-    if (!canAccess) {
-      toast.error("Você não tem permissão para acessar o Centro de Comando");
-      return <Navigate to="/dashboard" replace />;
-    }
-  }
-  
   // Determine if user has access to the requested page
   const hasAccess = hasAccessToPage(location.pathname);
   

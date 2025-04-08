@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Car, AlertTriangle, Settings, Shield, UserCog, ChevronLeft, ChevronRight, GavelIcon, Home, Command } from "lucide-react";
+import { Car, AlertTriangle, Settings, Shield, UserCog, ChevronLeft, ChevronRight, GavelIcon, Home } from "lucide-react";
 import { useAuthorization } from '@/hooks/use-authorization';
 
 interface SidebarProps {
@@ -26,12 +26,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       text: 'Dashboard',
       path: '/dashboard'
     }, 
-    {
-      icon: <Command className="h-5 w-5" />,
-      text: 'Centro de Comando',
-      path: '/index',
-      roles: ['Inspetor', 'Subinspetor']
-    },
     {
       icon: <Car className="h-5 w-5" />,
       text: 'Viaturas',
@@ -61,7 +55,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   
   const isActive = (path: string) => {
     if (path === '/dashboard' && (location.pathname === '/dashboard' || location.pathname === '/')) return true;
-    if (path === '/index' && location.pathname === '/index') return true;
     return location.pathname.startsWith(path);
   };
   

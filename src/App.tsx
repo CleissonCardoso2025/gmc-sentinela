@@ -13,6 +13,7 @@ import Inspetoria from "./pages/Inspetoria";
 import RecursosHumanos from "./pages/RecursosHumanos";
 import Ocorrencias from "./pages/Ocorrencias";
 import Corregedoria from "./pages/Corregedoria";
+import Configuracoes from "./pages/Configuracoes";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/ocorrencias" element={<Ocorrencias />} />
           <Route path="/ocorrencias/:id" element={<OccurrenceDetails />} />
           <Route path="/corregedoria" element={<Corregedoria />} />
+          <Route path="/configuracoes" element={<Configuracoes />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

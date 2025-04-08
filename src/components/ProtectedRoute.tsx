@@ -30,8 +30,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   // Simular o ID do usuário atual para o exemplo
   // Em uma aplicação real, isso viria do contexto de autenticação
   useEffect(() => {
-    // Esto é apenas para demonstração. Em produção, o ID viria do Supabase Auth
-    // ou seria definido durante o login
+    // Este é o ID do Inspetor, que tem acesso total ao sistema
     const userId = localStorage.getItem('userId') || 'e632890d-208e-489b-93a3-eae0dd0a9a08';
     localStorage.setItem('currentUserId', userId);
   }, []);
@@ -49,11 +48,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     }
   }, [location.pathname, navigate]);
   
-  // Inspetor profile should have access to all pages
-  if (userProfile === 'Inspetor') {
-    return <>{children}</>;
-  }
-  
+  // Determine if user has access to the requested page
   const hasAccess = hasAccessToPage(location.pathname);
   
   if (!hasAccess) {

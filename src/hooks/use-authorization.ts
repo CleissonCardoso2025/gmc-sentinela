@@ -29,16 +29,16 @@ const getPageAccessSettings = (): PageAccess[] => {
   ];
 };
 
-// Restrições específicas por usuário
-interface UserSpecificRestriction {
+// Usuários especiais com perfis específicos
+interface SpecialUser {
   userId: string;
-  restrictedPaths: string[];
+  specificProfile: string;
 }
 
-const USER_RESTRICTIONS: UserSpecificRestriction[] = [
+const SPECIAL_USERS: SpecialUser[] = [
   {
     userId: 'e632890d-208e-489b-93a3-eae0dd0a9a08',
-    restrictedPaths: ['/corregedoria']
+    specificProfile: 'Inspetor'
   }
 ];
 
@@ -46,14 +46,23 @@ export const useAuthorization = (userProfile: string) => {
   const [pageAccessSettings, setPageAccessSettings] = useState<PageAccess[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [effectiveProfile, setEffectiveProfile] = useState<string>(userProfile);
   
   // Carrega o ID do usuário atual
   useEffect(() => {
     const userId = localStorage.getItem('currentUserId');
     if (userId) {
       setCurrentUserId(userId);
+      
+      // Verifica se o usuário tem um perfil específico designado
+      const specialUser = SPECIAL_USERS.find(u => u.userId === userId);
+      if (specialUser) {
+        setEffectiveProfile(specialUser.specificProfile);
+      } else {
+        setEffectiveProfile(userProfile);
+      }
     }
-  }, []);
+  }, [userProfile]);
   
   // Load page access settings on component mount
   useEffect(() => {
@@ -63,25 +72,13 @@ export const useAuthorization = (userProfile: string) => {
   
   // Check if user has access to a specific page based on path
   const hasAccessToPage = (path: string): boolean => {
-    // Verificar restrições específicas para o usuário atual
-    if (currentUserId) {
-      const userRestriction = USER_RESTRICTIONS.find(r => r.userId === currentUserId);
-      if (userRestriction) {
-        // Extract the base path (e.g., /ocorrencias/123 -> /ocorrencias)
-        const basePath = '/' + path.split('/')[1];
-        
-        // Se o caminho estiver na lista de restrições, negar acesso
-        if (userRestriction.restrictedPaths.includes(basePath)) {
-          return false;
-        }
-        
-        // Se não estiver restrito para este usuário específico, permitir acesso
-        return true;
-      }
+    // If user is a special Inspetor through userId, allow access to all pages
+    if (currentUserId && SPECIAL_USERS.find(u => u.userId === currentUserId)?.specificProfile === 'Inspetor') {
+      return true;
     }
     
-    // If user is Inspetor, allow access to all pages
-    if (userProfile === 'Inspetor') {
+    // If user's effective profile is Inspetor, allow access to all pages
+    if (effectiveProfile === 'Inspetor') {
       return true;
     }
     
@@ -95,28 +92,23 @@ export const useAuthorization = (userProfile: string) => {
       return false;
     }
     
-    return page.allowedProfiles.includes(userProfile as any);
+    return page.allowedProfiles.includes(effectiveProfile as any);
   };
   
   // Get list of pages that the current user has access to
   const getAccessiblePages = (): PageAccess[] => {
-    // Verificar restrições específicas para o usuário atual
-    if (currentUserId) {
-      const userRestriction = USER_RESTRICTIONS.find(r => r.userId === currentUserId);
-      if (userRestriction) {
-        return pageAccessSettings.filter(page => 
-          !userRestriction.restrictedPaths.includes(page.path)
-        );
-      }
+    // If user is a special Inspetor through userId, return all pages
+    if (currentUserId && SPECIAL_USERS.find(u => u.userId === currentUserId)?.specificProfile === 'Inspetor') {
+      return pageAccessSettings;
     }
     
-    // If user is Inspetor, return all pages
-    if (userProfile === 'Inspetor') {
+    // If user's effective profile is Inspetor, return all pages
+    if (effectiveProfile === 'Inspetor') {
       return pageAccessSettings;
     }
     
     return pageAccessSettings.filter(page => 
-      page.allowedProfiles.includes(userProfile as any)
+      page.allowedProfiles.includes(effectiveProfile as any)
     );
   };
   

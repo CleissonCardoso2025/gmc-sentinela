@@ -3,7 +3,7 @@ import { useUserData } from './useUserData';
 import { useUserFilters } from './useUserFilters';
 import { useUserActions } from './useUserActions';
 import { useAccessControl } from './useAccessControl';
-import { UserManagementHook } from './types';
+import { UserManagementHook, PageAccessSettings } from './types';
 
 export const useUserManagement = (): UserManagementHook => {
   // Mock current user profile - This would come from authentication in a real app

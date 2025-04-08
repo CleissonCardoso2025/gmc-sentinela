@@ -1,7 +1,10 @@
 
 import { User } from "@/types/database";
 import { UserFormData } from "@/components/Configuracoes/UserManagement/types";
-import { PageAccessSettings } from "@/components/Configuracoes/PageAccessControl";
+import { PageAccess } from "@/components/Configuracoes/PageAccessControl";
+
+// Define PageAccessSettings as an alias for PageAccess[]
+export type PageAccessSettings = PageAccess[];
 
 export interface UserManagementHook {
   users: User[];

@@ -1,10 +1,22 @@
+
 import { useEffect, useState } from 'react';
 import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-// This would normally come from an API or local storage
+// Get page access settings from local storage or default settings
 const getPageAccessSettings = (): PageAccess[] => {
-  // This is a mock implementation that would be replaced with actual data
-  // The real implementation would fetch from a database or local storage
+  const storedSettings = localStorage.getItem('pageAccessSettings');
+  
+  if (storedSettings) {
+    try {
+      return JSON.parse(storedSettings) as PageAccess[];
+    } catch (error) {
+      console.error('Error parsing stored page access settings:', error);
+    }
+  }
+  
+  // Default settings if nothing is stored
   return [
     { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] },
     { id: 'viaturas', name: 'Viaturas', path: '/viaturas', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor'] },
@@ -17,12 +29,15 @@ const getPageAccessSettings = (): PageAccess[] => {
 
 export const useAuthorization = (userProfile: string) => {
   const [pageAccessSettings, setPageAccessSettings] = useState<PageAccess[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
+  // Load page access settings on component mount
   useEffect(() => {
-    // This would fetch the actual settings from an API or local storage
     setPageAccessSettings(getPageAccessSettings());
+    setIsLoading(false);
   }, []);
   
+  // Check if user has access to a specific page based on path
   const hasAccessToPage = (path: string): boolean => {
     // Extract the base path (e.g., /ocorrencias/123 -> /ocorrencias)
     const basePath = '/' + path.split('/')[1];
@@ -37,25 +52,36 @@ export const useAuthorization = (userProfile: string) => {
     return page.allowedProfiles.includes(userProfile as any);
   };
   
+  // Get list of pages that the current user has access to
   const getAccessiblePages = (): PageAccess[] => {
     return pageAccessSettings.filter(page => 
       page.allowedProfiles.includes(userProfile as any)
     );
   };
   
+  // Save updated page access settings
   const updatePageAccess = (pages: PageAccess[]) => {
-    // In a real app, this would save to an API
-    // For this example, we just update the local state
-    setPageAccessSettings(pages);
-    
-    // This could also update local storage
-    // localStorage.setItem('pageAccessSettings', JSON.stringify(pages));
+    try {
+      // Update state
+      setPageAccessSettings(pages);
+      
+      // Persist to local storage
+      localStorage.setItem('pageAccessSettings', JSON.stringify(pages));
+      
+      toast.success("As permissões de acesso foram atualizadas com sucesso");
+      return true;
+    } catch (error) {
+      console.error('Error updating page access settings:', error);
+      toast.error("Erro ao salvar as permissões de acesso");
+      return false;
+    }
   };
   
   return {
     hasAccessToPage,
     getAccessiblePages,
     updatePageAccess,
-    pageAccessSettings
+    pageAccessSettings,
+    isLoading
   };
 };

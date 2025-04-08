@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Define page access structure
 export type PageAccess = {
@@ -17,23 +19,20 @@ export type PageAccess = {
 // Available profiles
 export const availableProfiles = ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] as const;
 
-// List of application pages for access control
-const appPages: PageAccess[] = [
-  { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] },
-  { id: 'viaturas', name: 'Viaturas', path: '/viaturas', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor'] },
-  { id: 'inspetoria', name: 'Inspetoria', path: '/inspetoria', allowedProfiles: ['Inspetor', 'Subinspetor'] },
-  { id: 'ocorrencias', name: 'Ocorrências', path: '/ocorrencias', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Agente'] },
-  { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: ['Inspetor', 'Corregedor'] },
-  { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: ['Inspetor'] },
-];
-
 interface PageAccessControlProps {
+  initialPages: PageAccess[];
+  isLoading?: boolean;
   onSave: (pages: PageAccess[]) => void;
   onCancel: () => void;
 }
 
-const PageAccessControl: React.FC<PageAccessControlProps> = ({ onSave, onCancel }) => {
-  const [pages, setPages] = useState<PageAccess[]>(appPages);
+const PageAccessControl: React.FC<PageAccessControlProps> = ({ 
+  initialPages,
+  isLoading = false,
+  onSave, 
+  onCancel 
+}) => {
+  const [pages, setPages] = useState<PageAccess[]>(initialPages);
   const [hasChanges, setHasChanges] = useState(false);
   
   const toggleAccess = (pageId: string, profile: string) => {
@@ -65,6 +64,15 @@ const PageAccessControl: React.FC<PageAccessControlProps> = ({ onSave, onCancel 
     onSave(pages);
     setHasChanges(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-full mb-4" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

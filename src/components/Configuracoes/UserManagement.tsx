@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import UserTable from './UserTable';
@@ -30,6 +29,7 @@ import {
   deleteUser, 
   toggleUserStatus 
 } from '@/services/userService/apiUserService';
+import { useAuthorization } from '@/hooks/use-authorization';
 
 export type UserFormData = Omit<User, 'id'> & { id?: string };
 
@@ -47,7 +47,6 @@ const UserManagement = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
-  // Mock current user profile for access control - in a real app this would come from auth
   const mockCurrentUserProfile = {
     perfil: 'Inspetor'
   };
@@ -55,7 +54,8 @@ const UserManagement = () => {
   const userProfile = mockCurrentUserProfile.perfil;
   const hasAccess = userProfile === 'Inspetor';
 
-  // Fetch users on component mount
+  const { pageAccessSettings, updatePageAccess, isLoading: isLoadingAccess } = useAuthorization(userProfile);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -65,7 +65,6 @@ const UserManagement = () => {
     try {
       const data = await getUsers();
       setUsers(data);
-      // Initial filtering will happen in updateFilteredUsers via useEffect
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -78,7 +77,6 @@ const UserManagement = () => {
     }
   };
 
-  // Function to update filtered users whenever the base data changes
   const updateFilteredUsers = () => {
     let result = users;
     
@@ -101,7 +99,6 @@ const UserManagement = () => {
     setFilteredUsers(result);
   };
 
-  // Update filtered users whenever users, searchTerm, profileFilter, or statusFilter changes
   useEffect(() => {
     updateFilteredUsers();
   }, [users, searchTerm, profileFilter, statusFilter]);
@@ -233,11 +230,10 @@ const UserManagement = () => {
   };
 
   const handleSavePageAccess = (pages: PageAccess[]) => {
-    toast({
-      title: "Permissões atualizadas",
-      description: "As permissões de acesso foram atualizadas com sucesso."
-    });
-    setShowAccessDialog(false);
+    const success = updatePageAccess(pages);
+    if (success) {
+      setShowAccessDialog(false);
+    }
   };
 
   if (!hasAccess) {
@@ -356,6 +352,8 @@ const UserManagement = () => {
             <DialogTitle>Gerenciar Permissões de Acesso</DialogTitle>
           </DialogHeader>
           <PageAccessControl 
+            initialPages={pageAccessSettings}
+            isLoading={isLoadingAccess}
             onSave={handleSavePageAccess}
             onCancel={() => setShowAccessDialog(false)}
           />

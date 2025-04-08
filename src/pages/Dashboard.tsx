@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/layouts/Dashboard';
 import { WelcomeHeader } from '@/components/Dashboard/WelcomeHeader';
 import { QuickStats } from '@/components/Dashboard/QuickStats';
@@ -12,6 +12,25 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Route, Clock, MapPin, User, Users } from 'lucide-react';
 
 const Dashboard = () => {
+  const [userName, setUserName] = useState<string>("Carlos Silva");
+  const [userRole, setUserRole] = useState<string>("Guarda Civil Municipal");
+  
+  useEffect(() => {
+    // Get user info from localStorage
+    const storedUserName = localStorage.getItem("userName");
+    const storedUserRole = localStorage.getItem("userRole");
+    
+    if (storedUserName) {
+      setUserName(storedUserName);
+      // Save for other components
+      localStorage.setItem("userName", storedUserName);
+    }
+    
+    if (storedUserRole) {
+      setUserRole(storedUserRole);
+    }
+  }, []);
+
   // Mock data for patrol route
   const patrolRouteData = {
     name: "Rota Central - Setor 2",
@@ -63,7 +82,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
-        <WelcomeHeader userName="Carlos Silva" role="Guarda Civil Municipal" />
+        <WelcomeHeader userName={userName} role={userRole} />
         
         {/* First section - Stats and Quick Actions */}
         <div className="space-y-6">
@@ -143,7 +162,7 @@ const Dashboard = () => {
                 <div className="space-y-4">
                   <div className="flex items-center pb-2 border-b">
                     <User className="h-4 w-4 mr-2 text-gcm-600" />
-                    <span className="text-sm font-medium">Individual - Carlos Silva</span>
+                    <span className="text-sm font-medium">Individual - {userName}</span>
                   </div>
                   
                   <div className="overflow-x-auto">

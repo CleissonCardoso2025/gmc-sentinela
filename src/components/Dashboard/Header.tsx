@@ -1,18 +1,47 @@
+
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Bell, Search, User, ChevronDown, Menu } from "lucide-react";
+import { Bell, Search, User, ChevronDown, Menu, LogOut } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useEffect, useState } from 'react';
+import { toast } from "sonner";
+
 interface HeaderProps {
   notifications: number;
 }
+
 const Header: React.FC<HeaderProps> = ({
   notifications
 }) => {
   const isMobile = useIsMobile();
   const [showSearch, setShowSearch] = React.useState(false);
+  const [userName, setUserName] = useState<string>("Usuário");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get username from localStorage
+    const storedUserName = localStorage.getItem("userName");
+    if (storedUserName) {
+      setUserName(storedUserName);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // Clear user data and redirect to login
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("userProfile");
+    localStorage.removeItem("userName");
+    toast.success("Logout realizado com sucesso");
+    navigate("/login");
+  };
+
+  const handleProfileClick = () => {
+    navigate("/perfil");
+  };
+
   return <header className="fixed w-full h-16 z-50 px-3 sm:px-6 flex items-center justify-between shadow-md animate-fade-in bg-zinc-950">
       <div className="flex items-center">
         <Link to="/">
@@ -48,20 +77,28 @@ const Header: React.FC<HeaderProps> = ({
                   <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-white/30 flex items-center justify-center">
                     <User className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                   </div>
-                  <span className="hidden sm:inline text-sm sm:text-base">Usuário</span>
+                  <span className="hidden sm:inline text-sm sm:text-base truncate max-w-[120px]">{userName}</span>
                   <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-white/70" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 mt-2 animate-fade-up" align="end">
+              <DropdownMenuContent className="w-56 mt-2 animate-fade-up bg-zinc-900 text-zinc-100 border border-zinc-800" align="end">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuSeparator className="bg-zinc-800" />
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"
+                  onClick={handleProfileClick}
+                >
                   <User className="mr-2 h-4 w-4" />
                   <span>Meu Perfil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">Configurações</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500">Sair</DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-zinc-800" />
+                <DropdownMenuItem 
+                  className="cursor-pointer text-red-500 hover:text-red-400 hover:bg-zinc-800 focus:bg-zinc-800 focus:text-red-400"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>}

@@ -58,7 +58,19 @@ export const createUser = async (user: Omit<User, 'id'>): Promise<User | null> =
 
     if (error) {
       console.error("Error creating user:", error);
-      toast.error(`Erro ao criar usuário: ${error.message}`);
+      
+      let errorMessage = "Erro ao criar usuário";
+      
+      // Verificar se o erro é de campos únicos (email ou matrícula)
+      if (error.code === '23505') { // Violation of unique constraint
+        if (error.message.includes('email')) {
+          errorMessage = "Este email já está em uso";
+        } else if (error.message.includes('matricula')) {
+          errorMessage = "Esta matrícula já está em uso";
+        }
+      }
+      
+      toast.error(errorMessage);
       return null;
     }
 
@@ -79,6 +91,8 @@ export const updateUser = async (user: User): Promise<User | null> => {
       .update({
         nome: user.nome,
         email: user.email,
+        matricula: user.matricula,
+        data_nascimento: user.data_nascimento,
         perfil: user.perfil,
         status: user.status
       })
@@ -88,7 +102,19 @@ export const updateUser = async (user: User): Promise<User | null> => {
 
     if (error) {
       console.error("Error updating user:", error);
-      toast.error(`Erro ao atualizar usuário: ${error.message}`);
+      
+      let errorMessage = "Erro ao atualizar usuário";
+      
+      // Verificar se o erro é de campos únicos (email ou matrícula)
+      if (error.code === '23505') { // Violation of unique constraint
+        if (error.message.includes('email')) {
+          errorMessage = "Este email já está em uso";
+        } else if (error.message.includes('matricula')) {
+          errorMessage = "Esta matrícula já está em uso";
+        }
+      }
+      
+      toast.error(errorMessage);
       return null;
     }
 

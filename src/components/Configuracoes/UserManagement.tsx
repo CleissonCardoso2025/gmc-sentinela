@@ -186,7 +186,17 @@ const UserManagement = () => {
   };
 
   const handleEditUser = (user: User) => {
-    setEditingUser(user);
+    const userFormData: UserFormData = {
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      matricula: user.matricula || '',
+      data_nascimento: user.data_nascimento || '',
+      perfil: user.perfil,
+      status: user.status
+    };
+    
+    setEditingUser(userFormData);
     setShowUserDialog(true);
   };
 
@@ -235,7 +245,7 @@ const UserManagement = () => {
           if (userToRemove) {
             toast({
               title: "Usuário excluído",
-              description: `${userToRemove.nome} foi excluído com sucesso.`,
+              description: `${userToRemove.nome} foi exclu��do com sucesso.`,
               variant: "destructive"
             });
           }

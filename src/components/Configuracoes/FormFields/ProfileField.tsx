@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface ProfileFieldProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente') => void;
   readOnly?: boolean;
 }
 
@@ -19,7 +19,7 @@ const ProfileField: React.FC<ProfileFieldProps> = ({
       <Label htmlFor="perfil">Perfil</Label>
       <Select
         value={value}
-        onValueChange={onChange}
+        onValueChange={onChange as (value: string) => void}
         disabled={readOnly}
       >
         <SelectTrigger id="perfil" className={readOnly ? "bg-gray-100" : ""}>

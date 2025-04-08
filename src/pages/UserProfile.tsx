@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/layouts/Dashboard';
 import { useToast } from "@/hooks/use-toast";
@@ -50,8 +49,6 @@ const UserProfile = () => {
     const fetchUserData = async () => {
       setIsLoading(true);
       try {
-        // In a real app, this would use auth.getUser()
-        // For demo purposes, we'll get the first user or use mock data
         const userEmail = localStorage.getItem("userEmail");
         
         if (userEmail) {
@@ -66,7 +63,6 @@ const UserProfile = () => {
           if (data) {
             setUserData(data as UserType);
           } else {
-            // Fallback to mock data if no user found
             setUserData({
               id: "1",
               nome: localStorage.getItem("userName") || "Carlos Silva",
@@ -78,7 +74,6 @@ const UserProfile = () => {
             });
           }
         } else {
-          // Fallback to mock data if no user email in localStorage
           setUserData({
             id: "1",
             nome: localStorage.getItem("userName") || "Carlos Silva",
@@ -101,7 +96,6 @@ const UserProfile = () => {
   }, []);
 
   const onSubmit = (values: z.infer<typeof passwordFormSchema>) => {
-    // In a real app, this would call an API to update the password
     console.log(values);
     toast({
       title: "Senha alterada",
@@ -110,9 +104,8 @@ const UserProfile = () => {
     form.reset();
   };
 
-  const handleUpdateProfile = async (formData: any) => {
+  const handleUpdateProfile = async (formData: UserFormData) => {
     try {
-      // In a real app with auth, this would use the authenticated user's ID
       if (userData?.id) {
         const { data, error } = await supabase
           .from('users')
@@ -133,7 +126,6 @@ const UserProfile = () => {
         setIsEditing(false);
         sonnerToast.success('Perfil atualizado com sucesso');
         
-        // Update localStorage values
         localStorage.setItem("userName", formData.nome);
         localStorage.setItem("userEmail", formData.email);
       }
@@ -176,7 +168,6 @@ const UserProfile = () => {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* User Profile Info */}
           <div className="lg:col-span-1">
             <Card className="shadow-md animate-fade-up">
               <CardHeader className="text-center pb-2">
@@ -237,7 +228,15 @@ const UserProfile = () => {
                 <CardContent>
                   {userData && (
                     <UserForm 
-                      initialData={userData}
+                      initialData={{
+                        id: userData.id,
+                        nome: userData.nome,
+                        email: userData.email,
+                        matricula: userData.matricula || '',
+                        data_nascimento: userData.data_nascimento || '',
+                        perfil: userData.perfil,
+                        status: userData.status
+                      }}
                       onSubmit={handleUpdateProfile}
                       onCancel={() => setIsEditing(false)}
                     />
@@ -246,7 +245,6 @@ const UserProfile = () => {
               </Card>
             ) : (
               <>
-                {/* Stats Card */}
                 <Card className="shadow-md animate-fade-up" style={{ animationDelay: "100ms" }}>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center">
@@ -275,7 +273,6 @@ const UserProfile = () => {
                   </CardContent>
                 </Card>
                 
-                {/* Password Change Card */}
                 <Card className="shadow-md animate-fade-up" style={{ animationDelay: "200ms" }}>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center">

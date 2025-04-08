@@ -37,6 +37,10 @@ const UserForm: React.FC<UserFormProps> = ({
   // Não precisamos mais desta verificação já que handleSubmit do useUserForm já aplica a validação
   const onFormSubmit = handleSubmit;
 
+  const handleProfileChange = (value: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente') => {
+    form.setValue('perfil', value);
+  };
+
   return (
     <form onSubmit={onFormSubmit} className="space-y-4">
       <NameField 
@@ -71,7 +75,7 @@ const UserForm: React.FC<UserFormProps> = ({
 
       <ProfileField 
         value={form.watch('perfil')}
-        onChange={(value) => form.setValue('perfil', value)}
+        onChange={handleProfileChange}
         readOnly={readOnly}
       />
 

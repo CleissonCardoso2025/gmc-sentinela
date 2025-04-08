@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,18 +25,11 @@ interface FormErrors {
   data_nascimento: string;
 }
 
-// Define a more specific type for the payload we receive from Supabase realtime
-interface RealtimeUserPayload {
-  new: {
-    email?: string;
-    matricula?: string;
-    [key: string]: any;
-  };
-  old: {
-    [key: string]: any;
-  } | null;
+type RealtimeChangePayload = {
+  new: Record<string, any>;
+  old: Record<string, any> | null;
   eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-}
+};
 
 const UserForm: React.FC<UserFormProps> = ({ 
   initialData, 
@@ -66,13 +58,10 @@ const UserForm: React.FC<UserFormProps> = ({
   const [isEmailChecking, setIsEmailChecking] = useState(false);
   const [isMatriculaChecking, setIsMatriculaChecking] = useState(false);
 
-  // Efeito para verificar se o email já existe quando o usuário digita
   useEffect(() => {
-    // Skip checks if in readOnly mode
     if (readOnly) return;
     
     const checkEmailExists = async () => {
-      // Ignorar checks se o email for o mesmo do dado inicial (caso de edição)
       if (initialData && initialData.email === formData.email) {
         return;
       }
@@ -106,13 +95,10 @@ const UserForm: React.FC<UserFormProps> = ({
     return () => clearTimeout(debounce);
   }, [formData.email, initialData, readOnly]);
 
-  // Efeito para verificar se a matrícula já existe quando o usuário digita
   useEffect(() => {
-    // Skip checks if in readOnly mode
     if (readOnly) return;
     
     const checkMatriculaExists = async () => {
-      // Ignorar checks se a matrícula for a mesma do dado inicial (caso de edição)
       if (initialData && initialData.matricula === formData.matricula) {
         return;
       }
@@ -146,9 +132,7 @@ const UserForm: React.FC<UserFormProps> = ({
     return () => clearTimeout(debounce);
   }, [formData.matricula, initialData, readOnly]);
 
-  // Sincronização em tempo real para verificar mudanças no banco
   useEffect(() => {
-    // Skip real-time updates if in readOnly mode
     if (readOnly) return;
     
     const channel = supabase
@@ -159,17 +143,18 @@ const UserForm: React.FC<UserFormProps> = ({
           schema: 'public', 
           table: 'users' 
         }, 
-        (payload: any) => {
-          // Verificar se a alteração afeta o email ou matrícula sendo inserido
-          if (payload.new && !initialData) {
-            if (payload.new.email === formData.email) {
+        (payload) => {
+          const typedPayload = payload as unknown as RealtimeChangePayload;
+          
+          if (typedPayload.new && !initialData) {
+            if (typedPayload.new.email === formData.email) {
               setErrors(prev => ({
                 ...prev,
                 email: 'Este email acabou de ser registrado por outro usuário'
               }));
               toast.error("Este email acabou de ser registrado por outro usuário");
             }
-            if (payload.new.matricula === formData.matricula) {
+            if (typedPayload.new.matricula === formData.matricula) {
               setErrors(prev => ({
                 ...prev,
                 matricula: 'Esta matrícula acabou de ser registrada por outro usuário'
@@ -194,13 +179,11 @@ const UserForm: React.FC<UserFormProps> = ({
       data_nascimento: ''
     };
 
-    // Validação do nome
     if (!formData.nome.trim()) {
       newErrors.nome = 'Nome é obrigatório';
       valid = false;
     }
 
-    // Validação do email
     if (!formData.email.trim()) {
       newErrors.email = 'Email é obrigatório';
       valid = false;
@@ -209,18 +192,15 @@ const UserForm: React.FC<UserFormProps> = ({
       valid = false;
     }
 
-    // Validação da matrícula
     if (!formData.matricula?.trim()) {
       newErrors.matricula = 'Matrícula é obrigatória';
       valid = false;
     }
 
-    // Validação da data de nascimento
     if (!formData.data_nascimento?.trim()) {
       newErrors.data_nascimento = 'Data de nascimento é obrigatória';
       valid = false;
     } else {
-      // Verificar se a data está no formato DD/MM/YYYY
       const parsedDate = parse(formData.data_nascimento, 'dd/MM/yyyy', new Date());
       if (!isValid(parsedDate)) {
         newErrors.data_nascimento = 'Data inválida. Use o formato DD/MM/YYYY';
@@ -238,7 +218,6 @@ const UserForm: React.FC<UserFormProps> = ({
       [field]: value
     }));
     
-    // Limpar erro quando o usuário começa a digitar
     if (field === 'nome' || field === 'email' || field === 'matricula' || field === 'data_nascimento') {
       setErrors(prev => ({
         ...prev,
@@ -248,10 +227,8 @@ const UserForm: React.FC<UserFormProps> = ({
   };
 
   const formatDateInput = (input: string) => {
-    // Remove caracteres não numéricos
     const numbers = input.replace(/\D/g, '');
     
-    // Formatação para DD/MM/YYYY
     if (numbers.length <= 2) {
       return numbers;
     } else if (numbers.length <= 4) {

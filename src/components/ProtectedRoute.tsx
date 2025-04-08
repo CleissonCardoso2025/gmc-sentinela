@@ -40,6 +40,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     }
   }, [location.pathname, navigate]);
   
+  // Inspetor profile should have access to all pages
+  if (userProfile === 'Inspetor') {
+    return <>{children}</>;
+  }
+  
   const hasAccess = hasAccessToPage(location.pathname);
   
   if (!hasAccess) {

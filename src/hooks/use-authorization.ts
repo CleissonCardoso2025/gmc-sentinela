@@ -24,6 +24,8 @@ const getPageAccessSettings = (): PageAccess[] => {
     { id: 'ocorrencias', name: 'Ocorrências', path: '/ocorrencias', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Agente'] },
     { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: ['Inspetor', 'Corregedor'] },
     { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: ['Inspetor'] },
+    { id: 'perfil', name: 'Perfil', path: '/perfil', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] },
+    { id: 'index', name: 'Index', path: '/index', allowedProfiles: ['Inspetor'] },
   ];
 };
 
@@ -39,6 +41,11 @@ export const useAuthorization = (userProfile: string) => {
   
   // Check if user has access to a specific page based on path
   const hasAccessToPage = (path: string): boolean => {
+    // If user is Inspetor, allow access to all pages
+    if (userProfile === 'Inspetor') {
+      return true;
+    }
+    
     // Extract the base path (e.g., /ocorrencias/123 -> /ocorrencias)
     const basePath = '/' + path.split('/')[1];
     
@@ -54,6 +61,11 @@ export const useAuthorization = (userProfile: string) => {
   
   // Get list of pages that the current user has access to
   const getAccessiblePages = (): PageAccess[] => {
+    // If user is Inspetor, return all pages
+    if (userProfile === 'Inspetor') {
+      return pageAccessSettings;
+    }
+    
     return pageAccessSettings.filter(page => 
       page.allowedProfiles.includes(userProfile as any)
     );

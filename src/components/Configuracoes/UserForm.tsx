@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, isValid, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UserFormProps {
   initialData?: UserFormData;
@@ -93,7 +92,7 @@ const UserForm: React.FC<UserFormProps> = ({
 
     const debounce = setTimeout(checkEmailExists, 500);
     return () => clearTimeout(debounce);
-  }, [formData.email, initialData, readOnly]);
+  }, [formData.email, initialData, readOnly, errors.email]);
 
   useEffect(() => {
     if (readOnly) return;
@@ -130,7 +129,7 @@ const UserForm: React.FC<UserFormProps> = ({
 
     const debounce = setTimeout(checkMatriculaExists, 500);
     return () => clearTimeout(debounce);
-  }, [formData.matricula, initialData, readOnly]);
+  }, [formData.matricula, initialData, readOnly, errors.matricula]);
 
   useEffect(() => {
     if (readOnly) return;
@@ -143,7 +142,7 @@ const UserForm: React.FC<UserFormProps> = ({
           schema: 'public', 
           table: 'users' 
         }, 
-        (payload) => {
+        (payload: any) => {
           const typedPayload = payload as unknown as RealtimeChangePayload;
           
           if (typedPayload.new && !initialData) {

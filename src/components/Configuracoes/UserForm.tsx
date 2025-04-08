@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { UserFormData } from './UserManagement';
+import { UserFormData } from './UserManagement/types';
 import { toast } from "sonner";
 import { useUserForm } from '@/hooks/use-user-form';
 
@@ -27,71 +27,63 @@ const UserForm: React.FC<UserFormProps> = ({
   readOnly = false
 }) => {
   const {
-    formData,
-    errors,
-    isEmailChecking,
-    isMatriculaChecking,
-    validateForm,
-    handleChange
-  } = useUserForm(initialData, readOnly);
+    form,
+    isSubmitting,
+    handleSubmit,
+    handleCancel,
+    isEditing
+  } = useUserForm({ initialData, onSubmit, onCancel });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm() && !isEmailChecking && !isMatriculaChecking) {
-      onSubmit(formData);
-    } else if (isEmailChecking || isMatriculaChecking) {
-      toast.warning("Aguarde a verificação de dados...");
-    }
-  };
+  // Não precisamos mais desta verificação já que handleSubmit do useUserForm já aplica a validação
+  const onFormSubmit = handleSubmit;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={onFormSubmit} className="space-y-4">
       <NameField 
-        value={formData.nome}
-        onChange={(value) => handleChange('nome', value)}
-        error={errors.nome}
+        value={form.watch('nome')}
+        onChange={(value) => form.setValue('nome', value)}
+        error={form.formState.errors.nome?.message}
         readOnly={readOnly}
       />
 
       <EmailField 
-        value={formData.email}
-        onChange={(value) => handleChange('email', value)}
-        error={errors.email}
-        isChecking={isEmailChecking}
+        value={form.watch('email')}
+        onChange={(value) => form.setValue('email', value)}
+        error={form.formState.errors.email?.message}
+        isChecking={false}
         readOnly={readOnly}
       />
 
       <MatriculaField 
-        value={formData.matricula}
-        onChange={(value) => handleChange('matricula', value)}
-        error={errors.matricula}
-        isChecking={isMatriculaChecking}
+        value={form.watch('matricula')}
+        onChange={(value) => form.setValue('matricula', value)}
+        error={form.formState.errors.matricula?.message}
+        isChecking={false}
         readOnly={readOnly}
       />
 
       <DateField 
-        value={formData.data_nascimento}
-        onChange={(value) => handleChange('data_nascimento', value)}
-        error={errors.data_nascimento}
+        value={form.watch('data_nascimento')}
+        onChange={(value) => form.setValue('data_nascimento', value)}
+        error={form.formState.errors.data_nascimento?.message}
         readOnly={readOnly}
       />
 
       <ProfileField 
-        value={formData.perfil}
-        onChange={(value) => handleChange('perfil', value)}
+        value={form.watch('perfil')}
+        onChange={(value) => form.setValue('perfil', value)}
         readOnly={readOnly}
       />
 
       <StatusField 
-        checked={formData.status}
-        onChange={(checked) => handleChange('status', checked)}
+        checked={form.watch('status')}
+        onChange={(checked) => form.setValue('status', checked)}
         readOnly={readOnly}
       />
 
       <FormActions 
-        onCancel={onCancel}
-        isEditing={!!initialData}
+        onCancel={handleCancel}
+        isEditing={isEditing}
         readOnly={readOnly}
       />
     </form>

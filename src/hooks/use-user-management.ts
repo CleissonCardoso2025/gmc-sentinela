@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/types/database';
@@ -149,7 +148,17 @@ export const useUserManagement = () => {
   };
 
   const handleEditUser = (user: User) => {
-    setEditingUser(user);
+    const userFormData: UserFormData = {
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      matricula: user.matricula || '',
+      data_nascimento: user.data_nascimento || '',
+      perfil: user.perfil,
+      status: user.status
+    };
+    
+    setEditingUser(userFormData);
     setShowUserDialog(true);
   };
 

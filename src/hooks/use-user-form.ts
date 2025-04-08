@@ -48,7 +48,12 @@ export const useUserForm = ({ initialData, onSubmit, onCancel }: UseUserFormProp
       // Combine form data with existing user ID if editing
       const userData: UserFormData = {
         ...(initialData?.id ? { id: initialData.id } : {}),
-        ...data
+        nome: data.nome,
+        email: data.email,
+        matricula: data.matricula,
+        data_nascimento: data.data_nascimento,
+        perfil: data.perfil,
+        status: data.status
       };
       
       await onSubmit(userData);
@@ -69,7 +74,7 @@ export const useUserForm = ({ initialData, onSubmit, onCancel }: UseUserFormProp
   return {
     form,
     isSubmitting,
-    handleSubmit,
+    handleSubmit: form.handleSubmit(handleSubmit),
     handleCancel,
     isEditing: !!initialData?.id,
   };

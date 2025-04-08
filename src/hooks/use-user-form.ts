@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserFormData } from '@/components/Configuracoes/UserManagement';
+import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
 import { isValid, parse } from "date-fns";
 
 interface FormErrors {
@@ -12,6 +12,7 @@ interface FormErrors {
   data_nascimento: string;
 }
 
+// Simplified type for Supabase realtime change events
 type RealtimeChangePayload = {
   new: Record<string, any>;
   old: Record<string, any> | null;
@@ -129,6 +130,7 @@ export const useUserForm = (initialData?: UserFormData, readOnly: boolean = fals
           table: 'users' 
         }, 
         (payload: any) => {
+          // Safe cast to our simplified type
           const typedPayload = payload as unknown as RealtimeChangePayload;
           
           if (typedPayload.new && !initialData) {

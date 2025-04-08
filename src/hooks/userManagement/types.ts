@@ -15,6 +15,8 @@ export interface UserManagementState {
   editingUser: UserFormData | null;
   userToDelete: string | null;
   showDeleteDialog: boolean;
+  pageAccessSettings: PageAccess[];
+  isLoadingAccess: boolean;
 }
 
 export interface UserManagementActions {

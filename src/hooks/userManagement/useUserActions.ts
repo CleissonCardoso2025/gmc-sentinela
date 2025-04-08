@@ -39,8 +39,8 @@ export const useUserActions = (users: User[], setUsers: (users: User[]) => void)
     try {
       const updatedUser = await updateUser(userData as User);
       if (updatedUser) {
-        setUsers(prev => 
-          prev.map(user => user.id === updatedUser.id ? updatedUser : user)
+        setUsers((prevUsers: User[]) => 
+          prevUsers.map(user => user.id === updatedUser.id ? updatedUser : user)
         );
         setShowUserDialog(false);
         toast({
@@ -80,8 +80,8 @@ export const useUserActions = (users: User[], setUsers: (users: User[]) => void)
       
       const updatedUser = await toggleUserStatus(userId, user.status);
       if (updatedUser) {
-        setUsers(prev => 
-          prev.map(u => u.id === userId ? updatedUser : u)
+        setUsers((prevUsers: User[]) => 
+          prevUsers.map(u => u.id === userId ? updatedUser : u)
         );
         
         toast({

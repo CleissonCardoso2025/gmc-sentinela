@@ -79,7 +79,9 @@ export const useUserManagement = (): UserManagementHook => {
     handleAddNewUser,
     handleCloseUserDialog,
     handleOpenAccessControl,
-    handleSavePageAccess
+    handleSavePageAccess,
+    pageAccessSettings,
+    isLoadingAccess
   };
 };
 

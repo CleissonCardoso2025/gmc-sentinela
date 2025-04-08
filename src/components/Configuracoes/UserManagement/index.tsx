@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useAuthorization } from '@/hooks/use-authorization';
-import { useUserManagement } from '@/hooks/use-user-management';
+import { useUserManagement } from '@/hooks/userManagement';
 import UserTable from '@/components/Configuracoes/UserTable';
 import UserFilters from './UserFilters';
 import UserActions from './UserActions';
@@ -33,7 +33,11 @@ const UserManagement = () => {
     handleDeleteUser,
     confirmDeleteUser,
     handleAddNewUser,
-    handleCloseUserDialog
+    handleCloseUserDialog,
+    pageAccessSettings,
+    isLoadingAccess,
+    handleOpenAccessControl,
+    handleSavePageAccess
   } = useUserManagement();
 
   const mockCurrentUserProfile = {
@@ -42,19 +46,6 @@ const UserManagement = () => {
 
   const userProfile = mockCurrentUserProfile.perfil;
   const hasAccess = userProfile === 'Inspetor';
-
-  const { pageAccessSettings, updatePageAccess, isLoading: isLoadingAccess } = useAuthorization(userProfile);
-
-  const handleOpenAccessControl = () => {
-    setShowAccessDialog(true);
-  };
-
-  const handleSavePageAccess = (pages: any) => {
-    const success = updatePageAccess(pages);
-    if (success) {
-      setShowAccessDialog(false);
-    }
-  };
 
   if (!hasAccess) {
     return (

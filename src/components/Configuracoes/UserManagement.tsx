@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import UserTable from './UserTable';
@@ -59,7 +60,8 @@ const UserManagement = () => {
   const userProfile = mockCurrentUserProfile.perfil;
   const hasAccess = userProfile === 'Inspetor';
 
-  useEffect(() => {
+  // Function to update filtered users whenever the base data changes
+  const updateFilteredUsers = () => {
     let result = users;
     
     if (searchTerm) {
@@ -79,6 +81,11 @@ const UserManagement = () => {
     }
     
     setFilteredUsers(result);
+  };
+
+  // Update filtered users whenever users, searchTerm, profileFilter, or statusFilter changes
+  useEffect(() => {
+    updateFilteredUsers();
   }, [users, searchTerm, profileFilter, statusFilter]);
 
   const handleCreateUser = (userData: UserFormData) => {
@@ -93,6 +100,7 @@ const UserManagement = () => {
       title: "Usuário criado",
       description: `${newUser.nome} foi adicionado com sucesso.`
     });
+    // No need to call updateFilteredUsers here as it will be triggered by the useEffect
   };
 
   const handleUpdateUser = (userData: UserFormData) => {
@@ -106,6 +114,7 @@ const UserManagement = () => {
       title: "Usuário atualizado",
       description: `Os dados de ${userData.nome} foram atualizados.`
     });
+    // No need to call updateFilteredUsers here as it will be triggered by the useEffect
   };
 
   const handleEditUser = (user: User) => {
@@ -128,6 +137,7 @@ const UserManagement = () => {
         description: `${user.nome} foi ${user.status ? "desativado" : "ativado"} com sucesso.`
       });
     }
+    // No need to call updateFilteredUsers here as it will be triggered by the useEffect
   };
 
   const handleDeleteUser = (userId: number) => {
@@ -148,6 +158,7 @@ const UserManagement = () => {
           variant: "destructive"
         });
       }
+      // No need to call updateFilteredUsers here as it will be triggered by the useEffect
     }
   };
 
@@ -171,6 +182,7 @@ const UserManagement = () => {
       description: "As permissões de acesso foram atualizadas com sucesso."
     });
     setShowAccessDialog(false);
+    // Since this doesn't modify the users array, no need to call updateFilteredUsers
   };
 
   if (!hasAccess) {

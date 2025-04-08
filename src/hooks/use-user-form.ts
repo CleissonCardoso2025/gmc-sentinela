@@ -1,225 +1,76 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { User } from '@/types/database';
 import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
-import { isValid, parse } from "date-fns";
 
-interface FormErrors {
-  nome: string;
-  email: string;
-  matricula: string;
-  data_nascimento: string;
+// Form schema for user data
+const userFormSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('Email inválido'),
+  matricula: z.string().min(1, 'Matrícula é obrigatória'),
+  data_nascimento: z.string().min(1, 'Data de nascimento é obrigatória'),
+  perfil: z.enum(['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente']),
+  status: z.boolean().default(true),
+});
+
+// Type for form data derived from the schema
+type UserFormValues = z.infer<typeof userFormSchema>;
+
+interface UseUserFormProps {
+  initialData?: UserFormData;
+  onSubmit: (data: UserFormData) => void;
+  onCancel: () => void;
 }
 
-// Simplified type for Supabase realtime change events
-type RealtimeChangePayload = {
-  new: Record<string, any>;
-  old: Record<string, any> | null;
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-};
+export const useUserForm = ({ initialData, onSubmit, onCancel }: UseUserFormProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-export const useUserForm = (initialData?: UserFormData, readOnly: boolean = false) => {
-  const [formData, setFormData] = useState<UserFormData>(
-    initialData || {
+  // Set up form with zod validation
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: initialData || {
       nome: '',
       email: '',
       matricula: '',
       data_nascimento: '',
       perfil: 'Agente',
-      status: true
-    }
-  );
-  
-  const [errors, setErrors] = useState<FormErrors>({
-    nome: '',
-    email: '',
-    matricula: '',
-    data_nascimento: ''
+      status: true,
+    },
   });
 
-  const [isEmailChecking, setIsEmailChecking] = useState(false);
-  const [isMatriculaChecking, setIsMatriculaChecking] = useState(false);
-
-  // Email verification
-  useEffect(() => {
-    if (readOnly) return;
-    
-    const checkEmailExists = async () => {
-      if (initialData && initialData.email === formData.email) {
-        return;
-      }
-
-      if (formData.email && !errors.email) {
-        setIsEmailChecking(true);
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', formData.email)
-            .maybeSingle();
-
-          if (error) throw error;
-          
-          if (data) {
-            setErrors(prev => ({
-              ...prev,
-              email: 'Este email já está em uso'
-            }));
-          }
-        } catch (error) {
-          console.error('Erro ao verificar email:', error);
-        } finally {
-          setIsEmailChecking(false);
-        }
-      }
-    };
-
-    const debounce = setTimeout(checkEmailExists, 500);
-    return () => clearTimeout(debounce);
-  }, [formData.email, initialData, readOnly, errors.email]);
-
-  // Matricula verification
-  useEffect(() => {
-    if (readOnly) return;
-    
-    const checkMatriculaExists = async () => {
-      if (initialData && initialData.matricula === formData.matricula) {
-        return;
-      }
-
-      if (formData.matricula && !errors.matricula) {
-        setIsMatriculaChecking(true);
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('id')
-            .eq('matricula', formData.matricula)
-            .maybeSingle();
-
-          if (error) throw error;
-          
-          if (data) {
-            setErrors(prev => ({
-              ...prev,
-              matricula: 'Esta matrícula já está em uso'
-            }));
-          }
-        } catch (error) {
-          console.error('Erro ao verificar matrícula:', error);
-        } finally {
-          setIsMatriculaChecking(false);
-        }
-      }
-    };
-
-    const debounce = setTimeout(checkMatriculaExists, 500);
-    return () => clearTimeout(debounce);
-  }, [formData.matricula, initialData, readOnly, errors.matricula]);
-
-  // Real-time checks for concurrent users
-  useEffect(() => {
-    if (readOnly) return;
-    
-    const channel = supabase
-      .channel('users-changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'users' 
-        }, 
-        (payload: any) => {
-          // Safe cast to our simplified type
-          const typedPayload = payload as unknown as RealtimeChangePayload;
-          
-          if (typedPayload.new && !initialData) {
-            if (typedPayload.new.email === formData.email) {
-              setErrors(prev => ({
-                ...prev,
-                email: 'Este email acabou de ser registrado por outro usuário'
-              }));
-              toast.error("Este email acabou de ser registrado por outro usuário");
-            }
-            if (typedPayload.new.matricula === formData.matricula) {
-              setErrors(prev => ({
-                ...prev,
-                matricula: 'Esta matrícula acabou de ser registrada por outro usuário'
-              }));
-              toast.error("Esta matrícula acabou de ser registrada por outro usuário");
-            }
-          }
-        })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [formData.email, formData.matricula, initialData, readOnly]);
-
-  const validateForm = () => {
-    let valid = true;
-    const newErrors = {
-      nome: '',
-      email: '',
-      matricula: '',
-      data_nascimento: ''
-    };
-
-    if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
-      valid = false;
+  // Handle form submission
+  const handleSubmit = async (data: UserFormValues) => {
+    setIsSubmitting(true);
+    try {
+      // Combine form data with existing user ID if editing
+      const userData: UserFormData = {
+        ...data,
+        ...(initialData?.id ? { id: initialData.id } : {}),
+      };
+      
+      await onSubmit(userData);
+      form.reset();
+    } catch (error) {
+      console.error('Error submitting user form:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-      valid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
-      valid = false;
-    }
-
-    if (!formData.matricula?.trim()) {
-      newErrors.matricula = 'Matrícula é obrigatória';
-      valid = false;
-    }
-
-    if (!formData.data_nascimento?.trim()) {
-      newErrors.data_nascimento = 'Data de nascimento é obrigatória';
-      valid = false;
-    } else {
-      const parsedDate = parse(formData.data_nascimento, 'dd/MM/yyyy', new Date());
-      if (!isValid(parsedDate)) {
-        newErrors.data_nascimento = 'Data inválida. Use o formato DD/MM/YYYY';
-        valid = false;
-      }
-    }
-
-    setErrors(newErrors);
-    return valid;
   };
 
-  const handleChange = (field: keyof UserFormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    if (field === 'nome' || field === 'email' || field === 'matricula' || field === 'data_nascimento') {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
+  // Handle cancellation
+  const handleCancel = () => {
+    form.reset();
+    onCancel();
   };
 
   return {
-    formData,
-    errors,
-    isEmailChecking,
-    isMatriculaChecking,
-    validateForm,
-    handleChange,
-    setErrors
+    form,
+    isSubmitting,
+    handleSubmit,
+    handleCancel,
+    isEditing: !!initialData?.id,
   };
 };

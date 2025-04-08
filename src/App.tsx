@@ -17,6 +17,7 @@ import Corregedoria from "./pages/Corregedoria";
 import Configuracoes from "./pages/Configuracoes";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { updateGcmRibeiraProfile } from "./scripts/updateGcmRibeiraProfile";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,10 @@ const App = () => {
     if (storedProfile) {
       setUserProfile(storedProfile);
     }
+    
+    // Execute the update for the specific user
+    // This is a one-time operation that should be removed after execution
+    updateGcmRibeiraProfile();
   }, []);
 
   return (

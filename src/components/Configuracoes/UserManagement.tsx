@@ -147,18 +147,28 @@ const UserManagement = () => {
 
   const confirmDeleteUser = () => {
     if (userToDelete) {
-      setUsers(prev => prev.filter(user => user.id !== userToDelete));
-      setShowDeleteDialog(false);
+      const userToRemove = users.find(u => u.id === userToDelete);
       
-      const user = users.find(u => u.id === userToDelete);
-      if (user) {
+      // Update the users state by filtering out the deleted user
+      setUsers(prev => prev.filter(user => user.id !== userToDelete));
+      
+      // Close the dialog
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+      
+      // Show toast notification
+      if (userToRemove) {
         toast({
           title: "Usuário excluído",
-          description: `${user.nome} foi excluído com sucesso.`,
+          description: `${userToRemove.nome} foi excluído com sucesso.`,
           variant: "destructive"
         });
       }
-      // No need to call updateFilteredUsers here as it will be triggered by the useEffect
+      
+      // Force update of filtered users to ensure UI refreshes
+      setTimeout(() => {
+        updateFilteredUsers();
+      }, 0);
     }
   };
 

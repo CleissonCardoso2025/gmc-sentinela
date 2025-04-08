@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import UserForm from '@/components/Configuracoes/UserForm';
 import { User as UserType } from '@/types/database';
 import { toast as sonnerToast } from 'sonner';
+import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
 
 const passwordFormSchema = z.object({
   currentPassword: z.string().min(6, {

@@ -27,6 +27,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     return <Navigate to="/login" replace />;
   }
   
+  // Simular o ID do usuário atual para o exemplo
+  // Em uma aplicação real, isso viria do contexto de autenticação
+  useEffect(() => {
+    // Esto é apenas para demonstração. Em produção, o ID viria do Supabase Auth
+    // ou seria definido durante o login
+    const userId = localStorage.getItem('userId') || 'e632890d-208e-489b-93a3-eae0dd0a9a08';
+    localStorage.setItem('currentUserId', userId);
+  }, []);
+  
   // Check if the stored profile should be redirected
   useEffect(() => {
     const storedUserProfile = localStorage.getItem('userProfile');

@@ -29,9 +29,31 @@ const getPageAccessSettings = (): PageAccess[] => {
   ];
 };
 
+// Restrições específicas por usuário
+interface UserSpecificRestriction {
+  userId: string;
+  restrictedPaths: string[];
+}
+
+const USER_RESTRICTIONS: UserSpecificRestriction[] = [
+  {
+    userId: 'e632890d-208e-489b-93a3-eae0dd0a9a08',
+    restrictedPaths: ['/corregedoria']
+  }
+];
+
 export const useAuthorization = (userProfile: string) => {
   const [pageAccessSettings, setPageAccessSettings] = useState<PageAccess[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Carrega o ID do usuário atual
+  useEffect(() => {
+    const userId = localStorage.getItem('currentUserId');
+    if (userId) {
+      setCurrentUserId(userId);
+    }
+  }, []);
   
   // Load page access settings on component mount
   useEffect(() => {
@@ -41,6 +63,23 @@ export const useAuthorization = (userProfile: string) => {
   
   // Check if user has access to a specific page based on path
   const hasAccessToPage = (path: string): boolean => {
+    // Verificar restrições específicas para o usuário atual
+    if (currentUserId) {
+      const userRestriction = USER_RESTRICTIONS.find(r => r.userId === currentUserId);
+      if (userRestriction) {
+        // Extract the base path (e.g., /ocorrencias/123 -> /ocorrencias)
+        const basePath = '/' + path.split('/')[1];
+        
+        // Se o caminho estiver na lista de restrições, negar acesso
+        if (userRestriction.restrictedPaths.includes(basePath)) {
+          return false;
+        }
+        
+        // Se não estiver restrito para este usuário específico, permitir acesso
+        return true;
+      }
+    }
+    
     // If user is Inspetor, allow access to all pages
     if (userProfile === 'Inspetor') {
       return true;
@@ -61,6 +100,16 @@ export const useAuthorization = (userProfile: string) => {
   
   // Get list of pages that the current user has access to
   const getAccessiblePages = (): PageAccess[] => {
+    // Verificar restrições específicas para o usuário atual
+    if (currentUserId) {
+      const userRestriction = USER_RESTRICTIONS.find(r => r.userId === currentUserId);
+      if (userRestriction) {
+        return pageAccessSettings.filter(page => 
+          !userRestriction.restrictedPaths.includes(page.path)
+        );
+      }
+    }
+    
     // If user is Inspetor, return all pages
     if (userProfile === 'Inspetor') {
       return pageAccessSettings;

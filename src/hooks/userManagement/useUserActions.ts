@@ -5,7 +5,7 @@ import { User } from '@/types/database';
 import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
 import { createUser, updateUser, deleteUser, toggleUserStatus } from '@/services/userService/apiUserService';
 
-export const useUserActions = (users: User[], setUsers: (users: User[]) => void) => {
+export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevUsers: User[]) => User[])) => void) => {
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<UserFormData | null>(null);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);

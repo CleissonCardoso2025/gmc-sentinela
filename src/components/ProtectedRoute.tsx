@@ -28,7 +28,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   }
   
   // Simular o ID do usuário atual para o exemplo
-  // Em uma aplicação real, isso viria do contexto de autenticação
   useEffect(() => {
     // Este é o ID do Inspetor, que tem acesso total ao sistema
     const userId = localStorage.getItem('userId') || 'e632890d-208e-489b-93a3-eae0dd0a9a08';

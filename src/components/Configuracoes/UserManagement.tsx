@@ -1,11 +1,11 @@
+
 import React from 'react';
 import UserTable from './UserTable';
 import UserForm from './UserForm';
-import PageAccessControl from './PageAccessControl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Filter, Shield } from 'lucide-react';
+import { Plus, Search, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useUserManagement } from '@/hooks/userManagement';
-import { UserFormData } from './UserManagement/types';
 
 const UserManagement = () => {
   const {
@@ -34,8 +33,6 @@ const UserManagement = () => {
     setStatusFilter,
     showUserDialog,
     setShowUserDialog,
-    showAccessDialog,
-    setShowAccessDialog,
     editingUser,
     userToDelete,
     showDeleteDialog,
@@ -48,10 +45,7 @@ const UserManagement = () => {
     confirmDeleteUser,
     handleAddNewUser,
     handleCloseUserDialog,
-    handleOpenAccessControl,
-    handleSavePageAccess,
-    pageAccessSettings,
-    isLoadingAccess
+    refetchUsers
   } = useUserManagement();
 
   const mockCurrentUserProfile = {
@@ -136,11 +130,6 @@ const UserManagement = () => {
             </PopoverContent>
           </Popover>
           
-          <Button onClick={handleOpenAccessControl} variant="outline" className="gap-1">
-            <Shield className="h-4 w-4" />
-            Controle de Acesso
-          </Button>
-          
           <Button onClick={handleAddNewUser} className="gap-1">
             <Plus className="h-4 w-4" />
             Novo Usuário
@@ -167,20 +156,6 @@ const UserManagement = () => {
             initialData={editingUser || undefined} 
             onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
             onCancel={handleCloseUserDialog}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Permissões de Acesso</DialogTitle>
-          </DialogHeader>
-          <PageAccessControl 
-            initialPages={pageAccessSettings}
-            isLoading={isLoadingAccess}
-            onSave={handleSavePageAccess}
-            onCancel={() => setShowAccessDialog(false)}
           />
         </DialogContent>
       </Dialog>

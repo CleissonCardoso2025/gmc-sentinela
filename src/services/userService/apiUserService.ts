@@ -11,14 +11,15 @@ export class ApiUserService extends AbstractBaseService implements UserService {
 
   async getUsers(): Promise<User[]> {
     try {
+      // Use type assertion to handle Supabase's type constraints
       const { data, error } = await supabase
-        .from('users')
+        .from('users' as any)
         .select('*');
       
       if (error) throw error;
       
       return data.map(user => ({
-        id: user.id,
+        id: Number(user.id),
         nome: user.nome,
         email: user.email,
         perfil: user.perfil,
@@ -33,7 +34,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
   async getUserById(id: number): Promise<User | null> {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('users' as any)
         .select('*')
         .eq('id', id)
         .single();
@@ -42,7 +43,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
       if (!data) return null;
       
       return {
-        id: data.id,
+        id: Number(data.id),
         nome: data.nome,
         email: data.email,
         perfil: data.perfil,
@@ -57,7 +58,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
   async createUser(userData: UserFormData): Promise<User> {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('users' as any)
         .insert([{
           nome: userData.nome,
           email: userData.email,
@@ -70,7 +71,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
       if (error) throw error;
       
       return {
-        id: data.id,
+        id: Number(data.id),
         nome: data.nome,
         email: data.email,
         perfil: data.perfil,
@@ -89,7 +90,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
     
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('users' as any)
         .update({
           nome: userData.nome,
           email: userData.email,
@@ -103,7 +104,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
       if (error) throw error;
       
       return {
-        id: data.id,
+        id: Number(data.id),
         nome: data.nome,
         email: data.email,
         perfil: data.perfil,
@@ -118,7 +119,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
   async deleteUser(userId: number): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('users')
+        .from('users' as any)
         .delete()
         .eq('id', userId);
       
@@ -141,7 +142,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
       
       // Toggle the status
       const { data, error } = await supabase
-        .from('users')
+        .from('users' as any)
         .update({ status: !user.status })
         .eq('id', userId)
         .select()
@@ -150,7 +151,7 @@ export class ApiUserService extends AbstractBaseService implements UserService {
       if (error) throw error;
       
       return {
-        id: data.id,
+        id: Number(data.id),
         nome: data.nome,
         email: data.email,
         perfil: data.perfil,

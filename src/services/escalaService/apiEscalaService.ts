@@ -12,13 +12,13 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
   async getEscalaItems(): Promise<EscalaItem[]> {
     try {
       const { data, error } = await supabase
-        .from('escala_items')
+        .from('escala_items' as any)
         .select('*');
       
       if (error) throw error;
       
       return data.map(item => ({
-        id: item.id,
+        id: Number(item.id),
         guarnicao: item.guarnicao,
         supervisor: item.supervisor,
         rota: item.rota,
@@ -37,13 +37,13 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
   async getGuarnicoes(): Promise<GuarnicaoOption[]> {
     try {
       const { data, error } = await supabase
-        .from('guarnicoes')
+        .from('guarnicoes' as any)
         .select('*');
       
       if (error) throw error;
       
       return data.map(item => ({
-        id: item.id,
+        id: String(item.id),
         nome: item.nome,
         supervisor: item.supervisor
       }));
@@ -56,13 +56,13 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
   async getRotas(): Promise<RotaOption[]> {
     try {
       const { data, error } = await supabase
-        .from('rotas')
+        .from('rotas' as any)
         .select('*');
       
       if (error) throw error;
       
       return data.map(item => ({
-        id: item.id,
+        id: String(item.id),
         nome: item.nome
       }));
     } catch (error) {
@@ -74,13 +74,13 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
   async getViaturas(): Promise<ViaturaOption[]> {
     try {
       const { data, error } = await supabase
-        .from('viaturas')
+        .from('viaturas' as any)
         .select('*');
       
       if (error) throw error;
       
       return data.map(item => ({
-        id: item.id,
+        id: String(item.id),
         codigo: item.codigo,
         modelo: item.modelo
       }));
@@ -93,7 +93,7 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
   async updateEscalaItem(item: EscalaItem): Promise<EscalaItem> {
     try {
       const { data, error } = await supabase
-        .from('escala_items')
+        .from('escala_items' as any)
         .update({
           guarnicao: item.guarnicao,
           supervisor: item.supervisor,
@@ -110,7 +110,17 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
       
       if (error) throw error;
       
-      return data as EscalaItem;
+      return {
+        id: Number(data.id),
+        guarnicao: data.guarnicao,
+        supervisor: data.supervisor,
+        rota: data.rota,
+        viatura: data.viatura,
+        periodo: data.periodo,
+        agent: data.agent,
+        role: data.role,
+        schedule: data.schedule
+      };
     } catch (error) {
       console.error(`Error updating escala item with ID ${item.id}:`, error);
       throw error;
@@ -120,7 +130,7 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
   async createEscalaItem(item: Omit<EscalaItem, 'id'>): Promise<EscalaItem> {
     try {
       const { data, error } = await supabase
-        .from('escala_items')
+        .from('escala_items' as any)
         .insert([{
           guarnicao: item.guarnicao,
           supervisor: item.supervisor,
@@ -136,7 +146,17 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
       
       if (error) throw error;
       
-      return data as EscalaItem;
+      return {
+        id: Number(data.id),
+        guarnicao: data.guarnicao,
+        supervisor: data.supervisor,
+        rota: data.rota,
+        viatura: data.viatura,
+        periodo: data.periodo,
+        agent: data.agent,
+        role: data.role,
+        schedule: data.schedule
+      };
     } catch (error) {
       console.error('Error creating escala item:', error);
       throw error;
@@ -146,7 +166,7 @@ export class ApiEscalaService extends AbstractBaseService implements EscalaServi
   async deleteEscalaItem(id: number): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('escala_items')
+        .from('escala_items' as any)
         .delete()
         .eq('id', id);
       

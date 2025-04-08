@@ -7,7 +7,7 @@ import UserFilters from './UserFilters';
 import UserActions from './UserActions';
 import UserFormDialog from './UserFormDialog';
 import UserDeleteDialog from './UserDeleteDialog';
-import AccessControlDialog from './AccessControlDialog';
+import AccessControlDialog from '@/components/Configuracoes/AccessControlDialog';
 
 const UserManagement = () => {
   const {

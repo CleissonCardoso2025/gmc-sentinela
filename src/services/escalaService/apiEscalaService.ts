@@ -2,7 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EscalaItem, GuarnicaoOption, RotaOption, ViaturaOption, ScheduleDay } from "@/types/database";
 import { toast } from "sonner";
-import { Json } from "@/integrations/supabase/types";
 
 // Get all escala items
 export const getEscalaItems = async (): Promise<EscalaItem[]> => {
@@ -159,7 +158,7 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
         periodo: escalaItem.periodo,
         agent: escalaItem.agent,
         role: escalaItem.role,
-        schedule: escalaItem.schedule as unknown as Json
+        schedule: escalaItem.schedule as unknown as any
       }])
       .select()
       .single();
@@ -204,7 +203,7 @@ export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaIt
         periodo: escalaItem.periodo,
         agent: escalaItem.agent,
         role: escalaItem.role,
-        schedule: escalaItem.schedule as unknown as Json
+        schedule: escalaItem.schedule as unknown as any
       })
       .eq('id', escalaItem.id)
       .select()

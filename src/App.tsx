@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import Ocorrencias from "./pages/Ocorrencias";
 import Corregedoria from "./pages/Corregedoria";
 import Configuracoes from "./pages/Configuracoes";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,8 +41,9 @@ const App = () => {
             {/* Redirect root to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
             
-            {/* Login route is accessible by anyone */}
+            {/* Login and Register routes are accessible by anyone */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             
             {/* Protected Routes */}
             <Route path="/index" element={

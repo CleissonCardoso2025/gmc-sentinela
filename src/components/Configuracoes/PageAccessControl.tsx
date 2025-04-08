@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
@@ -23,7 +22,6 @@ const appPages: PageAccess[] = [
   { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] },
   { id: 'viaturas', name: 'Viaturas', path: '/viaturas', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor'] },
   { id: 'inspetoria', name: 'Inspetoria', path: '/inspetoria', allowedProfiles: ['Inspetor', 'Subinspetor'] },
-  { id: 'rh', name: 'Recursos Humanos', path: '/rh', allowedProfiles: ['Inspetor'] },
   { id: 'ocorrencias', name: 'Ocorrências', path: '/ocorrencias', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Agente'] },
   { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: ['Inspetor', 'Corregedor'] },
   { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: ['Inspetor'] },

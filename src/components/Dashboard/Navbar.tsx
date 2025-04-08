@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -8,7 +7,6 @@ import {
   AlertTriangle, 
   Settings,
   Shield,
-  UserCog,
   GavelIcon,
   Menu,
   Home
@@ -23,7 +21,6 @@ const Navbar: React.FC = () => {
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
-    { icon: <UserCog className="h-5 w-5" />, text: 'Recursos Humanos', path: '/rh' },
     { icon: <Shield className="h-5 w-5" />, text: 'Inspetoria Geral', path: '/inspetoria' },
     { icon: <Settings className="h-5 w-5" />, text: 'Configurações', path: '/configuracoes' },
   ];
@@ -35,7 +32,6 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="fixed top-16 left-0 right-0 bg-gcm-600 shadow-md z-30 animate-fade-in h-16 flex items-center px-4 justify-between">
-      {/* Visible navigation items */}
       <div className="flex items-center space-x-1 overflow-x-auto hide-scrollbar">
         {menuItems.slice(0, 4).map((item, index) => (
           <Button
@@ -58,7 +54,6 @@ const Navbar: React.FC = () => {
         ))}
       </div>
 
-      {/* More menu for remaining items */}
       <Sheet>
         <SheetTrigger asChild>
           <Button 

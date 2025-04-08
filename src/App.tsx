@@ -11,7 +11,6 @@ import UserProfile from "./pages/UserProfile";
 import OccurrenceDetails from "./pages/OccurrenceDetails";
 import Viaturas from "./pages/Viaturas";
 import Inspetoria from "./pages/Inspetoria";
-import RecursosHumanos from "./pages/RecursosHumanos";
 import Ocorrencias from "./pages/Ocorrencias";
 import Corregedoria from "./pages/Corregedoria";
 import Configuracoes from "./pages/Configuracoes";
@@ -53,11 +52,6 @@ const App = () => (
           <Route path="/inspetoria" element={
             <ProtectedRoute userProfile={userProfile}>
               <Inspetoria />
-            </ProtectedRoute>
-          } />
-          <Route path="/rh" element={
-            <ProtectedRoute userProfile={userProfile}>
-              <RecursosHumanos />
             </ProtectedRoute>
           } />
           <Route path="/ocorrencias" element={

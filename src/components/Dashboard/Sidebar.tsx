@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -28,7 +27,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
-    { icon: <UserCog className="h-5 w-5" />, text: 'Recursos Humanos', path: '/rh' },
     { icon: <Shield className="h-5 w-5" />, text: 'Inspetoria Geral', path: '/inspetoria' },
     { icon: <Settings className="h-5 w-5" />, text: 'Configurações', path: '/configuracoes' },
   ];

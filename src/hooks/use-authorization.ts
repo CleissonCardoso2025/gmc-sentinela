@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +24,7 @@ const getPageAccessSettings = (): PageAccess[] => {
     { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: ['Inspetor', 'Corregedor'] },
     { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: ['Inspetor'] },
     { id: 'perfil', name: 'Perfil', path: '/perfil', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] },
-    { id: 'index', name: 'Index', path: '/index', allowedProfiles: ['Inspetor', 'Subinspetor'] },
+    { id: 'index', name: 'Centro de Comando', path: '/index', allowedProfiles: ['Inspetor', 'Subinspetor'] },
   ];
 };
 
@@ -114,6 +113,11 @@ export const useAuthorization = (userProfile: string) => {
     // If user's effective profile is Inspetor, allow access to all pages
     if (effectiveProfile === 'Inspetor') {
       return true;
+    }
+    
+    // Special case for /index page - only Inspetor or Subinspetor can access
+    if (path === '/index') {
+      return effectiveProfile === 'Inspetor' || effectiveProfile === 'Subinspetor';
     }
     
     // Extract the base path (e.g., /ocorrencias/123 -> /ocorrencias)

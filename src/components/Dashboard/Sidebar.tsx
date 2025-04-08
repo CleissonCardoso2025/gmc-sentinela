@@ -3,7 +3,8 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Car, AlertTriangle, Settings, Shield, UserCog, ChevronLeft, ChevronRight, GavelIcon, Home } from "lucide-react";
+import { Car, AlertTriangle, Settings, Shield, UserCog, ChevronLeft, ChevronRight, GavelIcon, Home, Command } from "lucide-react";
+import { useAuthorization } from '@/hooks/use-authorization';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -16,6 +17,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
+  const { hasAccessToPage } = useAuthorization(userProfile);
   
   const menuItems = [
     {
@@ -23,6 +26,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       text: 'Dashboard',
       path: '/dashboard'
     }, 
+    {
+      icon: <Command className="h-5 w-5" />,
+      text: 'Centro de Comando',
+      path: '/index',
+      roles: ['Inspetor', 'Subinspetor']
+    },
     {
       icon: <Car className="h-5 w-5" />,
       text: 'Viaturas',
@@ -53,7 +62,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const isActive = (path: string) => {
     if (path === '/dashboard' && (location.pathname === '/dashboard' || location.pathname === '/')) return true;
     if (path === '/index' && location.pathname === '/index') return true;
-    // Tratamento especial para a página index que agora está no dashboard
     return location.pathname.startsWith(path);
   };
   
@@ -61,6 +69,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     console.log("Navegando para:", path);
     navigate(path);
   };
+
+  // Filter menu items based on user profile
+  const filteredMenuItems = menuItems.filter(item => {
+    // If the item has roles specified, check if user has the required role
+    if (item.roles) {
+      return item.roles.includes(userProfile);
+    }
+    // If no roles are specified, show the item to everyone
+    return true;
+  });
 
   return (
     <aside className={cn("fixed h-full bg-gcm-600 transition-all duration-300 ease-in-out z-40", collapsed ? "w-20" : "w-64")}>
@@ -83,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         <div className="p-4 overflow-y-auto h-full bg-zinc-950">
           <nav className="flex flex-col space-y-2">
-            {menuItems.map((item, index) => (
+            {filteredMenuItems.map((item, index) => (
               <Button 
                 key={index} 
                 variant="ghost" 

@@ -10,22 +10,37 @@ import {
   Shield,
   GavelIcon,
   Menu,
-  Home
+  Home,
+  Command
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuthorization } from '@/hooks/use-authorization';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
+  const { hasAccessToPage } = useAuthorization(userProfile);
   
   const menuItems = [
     { icon: <Home className="h-5 w-5" />, text: 'Dashboard', path: '/dashboard' },
+    { icon: <Command className="h-5 w-5" />, text: 'Centro de Comando', path: '/index', roles: ['Inspetor', 'Subinspetor'] },
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },
     { icon: <AlertTriangle className="h-5 w-5" />, text: 'Ocorrências', path: '/ocorrencias' },
     { icon: <GavelIcon className="h-5 w-5" />, text: 'Corregedoria', path: '/corregedoria' },
     { icon: <Shield className="h-5 w-5" />, text: 'Inspetoria Geral', path: '/inspetoria' },
     { icon: <Settings className="h-5 w-5" />, text: 'Configurações', path: '/configuracoes' },
   ];
+
+  // Filter menu items based on user profile
+  const filteredMenuItems = menuItems.filter(item => {
+    // If the item has roles specified, check if user has the required role
+    if (item.roles) {
+      return item.roles.includes(userProfile);
+    }
+    // If no roles are specified, show the item to everyone
+    return true;
+  });
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && (location.pathname === '/dashboard' || location.pathname === '/')) return true;
@@ -41,7 +56,7 @@ const Navbar: React.FC = () => {
   return (
     <nav className="fixed top-16 left-0 right-0 bg-gcm-600 shadow-md z-30 animate-fade-in h-16 flex items-center px-4 justify-between">
       <div className="flex items-center space-x-1 overflow-x-auto hide-scrollbar">
-        {menuItems.slice(0, 4).map((item, index) => (
+        {filteredMenuItems.slice(0, 4).map((item, index) => (
           <Button
             key={index}
             variant="ghost"
@@ -76,7 +91,7 @@ const Navbar: React.FC = () => {
               <h2 className="text-xl font-bold">Menu</h2>
             </div>
             <ul className="flex-1">
-              {menuItems.map((item, index) => (
+              {filteredMenuItems.map((item, index) => (
                 <li key={index}>
                   <Button
                     variant="ghost"

@@ -21,44 +21,62 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { User } from '@/types/database';
+import { 
+  getUsers, 
+  getUserById, 
+  createUser, 
+  updateUser, 
+  deleteUser, 
+  toggleUserStatus 
+} from '@/services/userService/apiUserService';
 
-export type User = {
-  id: number;
-  nome: string;
-  email: string;
-  perfil: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente';
-  status: boolean;
-};
-
-export type UserFormData = Omit<User, 'id'> & { id?: number };
-
-const mockUsers: User[] = [
-  { id: 1, nome: 'Carlos Silva', email: 'carlos.silva@gcm.gov.br', perfil: 'Inspetor', status: true },
-  { id: 2, nome: 'Maria Oliveira', email: 'maria.oliveira@gcm.gov.br', perfil: 'Subinspetor', status: true },
-  { id: 3, nome: 'João Santos', email: 'joao.santos@gcm.gov.br', perfil: 'Supervisor', status: true },
-  { id: 4, nome: 'Ana Costa', email: 'ana.costa@gcm.gov.br', perfil: 'Corregedor', status: false },
-  { id: 5, nome: 'Pedro Lima', email: 'pedro.lima@gcm.gov.br', perfil: 'Agente', status: true },
-];
-
-const mockCurrentUserProfile = {
-  perfil: 'Inspetor'
-};
+export type UserFormData = Omit<User, 'id'> & { id?: string };
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [profileFilter, setProfileFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [showAccessDialog, setShowAccessDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<UserFormData | null>(null);
-  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
+  // Mock current user profile for access control - in a real app this would come from auth
+  const mockCurrentUserProfile = {
+    perfil: 'Inspetor'
+  };
+
   const userProfile = mockCurrentUserProfile.perfil;
   const hasAccess = userProfile === 'Inspetor';
+
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getUsers();
+      setUsers(data);
+      // Initial filtering will happen in updateFilteredUsers via useEffect
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Erro ao carregar usuários",
+        description: "Não foi possível obter a lista de usuários. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Function to update filtered users whenever the base data changes
   const updateFilteredUsers = () => {
@@ -88,33 +106,50 @@ const UserManagement = () => {
     updateFilteredUsers();
   }, [users, searchTerm, profileFilter, statusFilter]);
 
-  const handleCreateUser = (userData: UserFormData) => {
-    const newUser = {
-      ...userData,
-      id: Math.max(0, ...users.map(u => u.id)) + 1,
-    } as User;
-    
-    setUsers(prev => [...prev, newUser]);
-    setShowUserDialog(false);
-    toast({
-      title: "Usuário criado",
-      description: `${newUser.nome} foi adicionado com sucesso.`
-    });
-    // No need to call updateFilteredUsers here as it will be triggered by the useEffect
+  const handleCreateUser = async (userData: UserFormData) => {
+    try {
+      const newUser = await createUser(userData);
+      if (newUser) {
+        setUsers(prev => [...prev, newUser]);
+        setShowUserDialog(false);
+        toast({
+          title: "Usuário criado",
+          description: `${newUser.nome} foi adicionado com sucesso.`
+        });
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Erro ao criar usuário",
+        description: "Não foi possível criar o usuário. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleUpdateUser = (userData: UserFormData) => {
+  const handleUpdateUser = async (userData: UserFormData) => {
     if (!userData.id) return;
     
-    setUsers(prev => 
-      prev.map(user => user.id === userData.id ? { ...userData } as User : user)
-    );
-    setShowUserDialog(false);
-    toast({
-      title: "Usuário atualizado",
-      description: `Os dados de ${userData.nome} foram atualizados.`
-    });
-    // No need to call updateFilteredUsers here as it will be triggered by the useEffect
+    try {
+      const updatedUser = await updateUser(userData as User);
+      if (updatedUser) {
+        setUsers(prev => 
+          prev.map(user => user.id === updatedUser.id ? updatedUser : user)
+        );
+        setShowUserDialog(false);
+        toast({
+          title: "Usuário atualizado",
+          description: `Os dados de ${updatedUser.nome} foram atualizados.`
+        });
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Erro ao atualizar usuário",
+        description: "Não foi possível atualizar o usuário. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditUser = (user: User) => {
@@ -122,53 +157,64 @@ const UserManagement = () => {
     setShowUserDialog(true);
   };
 
-  const handleToggleStatus = (userId: number) => {
-    setUsers(prev => 
-      prev.map(user => user.id === userId 
-        ? { ...user, status: !user.status } 
-        : user
-      )
-    );
-    
-    const user = users.find(u => u.id === userId);
-    if (user) {
+  const handleToggleStatus = async (userId: string) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      const updatedUser = await toggleUserStatus(userId, user.status);
+      if (updatedUser) {
+        setUsers(prev => 
+          prev.map(u => u.id === userId ? updatedUser : u)
+        );
+        
+        toast({
+          title: user.status ? "Usuário desativado" : "Usuário ativado",
+          description: `${user.nome} foi ${user.status ? "desativado" : "ativado"} com sucesso.`
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling user status:', error);
       toast({
-        title: user.status ? "Usuário desativado" : "Usuário ativado",
-        description: `${user.nome} foi ${user.status ? "desativado" : "ativado"} com sucesso.`
+        title: "Erro ao alterar status",
+        description: "Não foi possível alterar o status do usuário. Tente novamente mais tarde.",
+        variant: "destructive"
       });
     }
-    // No need to call updateFilteredUsers here as it will be triggered by the useEffect
   };
 
-  const handleDeleteUser = (userId: number) => {
+  const handleDeleteUser = (userId: string) => {
     setUserToDelete(userId);
     setShowDeleteDialog(true);
   };
 
-  const confirmDeleteUser = () => {
+  const confirmDeleteUser = async () => {
     if (userToDelete) {
-      const userToRemove = users.find(u => u.id === userToDelete);
-      
-      // Update the users state by filtering out the deleted user
-      setUsers(prev => prev.filter(user => user.id !== userToDelete));
-      
-      // Close the dialog
-      setShowDeleteDialog(false);
-      setUserToDelete(null);
-      
-      // Show toast notification
-      if (userToRemove) {
+      try {
+        const userToRemove = users.find(u => u.id === userToDelete);
+        const success = await deleteUser(userToDelete);
+        
+        if (success) {
+          setUsers(prev => prev.filter(user => user.id !== userToDelete));
+          setShowDeleteDialog(false);
+          setUserToDelete(null);
+          
+          if (userToRemove) {
+            toast({
+              title: "Usuário excluído",
+              description: `${userToRemove.nome} foi excluído com sucesso.`,
+              variant: "destructive"
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting user:', error);
         toast({
-          title: "Usuário excluído",
-          description: `${userToRemove.nome} foi excluído com sucesso.`,
+          title: "Erro ao excluir usuário",
+          description: "Não foi possível excluir o usuário. Tente novamente mais tarde.",
           variant: "destructive"
         });
       }
-      
-      // Force update of filtered users to ensure UI refreshes
-      setTimeout(() => {
-        updateFilteredUsers();
-      }, 0);
     }
   };
 
@@ -192,7 +238,6 @@ const UserManagement = () => {
       description: "As permissões de acesso foram atualizadas com sucesso."
     });
     setShowAccessDialog(false);
-    // Since this doesn't modify the users array, no need to call updateFilteredUsers
   };
 
   if (!hasAccess) {
@@ -287,6 +332,7 @@ const UserManagement = () => {
         onEdit={handleEditUser} 
         onToggleStatus={handleToggleStatus}
         onDelete={handleDeleteUser}
+        isLoading={isLoading}
       />
 
       <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -27,51 +27,46 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { DetalhesInvestigacao } from './DetalhesInvestigacao';
-
-// Dados mockados para demonstração
-const sindicancias = [
-  {
-    id: 'SIN-1234',
-    dataAbertura: '10/08/2023',
-    investigado: 'Carlos Eduardo Silva',
-    motivo: 'Desvio de conduta durante abordagem',
-    status: 'Em andamento',
-    etapaAtual: 'Coleta de Testemunhos',
-  },
-  {
-    id: 'SIN-1235',
-    dataAbertura: '15/09/2023',
-    investigado: 'Roberto Almeida',
-    motivo: 'Uso indevido de viatura',
-    status: 'Em andamento',
-    etapaAtual: 'Investigação Inicial',
-  },
-  {
-    id: 'SIN-1236',
-    dataAbertura: '22/07/2023',
-    investigado: 'Ana Paula Ferreira',
-    motivo: 'Abandono de posto',
-    status: 'Concluída',
-    etapaAtual: 'Parecer Final',
-  },
-  {
-    id: 'SIN-1237',
-    dataAbertura: '05/10/2023',
-    investigado: 'Paulo Roberto Santos',
-    motivo: 'Desvio de equipamento',
-    status: 'Arquivada',
-    etapaAtual: 'Análise dos Fatos',
-  },
-];
+import { Investigacao } from '@/types/database';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export function InvestigacaoList() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedInvestigacao, setSelectedInvestigacao] = useState<any>(null);
+  const [selectedInvestigacao, setSelectedInvestigacao] = useState<Investigacao | null>(null);
+  const [investigacoes, setInvestigacoes] = useState<Investigacao[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const filteredSindicancias = sindicancias.filter(sindicancia => 
-    sindicancia.investigado.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sindicancia.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sindicancia.motivo.toLowerCase().includes(searchTerm.toLowerCase())
+  // Fetch investigacoes on component mount
+  useEffect(() => {
+    fetchInvestigacoes();
+  }, []);
+
+  const fetchInvestigacoes = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('investigacoes')
+        .select('*');
+        
+      if (error) {
+        throw error;
+      }
+      
+      setInvestigacoes(data as Investigacao[]);
+    } catch (error) {
+      console.error('Error fetching investigacoes:', error);
+      toast.error('Não foi possível carregar as sindicâncias');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const filteredInvestigacoes = investigacoes.filter(investigacao => 
+    investigacao.investigado.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    investigacao.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    investigacao.motivo.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   const getStatusBadge = (status: string) => {
@@ -125,45 +120,59 @@ export function InvestigacaoList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredSindicancias.map((sindicancia) => (
-            <TableRow key={sindicancia.id}>
-              <TableCell className="font-medium">{sindicancia.id}</TableCell>
-              <TableCell>{sindicancia.dataAbertura}</TableCell>
-              <TableCell>{sindicancia.investigado}</TableCell>
-              <TableCell className="hidden md:table-cell max-w-[250px] truncate">
-                {sindicancia.motivo}
-              </TableCell>
-              <TableCell>{getStatusBadge(sindicancia.status)}</TableCell>
-              <TableCell>{sindicancia.etapaAtual}</TableCell>
-              <TableCell className="text-right">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setSelectedInvestigacao(sindicancia)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    {selectedInvestigacao && (
-                      <>
-                        <DialogHeader>
-                          <DialogTitle>Sindicância {selectedInvestigacao.id}</DialogTitle>
-                          <DialogDescription>
-                            Detalhes completos da sindicância e passo a passo da apuração
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DetalhesInvestigacao sindicancia={selectedInvestigacao} />
-                      </>
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </TableCell>
-            </TableRow>
-          ))}
-          {filteredSindicancias.length === 0 && (
+          {isLoading ? (
+            // Loading skeleton
+            Array(4).fill(0).map((_, index) => (
+              <TableRow key={`loading-${index}`}>
+                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-64" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-36" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+              </TableRow>
+            ))
+          ) : filteredInvestigacoes.length > 0 ? (
+            filteredInvestigacoes.map((investigacao) => (
+              <TableRow key={investigacao.id}>
+                <TableCell className="font-medium">{investigacao.numero}</TableCell>
+                <TableCell>{investigacao.dataAbertura}</TableCell>
+                <TableCell>{investigacao.investigado}</TableCell>
+                <TableCell className="hidden md:table-cell max-w-[250px] truncate">
+                  {investigacao.motivo}
+                </TableCell>
+                <TableCell>{getStatusBadge(investigacao.status)}</TableCell>
+                <TableCell>{investigacao.etapaAtual}</TableCell>
+                <TableCell className="text-right">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSelectedInvestigacao(investigacao)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                      {selectedInvestigacao && (
+                        <>
+                          <DialogHeader>
+                            <DialogTitle>Sindicância {selectedInvestigacao.numero}</DialogTitle>
+                            <DialogDescription>
+                              Detalhes completos da sindicância e passo a passo da apuração
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DetalhesInvestigacao sindicancia={selectedInvestigacao} />
+                        </>
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                 Nenhuma sindicância encontrada com os termos de busca informados.

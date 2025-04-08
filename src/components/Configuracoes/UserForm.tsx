@@ -101,7 +101,7 @@ const UserForm: React.FC<UserFormProps> = ({
           type="email"
           value={formData.email}
           onChange={(e) => handleChange('email', e.target.value)}
-          placeholder="email@gcm.gov.br"
+          placeholder="email@example.com"
         />
         {errors.email && (
           <p className="text-sm text-red-500">{errors.email}</p>

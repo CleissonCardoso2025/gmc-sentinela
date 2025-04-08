@@ -17,16 +17,24 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, Edit, Power, Trash2 } from 'lucide-react';
-import { User } from './UserManagement';
+import { User } from '@/types/database';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface UserTableProps {
   users: User[];
   onEdit: (user: User) => void;
-  onToggleStatus: (userId: number) => void;
-  onDelete: (userId: number) => void;
+  onToggleStatus: (userId: string) => void;
+  onDelete: (userId: string) => void;
+  isLoading?: boolean;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onToggleStatus, onDelete }) => {
+const UserTable: React.FC<UserTableProps> = ({ 
+  users, 
+  onEdit, 
+  onToggleStatus, 
+  onDelete, 
+  isLoading = false 
+}) => {
   const getStatusBadge = (status: boolean) => {
     if (status) {
       return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Ativo</Badge>;
@@ -49,6 +57,35 @@ const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onToggleStatus, on
       </Badge>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Perfil</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[80px]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array(5).fill(0).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
 
   if (users.length === 0) {
     return (

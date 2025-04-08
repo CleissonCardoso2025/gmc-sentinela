@@ -9,6 +9,233 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      escala_items: {
+        Row: {
+          agent: string
+          created_at: string | null
+          guarnicao: string
+          id: string
+          periodo: string
+          role: string
+          rota: string
+          schedule: Json
+          supervisor: string
+          updated_at: string | null
+          viatura: string
+        }
+        Insert: {
+          agent: string
+          created_at?: string | null
+          guarnicao: string
+          id?: string
+          periodo: string
+          role: string
+          rota: string
+          schedule: Json
+          supervisor: string
+          updated_at?: string | null
+          viatura: string
+        }
+        Update: {
+          agent?: string
+          created_at?: string | null
+          guarnicao?: string
+          id?: string
+          periodo?: string
+          role?: string
+          rota?: string
+          schedule?: Json
+          supervisor?: string
+          updated_at?: string | null
+          viatura?: string
+        }
+        Relationships: []
+      }
+      guarnicoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+          supervisor: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+          supervisor: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+          supervisor?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      investigacoes: {
+        Row: {
+          created_at: string | null
+          dataabertura: string
+          etapaatual: string
+          id: string
+          investigado: string
+          motivo: string
+          numero: string
+          relatoinicial: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dataabertura: string
+          etapaatual: string
+          id?: string
+          investigado: string
+          motivo: string
+          numero: string
+          relatoinicial?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dataabertura?: string
+          etapaatual?: string
+          id?: string
+          investigado?: string
+          motivo?: string
+          numero?: string
+          relatoinicial?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      membros_guarnicao: {
+        Row: {
+          created_at: string | null
+          funcao: string
+          guarnicao_id: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          funcao: string
+          guarnicao_id?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          funcao?: string
+          guarnicao_id?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membros_guarnicao_guarnicao_id_fkey"
+            columns: ["guarnicao_id"]
+            isOneToOne: false
+            referencedRelation: "guarnicoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ocorrencias: {
+        Row: {
+          created_at: string | null
+          data: string
+          descricao: string
+          id: string
+          local: string
+          numero: string
+          status: string
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data: string
+          descricao: string
+          id?: string
+          local: string
+          numero: string
+          status: string
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          local?: string
+          numero?: string
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      rotas: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          nome: string
+          perfil: string
+          status: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          nome: string
+          perfil: string
+          status?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          nome?: string
+          perfil?: string
+          status?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       vehicle_locations: {
         Row: {
           accuracy: number | null
@@ -89,6 +316,30 @@ export type Database = {
           status?: string | null
           tipo?: string | null
           ultimamanutencao?: string | null
+        }
+        Relationships: []
+      }
+      viaturas: {
+        Row: {
+          codigo: string
+          created_at: string | null
+          id: string
+          modelo: string
+          updated_at: string | null
+        }
+        Insert: {
+          codigo: string
+          created_at?: string | null
+          id?: string
+          modelo: string
+          updated_at?: string | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string | null
+          id?: string
+          modelo?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

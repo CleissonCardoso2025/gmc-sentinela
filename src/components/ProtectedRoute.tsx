@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthorization } from '@/hooks/use-authorization';
+import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   userProfile: string;
@@ -10,11 +11,27 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { hasAccessToPage } = useAuthorization(userProfile);
+  
+  // Check if the stored profile should be redirected
+  useEffect(() => {
+    const storedUserProfile = localStorage.getItem('userProfile');
+    
+    // If there's a logged in user and they're at the root path
+    if (storedUserProfile && location.pathname === '/') {
+      // Only redirect non-inspetors to dashboard
+      if (storedUserProfile !== 'Inspetor') {
+        navigate('/dashboard');
+      }
+    }
+  }, [location.pathname, navigate]);
   
   const hasAccess = hasAccessToPage(location.pathname);
   
   if (!hasAccess) {
+    toast.error("Você não tem permissão para acessar esta página");
+    
     return (
       <div className="p-8 max-w-md mx-auto my-12 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
         <h2 className="text-2xl font-bold mb-4">Acesso Negado</h2>

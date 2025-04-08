@@ -42,15 +42,37 @@ const Login = () => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Mock user profile - in a real app, this would come from your authentication service
+      // For demonstration, we'll set a profile based on username
+      let userProfile = "Agente"; // Default profile
+      
+      // Simple mock to set different profiles based on username
+      if (data.username.toLowerCase().includes("inspetor")) {
+        userProfile = "Inspetor";
+      } else if (data.username.toLowerCase().includes("subinspetor")) {
+        userProfile = "Subinspetor";
+      } else if (data.username.toLowerCase().includes("supervisor")) {
+        userProfile = "Supervisor";
+      } else if (data.username.toLowerCase().includes("corregedor")) {
+        userProfile = "Corregedor";
+      }
+      
+      // Store the user profile in localStorage (in a real app, this might be in a secure cookie or state management)
+      localStorage.setItem("userProfile", userProfile);
+      
       // Success notification
       toast({
         title: "Login realizado",
-        description: "Você será redirecionado para o dashboard",
+        description: `Bem-vindo, ${userProfile}. Você será redirecionado.`,
       });
       
-      // Redirect to dashboard after successful login
+      // Redirect based on user profile
       setTimeout(() => {
-        navigate("/");
+        if (userProfile === "Inspetor") {
+          navigate("/"); // Inspetor goes to index
+        } else {
+          navigate("/dashboard"); // Others go to dashboard
+        }
       }, 1000);
       
     } catch (error) {

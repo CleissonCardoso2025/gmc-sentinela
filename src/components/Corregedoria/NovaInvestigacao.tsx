@@ -16,8 +16,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { FileUp, Save, X } from 'lucide-react';
+import { FileUp, Save, X, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Select,
   SelectContent,
@@ -48,6 +49,8 @@ interface NovaInvestigacaoProps {
 export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
   const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
+  const [isCorrigindoMotivo, setIsCorrigindoMotivo] = useState<boolean>(false);
+  const [isCorrigindoRelato, setIsCorrigindoRelato] = useState<boolean>(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -91,6 +94,52 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
     setFiles(files.filter((_, i) => i !== index));
   };
 
+  const corrigirTexto = async (campo: 'motivoInvestigacao' | 'relatoInicial') => {
+    const texto = form.getValues(campo);
+    
+    if (!texto.trim()) {
+      toast({
+        title: "Erro",
+        description: "Não há texto para corrigir.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      campo === 'motivoInvestigacao' ? setIsCorrigindoMotivo(true) : setIsCorrigindoRelato(true);
+      
+      const { data, error } = await supabase.functions.invoke('text-correction', {
+        body: {
+          text: texto
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (data?.correctedText) {
+        form.setValue(campo, data.correctedText);
+        toast({
+          title: "Sucesso",
+          description: "Texto corrigido com sucesso!",
+        });
+      } else {
+        throw new Error('Não foi possível obter o texto corrigido.');
+      }
+    } catch (error) {
+      console.error('Erro ao corrigir texto:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível corrigir o texto. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      campo === 'motivoInvestigacao' ? setIsCorrigindoMotivo(false) : setIsCorrigindoRelato(false);
+    }
+  };
+
   return (
     <div className="mt-4">
       <Form {...form}>
@@ -102,7 +151,29 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
                 name="motivoInvestigacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Motivo da Investigação</FormLabel>
+                    <div className="flex justify-between items-center">
+                      <FormLabel>Motivo da Investigação</FormLabel>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => corrigirTexto('motivoInvestigacao')} 
+                        disabled={isCorrigindoMotivo || !form.getValues('motivoInvestigacao')}
+                        className="flex items-center gap-1"
+                      >
+                        {isCorrigindoMotivo ? (
+                          <>
+                            <span className="animate-spin mr-1">⟳</span>
+                            Corrigindo...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-3 w-3" />
+                            Corrigir Texto
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <FormControl>
                       <Textarea 
                         placeholder="Descreva detalhadamente o motivo da sindicância" 
@@ -192,7 +263,29 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
             name="relatoInicial"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Relato Inicial do Ocorrido</FormLabel>
+                <div className="flex justify-between items-center">
+                  <FormLabel>Relato Inicial do Ocorrido</FormLabel>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => corrigirTexto('relatoInicial')} 
+                    disabled={isCorrigindoRelato || !form.getValues('relatoInicial')}
+                    className="flex items-center gap-1"
+                  >
+                    {isCorrigindoRelato ? (
+                      <>
+                        <span className="animate-spin mr-1">⟳</span>
+                        Corrigindo...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-3 w-3" />
+                        Corrigir Texto
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <FormControl>
                   <Textarea 
                     placeholder="Descreva detalhadamente o relato inicial do ocorrido" 

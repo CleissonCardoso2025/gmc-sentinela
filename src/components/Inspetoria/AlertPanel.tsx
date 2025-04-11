@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
@@ -12,45 +12,45 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import EmptyState from '../Dashboard/EmptyState';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Alert {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  severity: string;
+  time: string;
+}
 
 const AlertPanel: React.FC = () => {
   const { toast } = useToast();
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data for alerts
-  const alerts = [
-    {
-      id: 1,
-      type: "plantao",
-      title: "Plantão não aberto",
-      description: "O supervisor Sgt. Marcos Oliveira não abriu o plantão noturno.",
-      severity: "high",
-      time: "Há 2 horas"
-    },
-    {
-      id: 2,
-      type: "viatura",
-      title: "Viatura requer manutenção",
-      description: "GCM-5678 está com manutenção programada vencida há 3 dias.",
-      severity: "medium",
-      time: "Há 1 dia"
-    },
-    {
-      id: 3,
-      type: "agente",
-      title: "Agente ausente",
-      description: "Agente Paulo Santos não se apresentou para o plantão diurno.",
-      severity: "high",
-      time: "Hoje, 08:15"
-    },
-    {
-      id: 4,
-      type: "ocorrencia",
-      title: "Ocorrência grave registrada",
-      description: "Ocorrência de código 3 registrada na região central.",
-      severity: "high",
-      time: "Há 30 minutos"
-    },
-  ];
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      setIsLoading(true);
+      try {
+        // This would be replaced with a real API call
+        // For now, we're setting an empty array to simulate no data
+        setAlerts([]);
+      } catch (error) {
+        console.error("Error fetching alerts:", error);
+        toast({
+          title: "Erro ao carregar alertas",
+          description: "Não foi possível carregar os alertas do sistema.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAlerts();
+  }, [toast]);
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -80,20 +80,42 @@ const AlertPanel: React.FC = () => {
     }
   };
 
-  const handleMarkResolved = (id: number) => {
-    toast({
-      title: "Alerta resolvido",
-      description: "O alerta foi marcado como resolvido."
-    });
+  const handleMarkResolved = async (id: string) => {
+    try {
+      // This would be replaced with a real API call
+      // For now, we just remove the alert from the state
+      setAlerts(alerts.filter(alert => alert.id !== id));
+      toast({
+        title: "Alerta resolvido",
+        description: "O alerta foi marcado como resolvido."
+      });
+    } catch (error) {
+      console.error("Error resolving alert:", error);
+      toast({
+        title: "Erro ao resolver alerta",
+        description: "Não foi possível marcar o alerta como resolvido.",
+        variant: "destructive"
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       {alerts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-6">
-          <CheckCircle className="h-12 w-12 text-green-500 mb-2" />
-          <p className="text-gray-500">Não há alertas pendentes.</p>
-        </div>
+        <EmptyState
+          title="Sem alertas"
+          description="Não há alertas pendentes no momento."
+          icon="info"
+        />
       ) : (
         <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
           {alerts.map((alert) => (

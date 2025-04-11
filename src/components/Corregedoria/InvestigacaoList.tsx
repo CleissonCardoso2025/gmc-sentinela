@@ -24,13 +24,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { DetalhesInvestigacao } from './DetalhesInvestigacao';
 import { Investigacao } from '@/types/database';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { getInvestigacoes } from '@/services/investigacaoService/apiInvestigacaoService';
+import EmptyState from '@/components/Dashboard/EmptyState';
 
 export function InvestigacaoList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,81 +99,84 @@ export function InvestigacaoList() {
         </div>
       </div>
       
-      <Table>
-        <TableCaption>Lista de sindicâncias registradas</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Número</TableHead>
-            <TableHead>Data de Abertura</TableHead>
-            <TableHead>Investigado</TableHead>
-            <TableHead className="hidden md:table-cell">Motivo</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Etapa Atual</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            // Loading skeleton
-            Array(4).fill(0).map((_, index) => (
-              <TableRow key={`loading-${index}`}>
-                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-64" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-36" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-              </TableRow>
-            ))
-          ) : filteredInvestigacoes.length > 0 ? (
-            filteredInvestigacoes.map((investigacao) => (
-              <TableRow key={investigacao.id}>
-                <TableCell className="font-medium">{investigacao.numero}</TableCell>
-                <TableCell>{investigacao.dataAbertura}</TableCell>
-                <TableCell>{investigacao.investigado}</TableCell>
-                <TableCell className="hidden md:table-cell max-w-[250px] truncate">
-                  {investigacao.motivo}
-                </TableCell>
-                <TableCell>{getStatusBadge(investigacao.status)}</TableCell>
-                <TableCell>{investigacao.etapaAtual}</TableCell>
-                <TableCell className="text-right">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setSelectedInvestigacao(investigacao)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                      {selectedInvestigacao && (
-                        <>
-                          <DialogHeader>
-                            <DialogTitle>Sindicância {selectedInvestigacao.numero}</DialogTitle>
-                            <DialogDescription>
-                              Detalhes completos da sindicância e passo a passo da apuração
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DetalhesInvestigacao sindicancia={selectedInvestigacao} />
-                        </>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
+      {isLoading ? (
+        <div>
+          <Skeleton className="h-12 w-full mb-3" />
+          <Skeleton className="h-12 w-full mb-3" />
+          <Skeleton className="h-12 w-full mb-3" />
+          <Skeleton className="h-12 w-full mb-3" />
+        </div>
+      ) : investigacoes.length === 0 ? (
+        <EmptyState 
+          title="Nenhuma sindicância encontrada" 
+          description="Não há sindicâncias registradas no sistema."
+          icon="search"
+          actionLabel="Nova Sindicância"
+        />
+      ) : (
+        <Table>
+          <TableCaption>Lista de sindicâncias registradas</TableCaption>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                Nenhuma sindicância encontrada com os termos de busca informados.
-              </TableCell>
+              <TableHead>Número</TableHead>
+              <TableHead>Data de Abertura</TableHead>
+              <TableHead>Investigado</TableHead>
+              <TableHead className="hidden md:table-cell">Motivo</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Etapa Atual</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredInvestigacoes.length > 0 ? (
+              filteredInvestigacoes.map((investigacao) => (
+                <TableRow key={investigacao.id}>
+                  <TableCell className="font-medium">{investigacao.numero}</TableCell>
+                  <TableCell>{investigacao.dataAbertura}</TableCell>
+                  <TableCell>{investigacao.investigado}</TableCell>
+                  <TableCell className="hidden md:table-cell max-w-[250px] truncate">
+                    {investigacao.motivo}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(investigacao.status)}</TableCell>
+                  <TableCell>{investigacao.etapaAtual}</TableCell>
+                  <TableCell className="text-right">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setSelectedInvestigacao(investigacao)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        {selectedInvestigacao && (
+                          <>
+                            <DialogHeader>
+                              <DialogTitle>Sindicância {selectedInvestigacao.numero}</DialogTitle>
+                              <DialogDescription>
+                                Detalhes completos da sindicância e passo a passo da apuração
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DetalhesInvestigacao sindicancia={selectedInvestigacao} />
+                          </>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                  Nenhuma sindicância encontrada com os termos de busca informados.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Form, 
   FormControl, 
@@ -12,7 +12,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,14 +26,9 @@ import {
   SelectValue
 } from '@/components/ui/select';
 
-// Mock data for users dropdown
-const usuariosMock = [
-  { id: '1', nome: 'Carlos Eduardo Silva' },
-  { id: '2', nome: 'Roberto Almeida' },
-  { id: '3', nome: 'Ana Paula Ferreira' },
-  { id: '4', nome: 'Paulo Roberto Santos' },
-  { id: '5', nome: 'Maria Oliveira Costa' },
-];
+interface NovaInvestigacaoProps {
+  onComplete?: () => void;
+}
 
 const formSchema = z.object({
   motivoInvestigacao: z.string().min(10, 'O motivo deve ter pelo menos 10 caracteres'),
@@ -42,15 +36,13 @@ const formSchema = z.object({
   relatoInicial: z.string().min(20, 'O relato inicial deve ter pelo menos 20 caracteres'),
 });
 
-interface NovaInvestigacaoProps {
-  onComplete?: () => void;
-}
-
 export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
   const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [isCorrigindoMotivo, setIsCorrigindoMotivo] = useState<boolean>(false);
   const [isCorrigindoRelato, setIsCorrigindoRelato] = useState<boolean>(false);
+  const [usuarios, setUsuarios] = useState<{id: string, nome: string}[]>([]);
+  const [isLoadingUsuarios, setIsLoadingUsuarios] = useState(true);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,25 +53,85 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Aqui seria a lógica para salvar no banco de dados
-    console.log('Valores do formulário:', values);
-    console.log('Arquivos anexados:', files);
+  useEffect(() => {
+    const fetchUsuarios = async () => {
+      setIsLoadingUsuarios(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, nome')
+          .order('nome');
+          
+        if (error) {
+          throw error;
+        }
+        
+        setUsuarios(data || []);
+      } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+        toast({
+          title: 'Erro ao carregar usuários',
+          description: 'Não foi possível carregar a lista de usuários.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingUsuarios(false);
+      }
+    };
     
-    // Find the selected user name
-    const selectedUser = usuariosMock.find(user => user.id === values.investigadoId);
-    
-    toast({
-      title: "Sindicância aberta com sucesso",
-      description: `Sindicância contra ${selectedUser?.nome || 'Investigado'} registrada. Número: SIN-${Math.floor(Math.random() * 10000)}`,
-    });
-    
-    form.reset();
-    setFiles([]);
-    
-    // Call onComplete callback if provided
-    if (onComplete) {
-      onComplete();
+    fetchUsuarios();
+  }, [toast]);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      // Find the selected user name
+      const selectedUser = usuarios.find(user => user.id === values.investigadoId);
+      
+      if (!selectedUser) {
+        throw new Error('Usuário selecionado não encontrado');
+      }
+      
+      const numero = `SIN-${Math.floor(Math.random() * 10000)}`;
+      
+      // Save to database
+      const { data, error } = await supabase
+        .from('investigacoes')
+        .insert([
+          {
+            numero,
+            dataabertura: new Date().toLocaleDateString('pt-BR'),
+            investigado: selectedUser.nome,
+            motivo: values.motivoInvestigacao,
+            status: 'Em andamento',
+            etapaatual: 'Abertura',
+            relatoinicial: values.relatoInicial
+          }
+        ]);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Sindicância aberta com sucesso",
+        description: `Sindicância contra ${selectedUser.nome} registrada. Número: ${numero}`,
+      });
+      
+      form.reset();
+      setFiles([]);
+      
+      // Call onComplete callback if provided
+      if (onComplete) {
+        onComplete();
+      }
+      
+    } catch (error) {
+      console.error('Erro ao salvar sindicância:', error);
+      toast({
+        title: 'Erro ao abrir sindicância',
+        description: 'Não foi possível registrar a sindicância. Tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -198,12 +250,13 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
+                        disabled={isLoadingUsuarios}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione um investigado" />
+                          <SelectValue placeholder={isLoadingUsuarios ? "Carregando usuários..." : "Selecione um investigado"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {usuariosMock.map((usuario) => (
+                          {usuarios.map((usuario) => (
                             <SelectItem key={usuario.id} value={usuario.id}>
                               {usuario.nome}
                             </SelectItem>

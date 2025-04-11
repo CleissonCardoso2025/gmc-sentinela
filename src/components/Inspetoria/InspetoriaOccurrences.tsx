@@ -1,12 +1,14 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, MapPin, Calendar, Clock, AlertTriangle } from "lucide-react";
-import { useOccurrenceData } from "@/hooks/use-occurrence-data";
+import { useOccurrenceData, Occurrence } from "@/hooks/use-occurrence-data";
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import OccurrenceEditForm from './OccurrenceEditForm';
+import EmptyState from '@/components/Dashboard/EmptyState';
 
 const InspetoriaOccurrences: React.FC = () => {
   const { occurrences, isLoading, refetchOccurrences } = useOccurrenceData('12m');
@@ -59,7 +61,11 @@ const InspetoriaOccurrences: React.FC = () => {
       </div>
 
       {occurrences.length === 0 ? (
-        <p className="text-center text-gray-500 py-8">Nenhuma ocorrência cadastrada.</p>
+        <EmptyState 
+          title="Sem ocorrências" 
+          description="Nenhuma ocorrência foi registrada nos últimos 12 meses." 
+          icon="info"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {occurrences.map((occurrence) => (

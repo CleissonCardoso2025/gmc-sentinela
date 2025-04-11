@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, FileText, Eye, ArrowUpDown, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from 'sonner';
+import EmptyState from '@/components/Dashboard/EmptyState';
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação' | 'Todas';
 type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros' | 'Todas';
@@ -30,55 +34,31 @@ export const OcorrenciaList = () => {
   const [tipoFilter, setTipoFilter] = useState<OcorrenciaTipo>('Todas');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filtrarHoje, setFiltrarHoje] = useState(true);
+  const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Dados mockados de ocorrências para demonstração
-  const ocorrenciasMock: Ocorrencia[] = [
-    {
-      id: '1',
-      numero: 'OCR-20250305-0001',
-      data: format(new Date(), 'yyyy-MM-dd') + 'T14:30', // Hoje
-      local: 'Av. Paulista, 1000 - São Paulo',
-      tipo: 'Trânsito',
-      status: 'Encerrada',
-      descricao: 'Acidente de trânsito sem vítimas.'
-    },
-    {
-      id: '2',
-      numero: 'OCR-20250304-0002',
-      data: format(new Date(), 'yyyy-MM-dd') + 'T10:15', // Hoje
-      local: 'Rua Augusta, 500 - São Paulo',
-      tipo: 'Crime',
-      status: 'Sob Investigação',
-      descricao: 'Furto de celular em estabelecimento comercial.'
-    },
-    {
-      id: '3',
-      numero: 'OCR-20250304-0003',
-      data: '2025-03-04T08:45', // Dia anterior
-      local: 'Praça da República, s/n - São Paulo',
-      tipo: 'Dano ao patrimônio público',
-      status: 'Encaminhada',
-      descricao: 'Vandalismo em monumento público.'
-    },
-    {
-      id: '4',
-      numero: 'OCR-20250303-0004',
-      data: '2025-03-03T22:30', // Passado
-      local: 'Rua Oscar Freire, 200 - São Paulo',
-      tipo: 'Apoio a outra instituição',
-      status: 'Encerrada',
-      descricao: 'Apoio à Polícia Militar em ocorrência de perturbação.'
-    },
-    {
-      id: '5',
-      numero: 'OCR-20250303-0005',
-      data: '2025-03-03T15:20', // Passado
-      local: 'Av. Santo Amaro, 800 - São Paulo',
-      tipo: 'Maria da Penha',
-      status: 'Aberta',
-      descricao: 'Acompanhamento de medida protetiva.'
+  useEffect(() => {
+    fetchOcorrencias();
+  }, []);
+
+  const fetchOcorrencias = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('ocorrencias')
+        .select('*')
+        .order('data', { ascending: false });
+
+      if (error) throw error;
+
+      setOcorrencias(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar ocorrências:', error);
+      toast.error('Não foi possível carregar as ocorrências');
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   // Função para verificar se uma data é de hoje
   const isToday = (dateString: string) => {
@@ -92,13 +72,13 @@ export const OcorrenciaList = () => {
   };
 
   // Filtragem e ordenação dos dados
-  const filteredOcorrencias = ocorrenciasMock
+  const filteredOcorrencias = ocorrencias
     .filter(ocorrencia => {
       // Filtro de texto
       const matchesSearch = 
-        ocorrencia.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ocorrencia.local.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ocorrencia.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+        ocorrencia.numero?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ocorrencia.local?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ocorrencia.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
       
       // Filtro de status
       const matchesStatus = statusFilter === 'Todas' || ocorrencia.status === statusFilter;
@@ -121,14 +101,18 @@ export const OcorrenciaList = () => {
 
   // Função para formatar a data para exibição
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = parseISO(dateString);
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
   // Função para retornar a cor do status
@@ -239,7 +223,12 @@ export const OcorrenciaList = () => {
         
         {/* Lista de ocorrências */}
         <div className="space-y-4">
-          {filteredOcorrencias.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gcm-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">Carregando ocorrências...</p>
+            </div>
+          ) : filteredOcorrencias.length > 0 ? (
             filteredOcorrencias.map((ocorrencia, index) => (
               <div 
                 key={ocorrencia.id} 
@@ -249,7 +238,7 @@ export const OcorrenciaList = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-gcm-600">{ocorrencia.numero}</h3>
+                      <h3 className="font-semibold text-gcm-600">{ocorrencia.numero || `OCR-${ocorrencia.id.slice(0, 6)}`}</h3>
                       <Badge className={getStatusColor(ocorrencia.status)}>
                         {ocorrencia.status}
                       </Badge>
@@ -294,11 +283,11 @@ export const OcorrenciaList = () => {
               </div>
             ))
           ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border animate-fade-in">
-              <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">Nenhuma ocorrência encontrada.</p>
-              <p className="text-gray-400 text-sm mt-1">Tente ajustar seus filtros.</p>
-            </div>
+            <EmptyState 
+              title="Sem ocorrências" 
+              description="Nenhuma ocorrência encontrada com os filtros selecionados." 
+              icon="search"
+            />
           )}
         </div>
       </CardContent>

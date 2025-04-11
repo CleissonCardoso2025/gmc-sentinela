@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -24,6 +23,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import { DetalhesInvestigacao } from './DetalhesInvestigacao';
 import { Investigacao } from '@/types/database';
@@ -38,7 +38,6 @@ export function InvestigacaoList() {
   const [investigacoes, setInvestigacoes] = useState<Investigacao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch investigacoes on component mount
   useEffect(() => {
     fetchInvestigacoes();
   }, []);

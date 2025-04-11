@@ -11,6 +11,7 @@ import Footer from '@/components/Dashboard/Footer';
 import { Car, AlertTriangle, Users, Settings } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Dashboard from '@/layouts/Dashboard';
+import { Occurrence } from '@/hooks/use-occurrence-data';
 
 const Index = () => {
   // State
@@ -29,10 +30,11 @@ const Index = () => {
     { id: 3, placa: 'GCM-9012', tipo: 'Preventiva', dataInicio: '2025-02-15', previsaoTermino: '2025-02-16', descricao: 'Alinhamento e balanceamento', status: 'Concluída' },
   ];
 
-  const ocorrenciasData = [
-    { titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', hora: '14:30' },
-    { titulo: 'Acidente de Trânsito', local: 'Av. Principal, 456', hora: '13:15' },
-    { titulo: 'Apoio ao Cidadão', local: 'Praça Central', hora: '12:45' },
+  // Format mock data to match the Occurrence type
+  const ocorrenciasData: Occurrence[] = [
+    { id: 1, titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', data: new Date().toISOString() },
+    { id: 2, titulo: 'Acidente de Trânsito', local: 'Av. Principal, 456', data: new Date().toISOString() },
+    { id: 3, titulo: 'Apoio ao Cidadão', local: 'Praça Central', data: new Date().toISOString() },
   ];
 
   return (

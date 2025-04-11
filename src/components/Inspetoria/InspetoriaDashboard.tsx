@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +42,7 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
+import { Occurrence } from '@/hooks/use-occurrence-data';
 
 const InspetoriaDashboard: React.FC = () => {
   const { toast } = useToast();
@@ -76,32 +76,37 @@ const InspetoriaDashboard: React.FC = () => {
     }
   ];
 
-  // Mock data for occurrences
-  const mockOccurrences = [
+  // Mock data converted to match Occurrence type
+  const mockOccurrences: Occurrence[] = [
     {
+      id: 1,
       titulo: "Perturbação do sossego",
       local: "Rua das Flores, 123",
-      hora: "Hoje, 14:30"
+      data: new Date().toISOString(),
     },
     {
+      id: 2,
       titulo: "Acidente de trânsito",
       local: "Av. Paulista, 1000",
-      hora: "Hoje, 11:15"
+      data: new Date().toISOString(),
     },
     {
+      id: 3,
       titulo: "Fiscalização de comércio",
       local: "Rua Comercial, 456",
-      hora: "Hoje, 09:45"
+      data: new Date().toISOString(),
     },
     {
+      id: 4,
       titulo: "Apoio ao SAMU",
       local: "Praça Central",
-      hora: "Ontem, 23:20"
+      data: new Date(Date.now() - 86400000).toISOString(), // yesterday
     },
     {
+      id: 5,
       titulo: "Fiscalização de som alto",
       local: "Rua das Palmeiras, 789",
-      hora: "Ontem, 22:10"
+      data: new Date(Date.now() - 86400000).toISOString(), // yesterday
     }
   ];
 

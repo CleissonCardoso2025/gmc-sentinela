@@ -11,6 +11,13 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
+interface MenuItem {
+  icon: React.ReactNode;
+  text: string;
+  path: string;
+  roles?: string[];
+}
+
 const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
   setCollapsed
@@ -20,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
   const { hasAccessToPage } = useAuthorization(userProfile);
   
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       icon: <Home className="h-5 w-5" />,
       text: 'Dashboard',

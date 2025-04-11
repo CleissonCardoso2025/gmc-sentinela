@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { LucideIcon } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatCardProps {
   title: string;
@@ -10,32 +10,33 @@ interface StatCardProps {
   icon: React.ReactNode;
   color: string;
   className?: string;
+  isLoading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, className }) => {
+const StatCard: React.FC<StatCardProps> = ({ 
+  title, 
+  value, 
+  icon, 
+  color, 
+  className,
+  isLoading = false
+}) => {
   return (
     <Card className={cn(
-      "p-5 transition-all duration-300 ease-in-out hover:shadow-lg overflow-hidden relative group",
+      "p-5 border border-gray-200 hover:shadow-md transition-all duration-300",
       className
     )}>
-      <div className="flex justify-between items-start">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-          <h3 className={cn("text-2xl font-bold", color)}>{value}</h3>
+          <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+          {isLoading ? (
+            <Skeleton className="h-8 w-16 mt-1" />
+          ) : (
+            <p className={cn("text-2xl font-bold mt-1", color)}>{value}</p>
+          )}
         </div>
-        <div className={cn(
-          "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out",
-          `bg-${color.split('-')[1]}-100`,
-          "group-hover:scale-110"
-        )}>
-          {icon}
-        </div>
+        <div className="bg-gray-100 rounded-full p-3">{icon}</div>
       </div>
-      
-      <div className={cn(
-        "absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500 ease-out",
-        color.replace('text', 'bg')
-      )}></div>
     </Card>
   );
 };

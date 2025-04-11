@@ -60,70 +60,19 @@ export const useVehicleLocations = () => {
         console.log("Vehicles with location:", vehiclesWithLocation);
         setVehicles(vehiclesWithLocation);
       } else {
-        // Always provide mock data for development purposes when no real data exists
-        const mockVehicles: Vehicle[] = [
-          {
-            id: 1,
-            placa: "GCM-1234",
-            marca: "Chevrolet",
-            modelo: "Spin",
-            condutor: "Carlos Silva",
-            latitude: -23.550520,
-            longitude: -46.633308,
-            lastUpdate: new Date().toISOString(),
-            location_name: "Centro, São Paulo"
-          },
-          {
-            id: 2,
-            placa: "GCM-5678",
-            marca: "Toyota",
-            modelo: "Hilux",
-            condutor: "Ana Oliveira",
-            latitude: -23.555520,
-            longitude: -46.639308,
-            lastUpdate: new Date().toISOString(),
-            location_name: "Bela Vista, São Paulo"
-          }
-        ];
-        
-        console.log("Using mock vehicle data for development");
-        setVehicles(mockVehicles);
+        // No mock data - just set empty array
+        setVehicles([]);
       }
     } catch (error) {
       console.error("Error fetching vehicle locations:", error);
       toast({
         title: "Erro ao carregar localizações",
-        description: "Não foi possível obter as localizações das viaturas. Usando dados fictícios.",
+        description: "Não foi possível obter as localizações das viaturas.",
         variant: "destructive"
       });
       
-      // Provide mock data even in case of error
-      const mockVehicles: Vehicle[] = [
-        {
-          id: 1,
-          placa: "GCM-1234",
-          marca: "Chevrolet",
-          modelo: "Spin",
-          condutor: "Carlos Silva",
-          latitude: -23.550520,
-          longitude: -46.633308,
-          lastUpdate: new Date().toISOString(),
-          location_name: "Centro, São Paulo"
-        },
-        {
-          id: 2,
-          placa: "GCM-5678",
-          marca: "Toyota",
-          modelo: "Hilux",
-          condutor: "Ana Oliveira",
-          latitude: -23.555520,
-          longitude: -46.639308,
-          lastUpdate: new Date().toISOString(),
-          location_name: "Bela Vista, São Paulo"
-        }
-      ];
-      
-      setVehicles(mockVehicles);
+      // No mock data on error - just set empty array
+      setVehicles([]);
     } finally {
       setIsLoading(false);
     }

@@ -16,13 +16,20 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthorization } from '@/hooks/use-authorization';
 
+interface MenuItem {
+  icon: React.ReactNode;
+  text: string;
+  path: string;
+  roles?: string[];
+}
+
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
   const { hasAccessToPage } = useAuthorization(userProfile);
   
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { icon: <Home className="h-5 w-5" />, text: 'Dashboard', path: '/dashboard' },
     { icon: <Command className="h-5 w-5" />, text: 'Centro de Comando', path: '/index', roles: ['Inspetor', 'Subinspetor'] },
     { icon: <Car className="h-5 w-5" />, text: 'Viaturas', path: '/viaturas' },

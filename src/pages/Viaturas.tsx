@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import AlertPanel from "@/components/Viaturas/AlertPanel";
 import ReportPanel from "@/components/Viaturas/ReportPanel";
 import Dashboard from "@/layouts/Dashboard";
 import { Plus, FileText, AlertTriangle, History } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export interface Vehicle {
   id: number;
@@ -47,87 +50,66 @@ const ViaturasPage: React.FC = () => {
   const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Mock data for vehicles
-  const [vehicles, setVehicles] = useState<Vehicle[]>([
-    {
-      id: 1,
-      placa: "GCM-1234",
-      modelo: "Spin",
-      marca: "Chevrolet",
-      ano: "2023",
-      tipo: "Patrulha",
-      status: "Em serviço",
-      quilometragem: 45678,
-      ultimaManutencao: "2025-02-15",
-      proximaManutencao: "2025-04-15",
-      observacoes: "Veículo em bom estado"
-    },
-    {
-      id: 2,
-      placa: "GCM-5678",
-      modelo: "Hilux",
-      marca: "Toyota",
-      ano: "2022",
-      tipo: "Transporte",
-      status: "Manutenção",
-      quilometragem: 32456,
-      ultimaManutencao: "2025-01-20",
-      proximaManutencao: "2025-03-20",
-      observacoes: "Em manutenção para troca de óleo"
-    },
-    {
-      id: 3,
-      placa: "GCM-9012",
-      modelo: "Duster",
-      marca: "Renault",
-      ano: "2024",
-      tipo: "Patrulha",
-      status: "Em serviço",
-      quilometragem: 28901,
-      ultimaManutencao: "2025-02-25",
-      proximaManutencao: "2025-05-01",
-      observacoes: "Veículo novo"
-    },
-  ]);
+  // State for data
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
 
-  // Mock data for maintenance records
-  const [maintenances, setMaintenances] = useState<Maintenance[]>([
-    {
-      id: 1,
-      veiculoId: 2,
-      data: "2025-03-06",
-      tipo: "Preventiva",
-      quilometragem: 32000,
-      custo: 350.0,
-      status: "Em andamento",
-      observacoes: "Troca de óleo e filtros",
-      descricao: "Troca de óleo e filtros",
-      previsaoTermino: "2025-03-08"
-    },
-    {
-      id: 2,
-      veiculoId: 1,
-      data: "2025-02-28",
-      tipo: "Corretiva",
-      quilometragem: 45000,
-      custo: 580.0,
-      status: "Concluída",
-      observacoes: "Substituição de pastilhas de freio",
-      descricao: "Substituição de pastilhas de freio"
-    },
-    {
-      id: 3,
-      veiculoId: 3,
-      data: "2025-02-15",
-      tipo: "Preventiva",
-      quilometragem: 28000,
-      custo: 250.0,
-      status: "Concluída",
-      observacoes: "Alinhamento e balanceamento",
-      descricao: "Alinhamento e balanceamento"
-    },
-  ]);
+  // Fetch vehicles and maintenance data
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Fetch vehicles
+        const { data: vehiclesData, error: vehiclesError } = await supabase
+          .from('vehicles')
+          .select('*');
+          
+        if (vehiclesError) throw vehiclesError;
+        
+        // Transform vehicle data if needed
+        const transformedVehicles = vehiclesData.map(vehicle => ({
+          id: vehicle.id,
+          placa: vehicle.placa,
+          modelo: vehicle.modelo,
+          marca: vehicle.marca,
+          ano: vehicle.ano || '',
+          tipo: vehicle.tipo || '',
+          status: vehicle.status || 'Disponível',
+          quilometragem: vehicle.quilometragem || 0,
+          ultimaManutencao: vehicle.ultimamanutencao ? new Date(vehicle.ultimamanutencao).toISOString().split('T')[0] : '',
+          proximaManutencao: vehicle.proximamanutencao ? new Date(vehicle.proximamanutencao).toISOString().split('T')[0] : '',
+          observacoes: vehicle.observacoes || ''
+        }));
+        
+        setVehicles(transformedVehicles);
+        
+        // Fetch maintenance data
+        // In a real system, you would have a maintenance table
+        // For now, we'll set an empty array
+        setMaintenances([]);
+        
+      } catch (error) {
+        console.error("Error fetching vehicle data:", error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar as informações das viaturas.",
+          variant: "destructive"
+        });
+        
+        // Set empty arrays on error
+        setVehicles([]);
+        setMaintenances([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [toast]);
 
   const handleAddVehicle = () => {
     setFormMode("add");
@@ -147,24 +129,127 @@ const ViaturasPage: React.FC = () => {
     setActiveTab("manutencao");
   };
 
-  const handleSaveVehicle = (vehicle: Vehicle) => {
-    if (formMode === "add") {
-      setVehicles([...vehicles, { ...vehicle, id: vehicles.length + 1 }]);
-    } else {
-      setVehicles(vehicles.map(v => v.id === vehicle.id ? vehicle : v));
+  const handleSaveVehicle = async (vehicle: Vehicle) => {
+    try {
+      if (formMode === "add") {
+        // Prepare vehicle data for insert
+        const vehicleData = {
+          placa: vehicle.placa,
+          modelo: vehicle.modelo,
+          marca: vehicle.marca,
+          ano: vehicle.ano,
+          tipo: vehicle.tipo,
+          status: vehicle.status,
+          quilometragem: vehicle.quilometragem,
+          ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
+          proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
+          observacoes: vehicle.observacoes
+        };
+        
+        const { data, error } = await supabase
+          .from('vehicles')
+          .insert(vehicleData)
+          .select();
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          // Transform returned data to match Vehicle interface
+          const newVehicle: Vehicle = {
+            id: data[0].id,
+            placa: data[0].placa,
+            modelo: data[0].modelo,
+            marca: data[0].marca,
+            ano: data[0].ano || '',
+            tipo: data[0].tipo || '',
+            status: data[0].status || 'Disponível',
+            quilometragem: data[0].quilometragem || 0,
+            ultimaManutencao: data[0].ultimamanutencao ? new Date(data[0].ultimamanutencao).toISOString().split('T')[0] : '',
+            proximaManutencao: data[0].proximamanutencao ? new Date(data[0].proximamanutencao).toISOString().split('T')[0] : '',
+            observacoes: data[0].observacoes || ''
+          };
+          
+          setVehicles([...vehicles, newVehicle]);
+        }
+        
+        toast({
+          title: "Viatura adicionada",
+          description: "Viatura cadastrada com sucesso.",
+        });
+      } else {
+        // Prepare vehicle data for update
+        const vehicleData = {
+          placa: vehicle.placa,
+          modelo: vehicle.modelo,
+          marca: vehicle.marca,
+          ano: vehicle.ano,
+          tipo: vehicle.tipo,
+          status: vehicle.status,
+          quilometragem: vehicle.quilometragem,
+          ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
+          proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
+          observacoes: vehicle.observacoes
+        };
+        
+        const { error } = await supabase
+          .from('vehicles')
+          .update(vehicleData)
+          .eq('id', vehicle.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        setVehicles(vehicles.map(v => v.id === vehicle.id ? vehicle : v));
+        
+        toast({
+          title: "Viatura atualizada",
+          description: "Dados da viatura atualizados com sucesso.",
+        });
+      }
+      
+      setActiveTab("listar");
+      setFormMode(null);
+    } catch (error) {
+      console.error("Error saving vehicle:", error);
+      toast({
+        title: "Erro ao salvar viatura",
+        description: "Não foi possível salvar os dados da viatura.",
+        variant: "destructive"
+      });
     }
-    setActiveTab("listar");
-    setFormMode(null);
   };
 
-  const handleSaveMaintenance = (maintenance: Maintenance) => {
-    if (!maintenance.id) {
-      setMaintenances([...maintenances, { ...maintenance, id: maintenances.length + 1 }]);
-    } else {
-      setMaintenances(maintenances.map(m => m.id === maintenance.id ? maintenance : m));
+  const handleSaveMaintenance = async (maintenance: Maintenance) => {
+    try {
+      // In a real system, you would save maintenance data to your database
+      // For now, we just update the local state for demonstration
+      if (!maintenance.id) {
+        const newMaintenance = { ...maintenance, id: maintenances.length + 1 };
+        setMaintenances([...maintenances, newMaintenance]);
+        
+        toast({
+          title: "Manutenção registrada",
+          description: "Registro de manutenção adicionado com sucesso.",
+        });
+      } else {
+        setMaintenances(maintenances.map(m => m.id === maintenance.id ? maintenance : m));
+        
+        toast({
+          title: "Manutenção atualizada",
+          description: "Registro de manutenção atualizado com sucesso.",
+        });
+      }
+      
+      setActiveTab("listar");
+      setMaintenanceMode(false);
+    } catch (error) {
+      console.error("Error saving maintenance:", error);
+      toast({
+        title: "Erro ao salvar manutenção",
+        description: "Não foi possível salvar os dados da manutenção.",
+        variant: "destructive"
+      });
     }
-    setActiveTab("listar");
-    setMaintenanceMode(false);
   };
 
   const filteredVehicles = vehicles.filter(vehicle => {
@@ -231,11 +316,20 @@ const ViaturasPage: React.FC = () => {
                 </div>
               </div>
 
-              <VehicleTable 
-                vehicles={filteredVehicles} 
-                onEdit={handleEditVehicle} 
-                onAddMaintenance={handleAddMaintenance} 
-              />
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : (
+                <VehicleTable 
+                  vehicles={filteredVehicles} 
+                  onEdit={handleEditVehicle} 
+                  onAddMaintenance={handleAddMaintenance} 
+                />
+              )}
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,11 +369,20 @@ const ViaturasPage: React.FC = () => {
                   }}
                 />
               ) : (
-                <MaintenanceHistory 
-                  maintenances={maintenances} 
-                  vehicles={vehicles} 
-                  fullHistory 
-                />
+                isLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : (
+                  <MaintenanceHistory 
+                    maintenances={maintenances} 
+                    vehicles={vehicles} 
+                    fullHistory 
+                  />
+                )
               )}
             </Card>
           </TabsContent>
@@ -287,7 +390,14 @@ const ViaturasPage: React.FC = () => {
           <TabsContent value="relatorios">
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Relatórios</h2>
-              <ReportPanel vehicles={vehicles} maintenances={maintenances} />
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-80 w-full" />
+                </div>
+              ) : (
+                <ReportPanel vehicles={vehicles} maintenances={maintenances} />
+              )}
             </Card>
           </TabsContent>
         </Tabs>

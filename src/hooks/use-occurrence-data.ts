@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 
 export type DateRange = '3m' | '6m' | '12m';
 
@@ -20,60 +21,65 @@ export const useOccurrenceData = (dateRange: DateRange) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Mock data with real coordinates for São Paulo
-  const mockOccurrences: Record<DateRange, Occurrence[]> = {
-    '3m': [
-      { id: 1, titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', data: '2025-02-01T14:30:00Z', latitude: -23.550520, longitude: -46.633308 },
-      { id: 2, titulo: 'Acidente de Trânsito', local: 'Av. Paulista, 1000', data: '2025-02-15T13:15:00Z', latitude: -23.561414, longitude: -46.655532 },
-      { id: 3, titulo: 'Apoio ao Cidadão', local: 'Praça da Sé', data: '2025-03-05T12:45:00Z', latitude: -23.550398, longitude: -46.633612 },
-      { id: 10, titulo: 'Furto', local: 'Shopping Pátio Paulista', data: '2025-03-10T16:20:00Z', latitude: -23.570523, longitude: -46.642805 },
-      { id: 11, titulo: 'Perturbação do Sossego', local: 'Vila Madalena', data: '2025-01-25T23:40:00Z', latitude: -23.546242, longitude: -46.684633 },
-    ],
-    '6m': [
-      { id: 1, titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', data: '2025-02-01T14:30:00Z', latitude: -23.550520, longitude: -46.633308 },
-      { id: 2, titulo: 'Acidente de Trânsito', local: 'Av. Paulista, 1000', data: '2025-02-15T13:15:00Z', latitude: -23.561414, longitude: -46.655532 },
-      { id: 3, titulo: 'Apoio ao Cidadão', local: 'Praça da Sé', data: '2025-03-05T12:45:00Z', latitude: -23.550398, longitude: -46.633612 },
-      { id: 4, titulo: 'Furto', local: 'Shopping Ibirapuera', data: '2024-12-20T16:30:00Z', latitude: -23.601271, longitude: -46.667108 },
-      { id: 5, titulo: 'Perturbação do Sossego', local: 'Vila Mariana', data: '2025-01-10T09:45:00Z', latitude: -23.586543, longitude: -46.639431 },
-      { id: 10, titulo: 'Furto', local: 'Shopping Pátio Paulista', data: '2025-03-10T16:20:00Z', latitude: -23.570523, longitude: -46.642805 },
-      { id: 11, titulo: 'Perturbação do Sossego', local: 'Vila Madalena', data: '2025-01-25T23:40:00Z', latitude: -23.546242, longitude: -46.684633 },
-      { id: 12, titulo: 'Acidente de Trânsito', local: 'Marginal Pinheiros', data: '2024-10-05T07:15:00Z', latitude: -23.590498, longitude: -46.691933 },
-    ],
-    '12m': [
-      { id: 1, titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', data: '2025-02-01T14:30:00Z', latitude: -23.550520, longitude: -46.633308 },
-      { id: 2, titulo: 'Acidente de Trânsito', local: 'Av. Paulista, 1000', data: '2025-02-15T13:15:00Z', latitude: -23.561414, longitude: -46.655532 },
-      { id: 3, titulo: 'Apoio ao Cidadão', local: 'Praça da Sé', data: '2025-03-05T12:45:00Z', latitude: -23.550398, longitude: -46.633612 },
-      { id: 4, titulo: 'Furto', local: 'Shopping Ibirapuera', data: '2024-12-20T16:30:00Z', latitude: -23.601271, longitude: -46.667108 },
-      { id: 5, titulo: 'Perturbação do Sossego', local: 'Vila Mariana', data: '2025-01-10T09:45:00Z', latitude: -23.586543, longitude: -46.639431 },
-      { id: 6, titulo: 'Vandalismo', local: 'Estação da Luz', data: '2024-07-15T18:20:00Z', latitude: -23.534927, longitude: -46.635587 },
-      { id: 7, titulo: 'Vandalismo', local: 'Parque do Ibirapuera', data: '2024-08-30T15:40:00Z', latitude: -23.587128, longitude: -46.657141 },
-      { id: 8, titulo: 'Acidente de Trânsito', local: 'Av. Brigadeiro Faria Lima', data: '2024-06-10T11:30:00Z', latitude: -23.581518, longitude: -46.672341 },
-      { id: 9, titulo: 'Apoio ao Cidadão', local: 'Mercado Municipal', data: '2024-09-20T10:15:00Z', latitude: -23.541857, longitude: -46.629153 },
-      { id: 10, titulo: 'Furto', local: 'Shopping Pátio Paulista', data: '2025-03-10T16:20:00Z', latitude: -23.570523, longitude: -46.642805 },
-      { id: 11, titulo: 'Perturbação do Sossego', local: 'Vila Madalena', data: '2025-01-25T23:40:00Z', latitude: -23.546242, longitude: -46.684633 },
-      { id: 12, titulo: 'Acidente de Trânsito', local: 'Marginal Pinheiros', data: '2024-10-05T07:15:00Z', latitude: -23.590498, longitude: -46.691933 },
-    ],
-  };
-
-  const fetchOccurrences = useCallback(() => {
+  const fetchOccurrences = useCallback(async () => {
     setIsLoading(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      try {
-        console.log(`Fetching occurrences for date range: ${dateRange}`);
-        setOccurrences(mockOccurrences[dateRange]);
-      } catch (error) {
-        console.error('Error fetching occurrences:', error);
-        toast({
-          title: 'Erro ao buscar ocorrências',
-          description: 'Não foi possível carregar as ocorrências.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
+    try {
+      console.log(`Fetching occurrences for date range: ${dateRange}`);
+      
+      // Get current date
+      const now = new Date();
+      
+      // Calculate the start date based on dateRange
+      const startDate = new Date();
+      if (dateRange === '3m') {
+        startDate.setMonth(now.getMonth() - 3);
+      } else if (dateRange === '6m') {
+        startDate.setMonth(now.getMonth() - 6);
+      } else if (dateRange === '12m') {
+        startDate.setMonth(now.getMonth() - 12);
       }
-    }, 500);
+      
+      // Format dates for API
+      const startDateStr = startDate.toISOString();
+      const endDateStr = now.toISOString();
+      
+      // Real API call to fetch occurrences
+      const { data, error } = await supabase
+        .from('ocorrencias')
+        .select('*')
+        .gte('created_at', startDateStr)
+        .lte('created_at', endDateStr)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Transform data to match expected interface
+      const transformedData: Occurrence[] = data?.map(item => ({
+        id: item.id,
+        titulo: item.tipo || 'Sem título',
+        local: item.local || 'Local não especificado',
+        data: item.data || new Date().toISOString(),
+        descricao: item.descricao,
+        status: item.status
+      })) || [];
+      
+      setOccurrences(transformedData);
+    } catch (error) {
+      console.error('Error fetching occurrences:', error);
+      toast({
+        title: 'Erro ao buscar ocorrências',
+        description: 'Não foi possível carregar as ocorrências.',
+        variant: 'destructive',
+      });
+      
+      // Set empty array on error
+      setOccurrences([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [dateRange, toast]);
 
   useEffect(() => {

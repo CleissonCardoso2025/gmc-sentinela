@@ -58,7 +58,7 @@ export const useOccurrenceData = (dateRange: DateRange) => {
       
       // Transform data to match expected interface
       const transformedData: Occurrence[] = data?.map(item => ({
-        id: item.id,
+        id: Number(item.id), // Convert string to number
         titulo: item.tipo || 'Sem título',
         local: item.local || 'Local não especificado',
         data: item.data || new Date().toISOString(),

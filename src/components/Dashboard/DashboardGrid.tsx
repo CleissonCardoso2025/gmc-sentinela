@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PatrolRouteCard } from './PatrolRouteCard';
 import { WorkScheduleCard } from './WorkScheduleCard';
 import { RecentOccurrences } from './RecentOccurrences';
-import { VehicleList } from './VehicleList';
+import VehicleList from './VehicleList';
 
 interface PatrolRouteLocation {
   id: number;
@@ -58,7 +58,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
             </div>
           </Card>
         ) : (
-          <PatrolRouteCard data={patrolRouteData} />
+          <PatrolRouteCard patrolRouteData={patrolRouteData} />
         )}
         
         <RecentOccurrences />
@@ -77,10 +77,10 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
             </div>
           </Card>
         ) : (
-          <WorkScheduleCard data={workScheduleData} userName={userName} />
+          <WorkScheduleCard workScheduleData={workScheduleData} userName={userName} />
         )}
         
-        <VehicleList />
+        <VehicleList vehicles={[]} />
       </div>
     </div>
   );

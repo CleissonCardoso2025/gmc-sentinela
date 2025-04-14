@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon, Wand2, Plus, Trash2, Phone, User, Ambulance, ClipboardCheck, ClipboardList, Shield } from 'lucide-react';
+import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon, Wand2, Plus, Trash2, Phone, User, Ambulance, ClipboardCheck, ClipboardList, Shield, Locate } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAgentsData } from '@/hooks/use-agents-data';
+import { useGeolocation } from '@/hooks/use-geolocation';
 
 type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
 type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros';
@@ -55,10 +55,9 @@ export const OcorrenciaForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   
-  // Use our custom hook to fetch real agent data
   const { agents, isLoading: agentsLoading, error: agentsError } = useAgentsData();
+  const { location, loading: locationLoading, error: locationError, refreshPosition } = useGeolocation();
   
-  // Setup default providências tomadas
   const [providencias, setProvidencias] = useState<ProvidenciaTomada[]>([
     { id: '1', label: 'Condução para Delegacia', checked: false },
     { id: '2', label: 'Orientação à vítima', checked: false },
@@ -68,7 +67,6 @@ export const OcorrenciaForm = () => {
     { id: '6', label: 'Isolamento do local', checked: false },
   ]);
 
-  // Função para gerar número de ocorrência baseado na data atual
   useEffect(() => {
     const generateOcorrenciaNumber = () => {
       const now = new Date();
@@ -81,7 +79,6 @@ export const OcorrenciaForm = () => {
 
     setNumero(generateOcorrenciaNumber());
     
-    // Preencher data e hora atual
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
     const formattedTime = today.toTimeString().split(' ')[0].substring(0, 5);
@@ -110,6 +107,58 @@ export const OcorrenciaForm = () => {
     }
   };
 
+  const handleGetCurrentLocation = async () => {
+    try {
+      toast.info('Buscando sua localização atual...');
+      
+      refreshPosition();
+      
+      if (location.latitude && location.longitude) {
+        setPosition({
+          id: 'current-location',
+          position: [location.latitude, location.longitude],
+          title: 'Localização Atual',
+          lat: location.latitude,
+          lng: location.longitude,
+          address: 'Obtendo endereço...'
+        });
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('geocode', {
+            body: { 
+              address: `${location.latitude},${location.longitude}`, 
+              reverse: true 
+            }
+          });
+          
+          if (error) {
+            console.error('Error getting address:', error);
+            toast.error('Não foi possível obter o endereço, mas suas coordenadas foram salvas');
+            return;
+          }
+          
+          if (data && data.results && data.results.length > 0) {
+            const address = data.results[0].formatted_address;
+            setLocal(address);
+            toast.success('Localização atual obtida com sucesso');
+          } else {
+            setLocal(`Coordenadas: ${location.latitude}, ${location.longitude}`);
+            toast.warning('Localização obtida, mas sem endereço identificável');
+          }
+        } catch (error) {
+          console.error('Error in reverse geocoding:', error);
+          setLocal(`Coordenadas: ${location.latitude}, ${location.longitude}`);
+          toast.warning('Localização obtida, mas sem endereço identificável');
+        }
+      } else {
+        toast.error('Não foi possível obter sua localização. Verifique as permissões do navegador.');
+      }
+    } catch (error) {
+      console.error('Error getting current location:', error);
+      toast.error('Erro ao obter localização atual');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -121,10 +170,8 @@ export const OcorrenciaForm = () => {
     try {
       setIsLoading(true);
       
-      // Format date and time
       const dateTime = `${data}T${hora}`;
       
-      // Prepare data for Supabase
       const ocorrenciaData = {
         numero,
         tipo,
@@ -140,7 +187,6 @@ export const OcorrenciaForm = () => {
         created_at: new Date().toISOString()
       };
       
-      // Save to database
       const { error } = await supabase
         .from('ocorrencias')
         .insert(ocorrenciaData);
@@ -149,7 +195,6 @@ export const OcorrenciaForm = () => {
       
       toast.success('Ocorrência registrada com sucesso!');
       
-      // Reset form
       setTipo('Trânsito');
       setStatus('Aberta');
       setLocal('');
@@ -159,7 +204,6 @@ export const OcorrenciaForm = () => {
       setProvidencias(providencias.map(p => ({ ...p, checked: false })));
       setSelectedAgents([]);
       
-      // Generate new occurrence number
       const now = new Date();
       const year = now.getFullYear();
       const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -178,7 +222,6 @@ export const OcorrenciaForm = () => {
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column - Main Form */}
         <div className="lg:col-span-8 space-y-6">
           <Card>
             <CardHeader className="pb-3">
@@ -188,7 +231,6 @@ export const OcorrenciaForm = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Número da ocorrência, tipo e status */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="numero">Número da Ocorrência</Label>
@@ -232,7 +274,6 @@ export const OcorrenciaForm = () => {
                 </div>
               </div>
               
-              {/* Data e hora */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="data">Data</Label>
@@ -254,20 +295,32 @@ export const OcorrenciaForm = () => {
                 </div>
               </div>
               
-              {/* Local com botão para abrir mapa */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="local">Local</Label>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setShowMap(true)}
-                    className="text-gcm-500"
-                  >
-                    <MapPin className="mr-1 h-4 w-4" />
-                    Selecionar no Mapa
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleGetCurrentLocation}
+                      className="text-gcm-500"
+                      disabled={locationLoading}
+                    >
+                      <Locate className="mr-1 h-4 w-4" />
+                      {locationLoading ? 'Obtendo...' : 'Minha Localização'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowMap(true)}
+                      className="text-gcm-500"
+                    >
+                      <MapPin className="mr-1 h-4 w-4" />
+                      Selecionar no Mapa
+                    </Button>
+                  </div>
                 </div>
                 <Input 
                   id="local" 
@@ -275,9 +328,14 @@ export const OcorrenciaForm = () => {
                   onChange={(e) => setLocal(e.target.value)}
                   placeholder="Endereço completo da ocorrência"
                 />
+                {locationError && (
+                  <p className="text-sm text-red-500 mt-1 flex items-center">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {locationError}
+                  </p>
+                )}
               </div>
               
-              {/* Descrição */}
               <div className="space-y-2">
                 <Label htmlFor="descricao">Descrição</Label>
                 <Textarea
@@ -291,7 +349,6 @@ export const OcorrenciaForm = () => {
             </CardContent>
           </Card>
 
-          {/* Providências Tomadas */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-xl flex items-center text-gcm-600">
@@ -321,9 +378,7 @@ export const OcorrenciaForm = () => {
           </Card>
         </div>
 
-        {/* Right Column - Agentes e Envolvidos */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Agentes Envolvidos */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-xl flex items-center text-gcm-600">
@@ -375,7 +430,6 @@ export const OcorrenciaForm = () => {
             </CardContent>
           </Card>
 
-          {/* Botões de ação */}
           <div className="flex flex-col space-y-2">
             <Button 
               type="submit" 
@@ -396,7 +450,6 @@ export const OcorrenciaForm = () => {
               variant="outline" 
               className="w-full border-gcm-600 text-gcm-600 hover:bg-gcm-50"
               onClick={() => {
-                // Reset form
                 setTipo('Trânsito');
                 setStatus('Aberta');
                 setLocal('');
@@ -414,7 +467,6 @@ export const OcorrenciaForm = () => {
         </div>
       </div>
 
-      {/* Map Dialog */}
       <Dialog open={showMap} onOpenChange={setShowMap}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -429,6 +481,7 @@ export const OcorrenciaForm = () => {
               onMapClick={handleMapClick}
               draggable
               searchBox
+              showUserLocation
             />
           </div>
         </DialogContent>

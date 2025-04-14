@@ -4,9 +4,29 @@ import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Função que retorna um array vazio de configurações de acesso
+// Função que retorna configurações de acesso padrão
 const getPageAccessSettings = (): PageAccess[] => {
-  return [];
+  const storedSettings = localStorage.getItem('pageAccessSettings');
+  
+  if (storedSettings) {
+    try {
+      return JSON.parse(storedSettings) as PageAccess[];
+    } catch (error) {
+      console.error('Error parsing stored page access settings:', error);
+    }
+  }
+  
+  // Default settings if nothing is stored - starting with empty allowedProfiles
+  return [
+    { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: [] },
+    { id: 'viaturas', name: 'Viaturas', path: '/viaturas', allowedProfiles: [] },
+    { id: 'inspetoria', name: 'Inspetoria', path: '/inspetoria', allowedProfiles: [] },
+    { id: 'ocorrencias', name: 'Ocorrências', path: '/ocorrencias', allowedProfiles: [] },
+    { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: [] },
+    { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: [] },
+    { id: 'perfil', name: 'Perfil', path: '/perfil', allowedProfiles: [] },
+    { id: 'index', name: 'Centro de Comando', path: '/index', allowedProfiles: [] },
+  ];
 };
 
 // Usuários especiais com perfis específicos
@@ -77,9 +97,6 @@ export const useAuthorization = (userProfile: string) => {
   useEffect(() => {
     setPageAccessSettings(getPageAccessSettings());
     setIsLoading(false);
-    
-    // Limpa qualquer configuração salva anteriormente no localStorage
-    localStorage.removeItem('pageAccessSettings');
   }, []);
   
   // Check if user has access to a specific page based on path
@@ -113,6 +130,11 @@ export const useAuthorization = (userProfile: string) => {
       // Se não encontrar a página nas configurações e as configurações estão vazias, permitir acesso
       // para não bloquear todos os usuários enquanto as configurações estão sendo reconfiguradas
       return pageAccessSettings.length === 0;
+    }
+    
+    // If no profiles are allowed yet (empty configuration), allow access for configuration
+    if (page.allowedProfiles.length === 0) {
+      return effectiveProfile === 'Inspetor';
     }
     
     return page.allowedProfiles.includes(effectiveProfile as any);

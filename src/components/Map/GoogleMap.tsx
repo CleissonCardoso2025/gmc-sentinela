@@ -21,7 +21,7 @@ interface GoogleMapComponentProps {
   zoom?: number;
   height?: string;
   className?: string;
-  onMapClick?: (location: { lat: number, lng: number }) => void;
+  onMapClick?: (marker: MapMarker) => void;
   markerType?: 'default' | 'police' | 'incident';
   showUserLocation?: boolean;
   draggable?: boolean;
@@ -154,8 +154,8 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
         id: Date.now().toString(),
         position: [lat, lng],
         title: 'Nova Localização',
-        lat: lat,
-        lng: lng,
+        lat,
+        lng,
         address: 'Endereço pendente...' // Default address
       };
       

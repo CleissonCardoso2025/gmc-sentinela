@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, X, Save } from "lucide-react";
+import { useAgentsData } from "@/hooks/use-agents-data";
 
 interface GuarnicaoFormProps {
   onSave: () => void;
@@ -27,26 +28,16 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
   guarnicao 
 }) => {
   const { toast } = useToast();
+  const { agents, isLoading, error } = useAgentsData();
 
-  // Mock data for available agents and supervisors
-  const availableAgents = [
-    "Agente Carlos Pereira",
-    "Agente Ana Melo",
-    "Agente Paulo Santos",
-    "Agente Juliana Campos",
-    "Agente Ricardo Alves",
-    "Agente Fernanda Lima",
-    "Agente Lucas Martins",
-    "Agente Carla Dias",
-    "Agente Bruno Sousa"
-  ];
+  // Separate agents by role (supervisors and regular agents)
+  const availableSupervisors = agents
+    .filter(agent => agent.patente === 'Supervisor' || agent.patente === 'Inspetor' || agent.patente === 'Subinspetor')
+    .map(agent => agent.nome);
 
-  const availableSupervisors = [
-    "Sgt. Roberto Silva",
-    "Sgt. Marcos Oliveira",
-    "Sgt. Pedro Costa",
-    "Sgt. Márcio Dias"
-  ];
+  const availableAgents = agents
+    .filter(agent => agent.patente === 'Agente' || (!agent.patente && agent.nome !== guarnicao?.supervisor))
+    .map(agent => agent.nome);
 
   const [formData, setFormData] = useState({
     name: guarnicao?.name || "",
@@ -88,6 +79,14 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
     }
   };
 
+  if (isLoading) {
+    return <div className="p-4 text-center">Carregando usuários...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-center text-red-500">Erro ao carregar usuários: {error}</div>;
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
       <div className="space-y-2">
@@ -111,11 +110,17 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
             <SelectValue placeholder="Selecione o supervisor" />
           </SelectTrigger>
           <SelectContent>
-            {availableSupervisors.map((supervisor) => (
-              <SelectItem key={supervisor} value={supervisor}>
-                {supervisor}
+            {availableSupervisors.length > 0 ? (
+              availableSupervisors.map((supervisor) => (
+                <SelectItem key={supervisor} value={supervisor}>
+                  {supervisor}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-supervisors" disabled>
+                Nenhum supervisor disponível
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -123,22 +128,28 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
       <div className="space-y-2">
         <Label>Equipe (selecione no mínimo 2 agentes)</Label>
         <div className="border rounded-md p-4 max-h-48 overflow-y-auto space-y-2">
-          {availableAgents.map((agent) => (
-            <div 
-              key={agent} 
-              className={`p-2 rounded-md flex items-center justify-between cursor-pointer transition-colors duration-200 ${
-                selectedAgents.includes(agent) 
-                  ? 'bg-gcm-50 border border-gcm-200' 
-                  : 'hover:bg-gray-50'
-              }`}
-              onClick={() => toggleAgentSelection(agent)}
-            >
-              <span>{agent}</span>
-              {selectedAgents.includes(agent) && (
-                <CheckCircle className="h-4 w-4 text-gcm-600" />
-              )}
+          {availableAgents.length > 0 ? (
+            availableAgents.map((agent) => (
+              <div 
+                key={agent} 
+                className={`p-2 rounded-md flex items-center justify-between cursor-pointer transition-colors duration-200 ${
+                  selectedAgents.includes(agent) 
+                    ? 'bg-gcm-50 border border-gcm-200' 
+                    : 'hover:bg-gray-50'
+                }`}
+                onClick={() => toggleAgentSelection(agent)}
+              >
+                <span>{agent}</span>
+                {selectedAgents.includes(agent) && (
+                  <CheckCircle className="h-4 w-4 text-gcm-600" />
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              Nenhum agente disponível
             </div>
-          ))}
+          )}
         </div>
         {selectedAgents.length > 0 && (
           <div className="mt-2">

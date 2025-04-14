@@ -1,11 +1,10 @@
 
 import React from 'react';
 import UserTable from './UserTable';
-import UserForm from './UserForm';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -20,6 +19,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useUserManagement } from '@/hooks/userManagement';
+import UserFormDialog from './UserManagement/UserFormDialog';
+import UserActions from './UserManagement/UserActions';
 
 const UserManagement = () => {
   const {
@@ -128,10 +129,7 @@ const UserManagement = () => {
             </PopoverContent>
           </Popover>
           
-          <Button onClick={handleAddNewUser} className="gap-1">
-            <Plus className="h-4 w-4" />
-            Novo Usuário
-          </Button>
+          <UserActions onAddUser={handleAddNewUser} />
         </div>
       </div>
 
@@ -143,21 +141,16 @@ const UserManagement = () => {
         isLoading={isLoading}
       />
 
-      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingUser ? 'Editar Usuário' : 'Adicionar Novo Usuário'}
-            </DialogTitle>
-          </DialogHeader>
-          <UserForm 
-            initialData={editingUser || undefined} 
-            onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-            onCancel={handleCloseUserDialog}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* User Form Dialog */}
+      <UserFormDialog
+        isOpen={showUserDialog}
+        onOpenChange={setShowUserDialog}
+        editingUser={editingUser}
+        onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+        onCancel={handleCloseUserDialog}
+      />
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

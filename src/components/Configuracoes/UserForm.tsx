@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { UserFormData } from './UserManagement/types';
-import { toast } from "sonner";
 import { useUserForm } from '@/hooks/use-user-form';
 import { Form } from '@/components/ui/form';
 
@@ -46,51 +45,59 @@ const UserForm: React.FC<UserFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={onFormSubmit} className="space-y-4">
-        <NameField 
-          value={form.watch('nome')}
-          onChange={(value) => form.setValue('nome', value)}
-          error={form.formState.errors.nome?.message}
-          readOnly={readOnly}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NameField 
+            value={form.watch('nome')}
+            onChange={(value) => form.setValue('nome', value)}
+            error={form.formState.errors.nome?.message}
+            readOnly={readOnly}
+          />
 
-        <EmailField 
-          value={form.watch('email')}
-          onChange={(value) => form.setValue('email', value)}
-          error={form.formState.errors.email?.message}
-          isChecking={false}
-          readOnly={readOnly}
-        />
+          <EmailField 
+            value={form.watch('email')}
+            onChange={(value) => form.setValue('email', value)}
+            error={form.formState.errors.email?.message}
+            isChecking={false}
+            readOnly={readOnly}
+          />
+        </div>
 
-        <MatriculaField 
-          value={form.watch('matricula')}
-          onChange={(value) => form.setValue('matricula', value)}
-          error={form.formState.errors.matricula?.message}
-          isChecking={false}
-          readOnly={readOnly}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <MatriculaField 
+            value={form.watch('matricula')}
+            onChange={(value) => form.setValue('matricula', value)}
+            error={form.formState.errors.matricula?.message}
+            isChecking={false}
+            readOnly={readOnly}
+          />
 
-        <DateField 
-          value={form.watch('data_nascimento')}
-          onChange={(value) => form.setValue('data_nascimento', value)}
-          error={form.formState.errors.data_nascimento?.message}
-          readOnly={readOnly}
-        />
+          <DateField 
+            value={form.watch('data_nascimento')}
+            onChange={(value) => form.setValue('data_nascimento', value)}
+            error={form.formState.errors.data_nascimento?.message}
+            readOnly={readOnly}
+          />
+        </div>
 
-        <ProfileField 
-          value={form.watch('perfil')}
-          onChange={handleProfileChange}
-          readOnly={readOnly}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ProfileField 
+            value={form.watch('perfil')}
+            onChange={handleProfileChange}
+            readOnly={readOnly}
+          />
 
-        <StatusField 
-          checked={form.watch('status')}
-          onChange={(checked) => form.setValue('status', checked)}
-          readOnly={readOnly}
-        />
+          <div className="flex items-center h-full">
+            <StatusField 
+              checked={form.watch('status')}
+              onChange={(checked) => form.setValue('status', checked)}
+              readOnly={readOnly}
+            />
+          </div>
+        </div>
 
         {/* Password fields */}
         {!isEditing && (
-          <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PasswordField 
               label="Senha"
               value={form.watch('password') || ''}
@@ -107,7 +114,7 @@ const UserForm: React.FC<UserFormProps> = ({
               placeholder="Confirme sua senha"
               readOnly={readOnly}
             />
-          </>
+          </div>
         )}
 
         <FormActions 

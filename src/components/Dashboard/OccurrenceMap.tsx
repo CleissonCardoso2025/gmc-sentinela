@@ -99,7 +99,9 @@ const OccurrenceMap: React.FC = () => {
         <p>${occurrence.local}</p>
         <p>Data: ${formatDateBR(occurrence.data)}</p>
       `,
-      icon: 'incident'
+      icon: 'incident',
+      lat: occurrence.latitude || -23.550520,
+      lng: occurrence.longitude || -46.633308
     }));
   
   // Add user location marker if available
@@ -111,7 +113,9 @@ const OccurrenceMap: React.FC = () => {
       content: geolocation.location.accuracy 
         ? `<p>Precisão: ~${Math.round(geolocation.location.accuracy)}m</p>` 
         : '',
-      icon: 'default'
+      icon: 'default',
+      lat: geolocation.location.latitude,
+      lng: geolocation.location.longitude
     });
   }
 

@@ -46,7 +46,9 @@ const VehicleTrackingMap: React.FC = () => {
           <p>Última atualização: ${formatDateBR(vehicle.lastUpdate || '')}</p>
         </div>
       `,
-      icon: 'police'
+      icon: 'police',
+      lat: vehicle.latitude || -23.550520,
+      lng: vehicle.longitude || -46.633308
     }));
   
   // Add user's location as a marker if available
@@ -59,7 +61,9 @@ const VehicleTrackingMap: React.FC = () => {
       content: geolocation.location.accuracy 
         ? `<p>Precisão: ~${Math.round(geolocation.location.accuracy)}m</p>` 
         : '',
-      icon: 'default'
+      icon: 'default',
+      lat: geolocation.location.latitude,
+      lng: geolocation.location.longitude
     });
   }
   

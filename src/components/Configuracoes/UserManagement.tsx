@@ -50,7 +50,8 @@ const UserManagement = () => {
 
   // Get the user profile from localStorage - this would normally come from an auth context
   const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
-  const hasAccess = userProfile === 'Inspetor';
+  const userEmail = localStorage.getItem('userEmail');
+  const hasAccess = userProfile === 'Inspetor' || userEmail === 'gcmribeiradopombal@hotmail.com';
 
   if (!hasAccess) {
     return (

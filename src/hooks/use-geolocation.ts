@@ -149,7 +149,7 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
                 break;
             }
           } else if (error instanceof Error) {
-            errorMessage = `Erro ao monitorar localização: ${error.message}`;
+            errorMessage = error.message;
           }
           
           setState(prev => ({

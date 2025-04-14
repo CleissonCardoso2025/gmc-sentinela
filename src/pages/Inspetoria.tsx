@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Dashboard from "@/layouts/Dashboard";
-import { Shield, Users, Calendar, FileText, Bell, Plus, Map, AlertTriangle } from "lucide-react";
+import { Shield, Users, Calendar, FileText, Bell, Plus, Map, AlertTriangle, Megaphone } from "lucide-react";
 import InspetoriaDashboard from "@/components/Inspetoria/InspetoriaDashboard";
 import GuarnicoesList from "@/components/Inspetoria/GuarnicoesList";
 import GuarnicaoForm from "@/components/Inspetoria/GuarnicaoForm";
@@ -13,6 +13,7 @@ import RelatoriosOperacionais from "@/components/Inspetoria/RelatoriosOperaciona
 import RotasList from "@/components/Inspetoria/RotasList";
 import RotaForm from "@/components/Inspetoria/RotaForm";
 import InspetoriaOccurrences from "@/components/Inspetoria/InspetoriaOccurrences";
+import AlertManager from "@/components/Inspetoria/AlertManager";
 
 const InspetoriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -48,7 +49,7 @@ const InspetoriaPage: React.FC = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="overflow-x-auto">
-            <TabsList className="grid min-w-max w-full grid-cols-6">
+            <TabsList className="grid min-w-max w-full grid-cols-7">
               <TabsTrigger value="dashboard" className="flex items-center">
                 <Shield className="sm:mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Dashboard</span>
@@ -72,6 +73,10 @@ const InspetoriaPage: React.FC = () => {
               <TabsTrigger value="ocorrencias" className="flex items-center">
                 <AlertTriangle className="sm:mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Ocorrências</span>
+              </TabsTrigger>
+              <TabsTrigger value="alertas" className="flex items-center">
+                <Megaphone className="sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Mural de Alertas</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -139,6 +144,12 @@ const InspetoriaPage: React.FC = () => {
             <Card className="p-4 sm:p-6 animate-fade-in">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">Ocorrências Cadastradas</h2>
               <InspetoriaOccurrences />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="alertas">
+            <Card className="p-4 sm:p-6 animate-fade-in">
+              <AlertManager />
             </Card>
           </TabsContent>
         </Tabs>

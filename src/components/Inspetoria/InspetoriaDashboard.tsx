@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Car, Clock } from "lucide-react";
+import { Users, Car, Clock, Megaphone } from "lucide-react";
 import { CalendarIcon } from "lucide-react";
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
-import AlertPanel from './AlertPanel';
+import { AlertBoard } from '@/components/Dashboard/AlertBoard';
 import EmptyState from "@/components/Dashboard/EmptyState";
 
 // Lazy load the components for better performance

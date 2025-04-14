@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/layouts/Dashboard';
 import { WelcomeHeader } from '@/components/Dashboard/WelcomeHeader';
@@ -24,12 +23,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Simulate API loading
     const loadUserData = async () => {
       setIsLoading(true);
       
       try {
-        // In the future, replace with actual API call
         const storedUserName = localStorage.getItem("userName");
         const storedUserRole = localStorage.getItem("userRole");
         const storedUserProfile = localStorage.getItem("userProfile") || "Inspetor";
@@ -160,10 +157,10 @@ const Dashboard = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
               <div className="lg:col-span-2">
-                <VehicleTable vehicles={[]} maintenances={[]} />
+                <VehicleTable />
               </div>
               <div>
-                <OccurrenceList occurrences={[]} />
+                <OccurrenceList />
               </div>
             </div>
           </TabsContent>

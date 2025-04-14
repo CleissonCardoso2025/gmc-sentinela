@@ -80,10 +80,10 @@ const Index = () => {
         {/* Tabelas e Listas */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
           <div className="lg:col-span-2">
-            <VehicleTable vehicles={[]} maintenances={[]} />
+            <VehicleTable />
           </div>
           <div>
-            <OccurrenceList occurrences={[]} />
+            <OccurrenceList />
           </div>
         </div>
       </div>

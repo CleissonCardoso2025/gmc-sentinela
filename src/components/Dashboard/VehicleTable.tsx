@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
-import { Car, CheckCircle, AlertCircle, Clock, Tool, Eye } from 'lucide-react';
+import { Car, CheckCircle, AlertCircle, Clock, Wrench, Eye } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVehicleLocations } from '@/hooks/use-vehicle-locations';
 import EmptyState from './EmptyState';

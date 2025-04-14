@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AlertTriangle, Megaphone, Package, BookOpen, ClipboardList, CheckCircle, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import EmptyState from '../Dashboard/EmptyState';
 
 interface Alert {
   id: number;
@@ -24,58 +24,7 @@ interface AlertBoardProps {
 
 export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }) => {
   const { toast } = useToast();
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: 1,
-      title: "Atualização de protocolo operacional",
-      description: "Todos os GCMs devem adotar o novo protocolo de abordagem a partir de hoje.",
-      type: "procedimento",
-      createdAt: "2025-04-07T10:30:00",
-      author: "Inspetor Geral",
-      status: "ativo",
-      read: false
-    },
-    {
-      id: 2,
-      title: "Veículos não identificados na região central",
-      description: "Atenção redobrada a veículos sem identificação circulando no centro.",
-      type: "urgente",
-      createdAt: "2025-04-07T09:15:00",
-      author: "Comandante Operacional",
-      status: "ativo",
-      read: false
-    },
-    {
-      id: 3,
-      title: "Reunião extraordinária",
-      description: "Presença obrigatória na sede administrativa às 14h.",
-      type: "ordem",
-      createdAt: "2025-04-06T16:45:00",
-      author: "Secretário Municipal",
-      status: "ativo",
-      read: true
-    },
-    {
-      id: 4,
-      title: "Apoio à Polícia Civil",
-      description: "Solicitação de apoio para diligências na zona leste no dia 10/04.",
-      type: "diligencia",
-      createdAt: "2025-04-05T11:20:00",
-      author: "Coordenador de Operações",
-      status: "ativo",
-      read: true
-    },
-    {
-      id: 5,
-      title: "Manutenção do sistema de rádio",
-      description: "Sistema de rádio estará em manutenção das 22h às 23h de hoje.",
-      type: "administrativo",
-      createdAt: "2025-04-07T08:00:00",
-      author: "Suporte Técnico",
-      status: "ativo",
-      read: false
-    }
-  ]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -182,10 +131,8 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
     });
   };
 
-  // Count unread alerts
   const unreadCount = alerts.filter(alert => !alert.read).length;
 
-  // Limit displayed alerts
   const displayedAlerts = alerts.slice(0, Math.floor(maxDisplayedAlerts));
   const hasMoreAlerts = alerts.length > displayedAlerts.length;
 
@@ -270,10 +217,11 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
               })}
             </div>
           ) : (
-            <div className="text-center py-6 text-gray-500">
-              <CheckCircle className="h-10 w-10 mx-auto mb-2 text-green-500" />
-              <p>Não há alertas para exibir.</p>
-            </div>
+            <EmptyState
+              title="Sem alertas"
+              description="Não há alertas para exibir no momento."
+              icon="info"
+            />
           )}
           
           {hasMoreAlerts && (

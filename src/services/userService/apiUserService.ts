@@ -50,6 +50,8 @@ export const getUserById = async (id: string): Promise<User | null> => {
 // Create new user
 export const createUser = async (user: Omit<User, 'id'>): Promise<User | null> => {
   try {
+    console.log("Creating user with data:", user);
+    
     const { data, error } = await supabase
       .from('users')
       .insert([user])
@@ -74,6 +76,7 @@ export const createUser = async (user: Omit<User, 'id'>): Promise<User | null> =
       return null;
     }
 
+    console.log("User created successfully:", data);
     toast.success("Usuário criado com sucesso");
     return data as User;
   } catch (error) {
@@ -86,6 +89,8 @@ export const createUser = async (user: Omit<User, 'id'>): Promise<User | null> =
 // Update user
 export const updateUser = async (user: User): Promise<User | null> => {
   try {
+    console.log("Updating user with data:", user);
+    
     const { data, error } = await supabase
       .from('users')
       .update({
@@ -118,6 +123,7 @@ export const updateUser = async (user: User): Promise<User | null> => {
       return null;
     }
 
+    console.log("User updated successfully:", data);
     toast.success("Usuário atualizado com sucesso");
     return data as User;
   } catch (error) {

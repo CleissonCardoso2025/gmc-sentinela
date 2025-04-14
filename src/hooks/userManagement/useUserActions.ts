@@ -14,6 +14,18 @@ export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevU
   
   const handleCreateUser = async (userData: UserFormData) => {
     try {
+      console.log("Creating user with data:", userData);
+      
+      // Ensure all required fields are present and valid
+      if (!userData.nome || !userData.email || !userData.perfil) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Nome, email e perfil são campos obrigatórios",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const newUser = await createUser(userData);
       if (newUser) {
         await refetchUsers(); // Refresh the user list after creating a user
@@ -37,6 +49,8 @@ export const useUserActions = (users: User[], setUsers: (users: User[] | ((prevU
     if (!userData.id) return;
     
     try {
+      console.log("Updating user with data:", userData);
+      
       const updatedUser = await updateUser(userData as User);
       if (updatedUser) {
         await refetchUsers(); // Refresh the user list after updating a user

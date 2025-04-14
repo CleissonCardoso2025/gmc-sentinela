@@ -13,7 +13,9 @@ export const useUserData = () => {
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching users...");
       const data = await getUsers();
+      console.log("Users fetched:", data);
       setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);

@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { DateRange, useOccurrenceData } from "@/hooks/use-occurrence-data";
+import { DateRangeOption } from "@/hooks/use-occurrence-data";
+import { useOccurrenceData } from "@/hooks/use-occurrence-data";
 import { useToast } from '@/hooks/use-toast';
 import GoogleMapComponent from '../Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
@@ -16,7 +17,7 @@ import { useGeolocation } from '@/hooks/use-geolocation';
 type OccurrenceType = 'all' | 'transito' | 'crime' | 'apoio' | 'perturbacao';
 
 const OccurrenceMap: React.FC = () => {
-  const [dateRange, setDateRange] = useState<DateRange>('7d');
+  const [dateRange, setDateRange] = useState<DateRangeOption>('7d');
   const [occurrenceType, setOccurrenceType] = useState<OccurrenceType>('all');
   const { occurrences, isLoading: dataLoading, refetchOccurrences } = useOccurrenceData(dateRange);
   const isMobile = useIsMobile();
@@ -25,7 +26,7 @@ const OccurrenceMap: React.FC = () => {
   const [centered, setCentered] = useState(false);
   
   const handleRangeChange = (value: string) => {
-    setDateRange(value as DateRange);
+    setDateRange(value as DateRangeOption);
   };
   
   const handleTypeChange = (value: string) => {

@@ -8,22 +8,8 @@ import { ptBR } from 'date-fns/locale';
 import { subDays } from 'date-fns';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
-import { DateRange as DateRangeType } from "@/components/ui/date-range-picker";
-
-export interface Occurrence {
-  id: string;
-  titulo: string;
-  tipo: string;
-  descricao: string;
-  status: string;
-  created_at: string;
-  data: string;
-  local: string;
-  numero: string;
-  updated_at?: string;
-  latitude?: number;
-  longitude?: number;
-}
+import { DateRange } from "@/components/ui/date-range-picker";
+import { Occurrence, DateRangeOption } from "@/hooks/use-occurrence-data";
 
 interface RecentOccurrencesProps {
   limit?: number;
@@ -49,7 +35,9 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
         // Map the data to add the titulo field
         const mappedData = data?.map(item => ({
           ...item,
-          titulo: item.tipo // Use tipo as titulo
+          titulo: item.tipo, // Use tipo as titulo
+          latitude: 0,
+          longitude: 0
         })) || [];
         
         setOccurrences(mappedData);
@@ -126,11 +114,11 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
   );
 };
 
-export const useOccurrenceData = (dateRange: string | DateRangeType) => {
+export const useOccurrenceData = (dateRange: string | DateRange) => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const [currentDateRange, setCurrentDateRange] = useState<DateRangeType>({
+  const [currentDateRange, setCurrentDateRange] = useState<DateRange>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
@@ -150,7 +138,9 @@ export const useOccurrenceData = (dateRange: string | DateRangeType) => {
         // Map the data to add the titulo field
         const mappedData = data?.map(item => ({
           ...item,
-          titulo: item.tipo // Use tipo as titulo
+          titulo: item.tipo, // Use tipo as titulo
+          latitude: 0,
+          longitude: 0
         })) || [];
         
         setOccurrences(mappedData);

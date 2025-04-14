@@ -6,7 +6,7 @@ export interface ScheduleDay {
 }
 
 export interface EscalaItem {
-  id: number;
+  id: string; // Changed from 'number' to 'string' to match the UUID from Supabase
   guarnicao: string;
   supervisor: string;
   rota: string;
@@ -15,6 +15,8 @@ export interface EscalaItem {
   agent: string;
   role: string;
   schedule: ScheduleDay[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface GuarnicaoOption {

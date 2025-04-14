@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { AlertTriangle, Search, Info, Users, Map, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Search, Info, Users, Map, AlertCircle, Calendar, FileText, Car, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
   title?: string;
   description?: string;
-  icon?: 'alert' | 'search' | 'info' | 'users' | 'map' | 'error';
+  icon?: 'alert' | 'search' | 'info' | 'users' | 'map' | 'error' | 'calendar' | 'file' | 'car' | 'user-x';
   actionLabel?: string;
   onAction?: () => void;
 }
@@ -24,7 +24,11 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     info: <Info className="h-12 w-12 text-gray-500" />,
     users: <Users className="h-12 w-12 text-blue-500" />,
     map: <Map className="h-12 w-12 text-green-500" />,
-    error: <AlertCircle className="h-12 w-12 text-red-500" />
+    error: <AlertCircle className="h-12 w-12 text-red-500" />,
+    calendar: <Calendar className="h-12 w-12 text-purple-500" />,
+    file: <FileText className="h-12 w-12 text-indigo-500" />,
+    car: <Car className="h-12 w-12 text-green-500" />,
+    'user-x': <UserX className="h-12 w-12 text-red-500" />
   };
 
   return (

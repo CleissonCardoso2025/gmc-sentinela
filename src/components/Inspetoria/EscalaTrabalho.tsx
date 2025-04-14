@@ -32,7 +32,7 @@ const EscalaTrabalho: React.FC = () => {
   const [selectedRota, setSelectedRota] = useState("todas");
   const [selectedViatura, setSelectedViatura] = useState("todas");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<number | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<string | null>(null); // Changed from number to string
   
   // State for data from Supabase
   const [escalaData, setEscalaData] = useState<EscalaItem[]>([]);
@@ -76,7 +76,25 @@ const EscalaTrabalho: React.FC = () => {
         if (viaturasError) throw viaturasError;
         
         // Format and set data
-        setEscalaData(escalaItems || []);
+        if (escalaItems && escalaItems.length > 0) {
+          // Process the schedule data to make sure it's properly formatted
+          const formattedItems: EscalaItem[] = escalaItems.map(item => ({
+            id: item.id,
+            guarnicao: item.guarnicao,
+            supervisor: item.supervisor,
+            rota: item.rota,
+            viatura: item.viatura,
+            periodo: item.periodo,
+            agent: item.agent,
+            role: item.role,
+            schedule: Array.isArray(item.schedule) ? item.schedule : [],
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          }));
+          setEscalaData(formattedItems);
+        } else {
+          setEscalaData([]);
+        }
         
         setGuarnicoes(guarnicoesData?.map(g => ({
           id: g.id,
@@ -131,7 +149,7 @@ const EscalaTrabalho: React.FC = () => {
     });
   };
 
-  const handleDeleteShift = async (id: number) => {
+  const handleDeleteShift = async (id: string) => { // Changed from number to string
     try {
       // Delete from Supabase
       const { error } = await supabase
@@ -158,14 +176,14 @@ const EscalaTrabalho: React.FC = () => {
     }
   };
 
-  const handleSubstituteAgent = (id: number) => {
+  const handleSubstituteAgent = (id: string) => { // Changed from number to string
     toast({
       title: "Substituição de agente",
       description: "Selecione um agente para substituição."
     });
   };
 
-  const handleEditSchedule = (id: number) => {
+  const handleEditSchedule = (id: string) => { // Changed from number to string
     setEditingSchedule(id);
     setIsCreateModalOpen(true);
   };
@@ -181,7 +199,25 @@ const EscalaTrabalho: React.FC = () => {
       
       if (error) throw error;
       
-      setEscalaData(data || []);
+      // Process the data before setting it
+      if (data && data.length > 0) {
+        const formattedItems: EscalaItem[] = data.map(item => ({
+          id: item.id,
+          guarnicao: item.guarnicao,
+          supervisor: item.supervisor,
+          rota: item.rota,
+          viatura: item.viatura,
+          periodo: item.periodo,
+          agent: item.agent,
+          role: item.role,
+          schedule: Array.isArray(item.schedule) ? item.schedule : [],
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }));
+        setEscalaData(formattedItems);
+      } else {
+        setEscalaData([]);
+      }
       
       toast({
         title: "Escala salva",

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +53,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, startOfWeek, endOfWeek } from "date-fns";
 import EmptyState from "@/components/Dashboard/EmptyState";
 
+interface ScheduleDay {
+  day: string;
+  shift: string;
+  status: string;
+}
+
 const RelatoriosOperacionais: React.FC = () => {
   const { toast } = useToast();
   const [reportType, setReportType] = useState("plantoes");
@@ -62,7 +67,6 @@ const RelatoriosOperacionais: React.FC = () => {
     end: format(new Date(), "yyyy-MM-dd")
   });
   
-  // State for data from Supabase
   const [isLoading, setIsLoading] = useState(true);
   const [plantoesData, setPlantoesData] = useState<any[]>([]);
   const [ocorrenciasData, setOcorrenciasData] = useState<any[]>([]);
@@ -91,16 +95,13 @@ const RelatoriosOperacionais: React.FC = () => {
     substituicoes: 0
   });
 
-  // Fetch data from Supabase
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Get start and end dates for filtering
         const startDate = new Date(dateRange.start);
         const endDate = new Date(dateRange.end);
         
-        // Fetch escala data for plantoes
         const { data: escalaData, error: escalaError } = await supabase
           .from('escala_items')
           .select('*')
@@ -109,14 +110,12 @@ const RelatoriosOperacionais: React.FC = () => {
         
         if (escalaError) throw escalaError;
         
-        // Fetch vehicles data for viaturas
         const { data: vehiclesData, error: vehiclesError } = await supabase
           .from('vehicles')
           .select('*');
           
         if (vehiclesError) throw vehiclesError;
         
-        // Fetch ocorrencias data
         const { data: ocorrenciasDbData, error: ocorrenciasError } = await supabase
           .from('ocorrencias')
           .select('*')
@@ -125,7 +124,6 @@ const RelatoriosOperacionais: React.FC = () => {
           
         if (ocorrenciasError) throw ocorrenciasError;
         
-        // Process plantoes data
         const daysOfWeek = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
         const plantoesByDay = daysOfWeek.map(day => ({
           name: day,
@@ -140,15 +138,14 @@ const RelatoriosOperacionais: React.FC = () => {
         
         if (escalaData && escalaData.length > 0) {
           escalaData.forEach(item => {
-            if (item.schedule) {
-              const scheduleDays = item.schedule;
-              scheduleDays.forEach((day: any) => {
+            if (item.schedule && Array.isArray(item.schedule)) {
+              const scheduleDays = item.schedule as ScheduleDay[];
+              scheduleDays.forEach((day) => {
                 const dayIndex = daysOfWeek.indexOf(day.day);
                 if (dayIndex >= 0 && day.shift === "24h") {
                   plantoesByDay[dayIndex].plantoes += 1;
                   totalPlantoes += 1;
                   
-                  // Count day/night shifts based on some logic
                   if (dayIndex < 5) { // Weekday
                     plantoesDiurnos += 1;
                   } else { // Weekend
@@ -157,7 +154,6 @@ const RelatoriosOperacionais: React.FC = () => {
                   
                   agentesTotal += 1;
                   
-                  // Count incomplete shifts based on status
                   if (day.status !== 'presente') {
                     plantoesIncompletos += 1;
                   }
@@ -167,7 +163,6 @@ const RelatoriosOperacionais: React.FC = () => {
           });
         }
         
-        // Process ocorrencias data
         const ocorrenciasByDay = daysOfWeek.map(day => ({
           name: day,
           ocorrencias: 0
@@ -180,27 +175,24 @@ const RelatoriosOperacionais: React.FC = () => {
         if (ocorrenciasDbData && ocorrenciasDbData.length > 0) {
           ocorrenciasDbData.forEach(item => {
             const date = new Date(item.created_at || item.data);
-            const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Convert 0-6 (Sun-Sat) to 0-6 (Mon-Sun)
+            const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
             if (dayIndex >= 0) {
               ocorrenciasByDay[dayIndex].ocorrencias += 1;
             }
             
-            // Count by priority
-            switch (item.status?.toLowerCase()) {
-              case 'alta':
+            if (item.status) {
+              const status = item.status.toLowerCase();
+              if (status === 'alta') {
                 ocorrenciasAlta += 1;
-                break;
-              case 'média':
+              } else if (status === 'média') {
                 ocorrenciasMeida += 1;
-                break;
-              case 'baixa':
+              } else if (status === 'baixa') {
                 ocorrenciasBaixa += 1;
-                break;
+              }
             }
           });
         }
         
-        // Process viaturas data
         const viaturasProcessed = [
           { name: 'Em operação', value: 0, color: '#22c55e' },
           { name: 'Em manutenção', value: 0, color: '#f59e0b' },
@@ -212,24 +204,22 @@ const RelatoriosOperacionais: React.FC = () => {
         
         if (vehiclesData && vehiclesData.length > 0) {
           vehiclesData.forEach(vehicle => {
-            switch (vehicle.status?.toLowerCase()) {
-              case 'operacional':
+            if (vehicle.status) {
+              const status = vehicle.status.toLowerCase();
+              if (status === 'operacional') {
                 viaturasProcessed[0].value += 1;
-                break;
-              case 'manutenção':
+              } else if (status === 'manutenção') {
                 viaturasProcessed[1].value += 1;
                 manutencoes += 1;
-                break;
-              case 'inoperante':
+              } else if (status === 'inoperante') {
                 viaturasProcessed[2].value += 1;
-                break;
+              }
             }
             
             quilometragemTotal += (vehicle.quilometragem || 0);
           });
         }
         
-        // Process faltas data (using escala data)
         const faltasProcessed = [
           { name: 'Presentes', value: 0, color: '#3b82f6' },
           { name: 'Faltas', value: 0, color: '#ef4444' },
@@ -241,36 +231,32 @@ const RelatoriosOperacionais: React.FC = () => {
         
         if (escalaData && escalaData.length > 0) {
           escalaData.forEach(item => {
-            if (item.schedule) {
-              const scheduleDays = item.schedule;
-              scheduleDays.forEach((day: any) => {
-                switch (day.status?.toLowerCase()) {
-                  case 'presente':
+            if (item.schedule && Array.isArray(item.schedule)) {
+              const scheduleDays = item.schedule as ScheduleDay[];
+              scheduleDays.forEach((day) => {
+                if (day.status) {
+                  const status = day.status.toLowerCase();
+                  if (status === 'presente') {
                     faltasProcessed[0].value += 1;
-                    break;
-                  case 'falta':
+                  } else if (status === 'falta') {
                     faltasProcessed[1].value += 1;
-                    break;
-                  case 'licença':
+                  } else if (status === 'licença') {
                     faltasProcessed[2].value += 1;
-                    substituicoes += 1; // Assume each license requires a substitution
-                    break;
-                  case 'folga':
+                    substituicoes += 1;
+                  } else if (status === 'folga') {
                     faltasProcessed[3].value += 1;
-                    break;
+                  }
                 }
               });
             }
           });
         }
         
-        // Set all the processed data
         setPlantoesData(plantoesByDay);
         setOcorrenciasData(ocorrenciasByDay);
         setViaturasData(viaturasProcessed);
         setFaltasData(faltasProcessed);
         
-        // Set totals
         setTotais({
           plantoes: totalPlantoes,
           plantoesDiurnos,
@@ -281,19 +267,18 @@ const RelatoriosOperacionais: React.FC = () => {
           ocorrenciasAlta,
           ocorrenciasMeida,
           ocorrenciasBaixa,
-          tempoMedioResposta: 12, // Mock data for now
+          tempoMedioResposta: 12,
           viaturas: vehiclesData?.length || 0,
           quilometragemTotal,
           mediaDiaria: quilometragemTotal > 0 ? Math.round(quilometragemTotal / 7) : 0,
           manutencoes,
-          custoManutencao: manutencoes * 1500, // Mock data for now
+          custoManutencao: manutencoes * 1500,
           agentes: faltasProcessed.reduce((acc, curr) => acc + curr.value, 0),
           faltas: faltasProcessed[1].value,
           licencas: faltasProcessed[2].value,
           ferias: faltasProcessed[3].value,
           substituicoes
         });
-        
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({

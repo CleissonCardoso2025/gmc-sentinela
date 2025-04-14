@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ interface ScheduleDay {
 }
 
 interface EscalaRow {
-  id: number;
+  id: string;
   guarnicao: string;
   supervisor: string;
   rota: string;
@@ -37,7 +36,7 @@ interface GroupedEscalaRow {
   viatura: string;
   periodo: string;
   agents: {
-    id: number;
+    id: string;
     name: string;
     role: string;
     schedule: ScheduleDay[];
@@ -47,9 +46,9 @@ interface GroupedEscalaRow {
 interface EscalaTableProps {
   weekDays: string[];
   filteredData: EscalaRow[];
-  onEditSchedule: (id: number) => void;
-  onSubstituteAgent: (id: number) => void;
-  onDeleteShift: (id: number) => void;
+  onEditSchedule: (id: string) => void;
+  onSubstituteAgent: (id: string) => void;
+  onDeleteShift: (id: string) => void;
   getStatusColor: (status: string) => string;
 }
 
@@ -61,7 +60,6 @@ const EscalaTable: React.FC<EscalaTableProps> = ({
   onDeleteShift,
   getStatusColor
 }) => {
-  // Group data by guarnicao for better organization
   const groupedData: GroupedEscalaRow[] = [];
   
   filteredData.forEach(row => {

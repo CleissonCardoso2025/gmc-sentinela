@@ -13,6 +13,9 @@ export interface Vehicle {
   longitude?: number;
   lastUpdate?: string;
   location_name?: string;
+  status?: string;
+  quilometragem?: number;
+  proximaManutencao?: string;
 }
 
 export const useVehicleLocations = () => {
@@ -53,7 +56,10 @@ export const useVehicleLocations = () => {
             latitude: location?.latitude,
             longitude: location?.longitude,
             lastUpdate: location?.recorded_at,
-            location_name: location?.location_name
+            location_name: location?.location_name,
+            status: vehicle.status,
+            quilometragem: vehicle.quilometragem,
+            proximaManutencao: vehicle.proximamanutencao
           };
         }) || [];
         

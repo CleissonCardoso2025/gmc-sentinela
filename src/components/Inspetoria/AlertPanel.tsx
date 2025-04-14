@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import EmptyState from '../Dashboard/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface Alert {
+interface AlertItem {
   id: string;
   type: string;
   title: string;
@@ -27,16 +27,34 @@ interface Alert {
 
 const AlertPanel: React.FC = () => {
   const { toast } = useToast();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchAlerts = async () => {
       setIsLoading(true);
       try {
-        // This would be replaced with a real API call
-        // For now, we're setting an empty array to simulate no data
-        setAlerts([]);
+        // Fetch alerts from ocorrencias table with high priority
+        const { data, error } = await supabase
+          .from('ocorrencias')
+          .select('*')
+          .eq('status', 'Alta')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (error) throw error;
+        
+        // Transform data to match the AlertItem interface
+        const transformedAlerts = data.map(item => ({
+          id: item.id,
+          type: mapTypeToAlertType(item.tipo),
+          title: item.tipo,
+          description: item.descricao,
+          severity: mapStatusToSeverity(item.status),
+          time: new Date(item.created_at).toLocaleString('pt-BR')
+        }));
+        
+        setAlerts(transformedAlerts);
       } catch (error) {
         console.error("Error fetching alerts:", error);
         toast({
@@ -44,6 +62,7 @@ const AlertPanel: React.FC = () => {
           description: "Não foi possível carregar os alertas do sistema.",
           variant: "destructive"
         });
+        setAlerts([]);
       } finally {
         setIsLoading(false);
       }
@@ -51,6 +70,29 @@ const AlertPanel: React.FC = () => {
 
     fetchAlerts();
   }, [toast]);
+
+  // Maps occurrence type to alert type
+  const mapTypeToAlertType = (tipo: string): string => {
+    const typeMap: Record<string, string> = {
+      'Plantão': 'plantao',
+      'Viatura': 'viatura',
+      'Agente': 'agente',
+      'Ocorrência': 'ocorrencia'
+    };
+    
+    return typeMap[tipo] || 'ocorrencia';
+  };
+
+  // Maps status to severity
+  const mapStatusToSeverity = (status: string): string => {
+    const severityMap: Record<string, string> = {
+      'Alta': 'high',
+      'Média': 'medium',
+      'Baixa': 'low'
+    };
+    
+    return severityMap[status] || 'medium';
+  };
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -82,9 +124,17 @@ const AlertPanel: React.FC = () => {
 
   const handleMarkResolved = async (id: string) => {
     try {
-      // This would be replaced with a real API call
-      // For now, we just remove the alert from the state
+      // Update the ocorrencia status to resolved
+      const { error } = await supabase
+        .from('ocorrencias')
+        .update({ status: 'Resolvida' })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Remove from local state to update UI
       setAlerts(alerts.filter(alert => alert.id !== id));
+      
       toast({
         title: "Alerta resolvido",
         description: "O alerta foi marcado como resolvido."
@@ -117,7 +167,7 @@ const AlertPanel: React.FC = () => {
           icon="info"
         />
       ) : (
-        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+        <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
           {alerts.map((alert) => (
             <Alert key={alert.id} className={cn("flex items-start", getAlertBorder(alert.severity))}>
               <div className="flex-shrink-0 mr-3 mt-0.5">

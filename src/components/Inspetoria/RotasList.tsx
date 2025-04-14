@@ -1,70 +1,26 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Edit, Trash2, Map, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/Dashboard/EmptyState";
 
-// Mock data for demonstration purposes
-const rotasMock = [
-  {
-    id: '1',
-    nome: 'Rota Centro-Norte',
-    descricao: 'Percorre o centro da cidade e região norte, passando por pontos comerciais importantes',
-    bairros: 'Centro, Vila Norte, Jardim Primavera',
-    pontoInicial: 'Praça Central',
-    pontoFinal: 'Terminal Norte',
-    tempoPrevisto: '90',
-    prioridade: 'Alta',
-    ultimoPatrulhamento: '12/06/2023'
-  },
-  {
-    id: '2',
-    nome: 'Rota Leste',
-    descricao: 'Percorre a zona leste da cidade, cobrindo áreas residenciais e escolas',
-    bairros: 'Jardim Leste, Vila Oriental, Parque dos Ipês',
-    pontoInicial: 'UBS Leste',
-    pontoFinal: 'Praça dos Ipês',
-    tempoPrevisto: '60',
-    prioridade: 'Normal',
-    ultimoPatrulhamento: '10/06/2023'
-  },
-  {
-    id: '3',
-    nome: 'Rota Escolar',
-    descricao: 'Foco em escolas e creches durante horários de entrada e saída de alunos',
-    bairros: 'Centro, Jardim Educacional, Vila das Escolas',
-    pontoInicial: 'E.E. Prof. Silva',
-    pontoFinal: 'Creche Municipal',
-    tempoPrevisto: '45',
-    prioridade: 'Alta',
-    ultimoPatrulhamento: '13/06/2023'
-  },
-  {
-    id: '4',
-    nome: 'Rota Comercial Sul',
-    descricao: 'Abrange a área comercial da zona sul, com foco em estabelecimentos comerciais',
-    bairros: 'Centro Comercial Sul, Jardim Empresarial',
-    pontoInicial: 'Shopping Sul',
-    pontoFinal: 'Rua do Comércio',
-    tempoPrevisto: '75',
-    prioridade: 'Normal',
-    ultimoPatrulhamento: '09/06/2023'
-  },
-  {
-    id: '5',
-    nome: 'Rota Parques',
-    descricao: 'Percorre os principais parques e áreas de lazer da cidade',
-    bairros: 'Parque Municipal, Jardim das Flores, Vila Verde',
-    pontoInicial: 'Parque Municipal',
-    pontoFinal: 'Jardim Botânico',
-    tempoPrevisto: '120',
-    prioridade: 'Baixa',
-    ultimoPatrulhamento: '05/06/2023'
-  }
-];
+interface Rota {
+  id: string;
+  nome: string;
+  bairros?: string;
+  pontoInicial?: string;
+  pontoFinal?: string;
+  tempoPrevisto?: string;
+  prioridade?: string;
+  ultimoPatrulhamento?: string;
+  created_at: string;
+}
 
 interface RotasListProps {
   onCreateNew: () => void;
@@ -73,23 +29,66 @@ interface RotasListProps {
 const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [rotas, setRotas] = useState(rotasMock);
+  const [rotas, setRotas] = useState<Rota[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleDeleteRota = (id: string) => {
-    const rotaToDelete = rotas.find(rota => rota.id === id);
-    if (rotaToDelete) {
+  useEffect(() => {
+    fetchRotas();
+  }, []);
+
+  const fetchRotas = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('rotas')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setRotas(data || []);
+    } catch (error) {
+      console.error("Error fetching rotas:", error);
+      toast({
+        title: "Erro ao carregar rotas",
+        description: "Não foi possível carregar as rotas cadastradas.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteRota = async (id: string) => {
+    try {
+      const rotaToDelete = rotas.find(rota => rota.id === id);
+      if (!rotaToDelete) return;
+
+      const { error } = await supabase
+        .from('rotas')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
       setRotas(rotas.filter(rota => rota.id !== id));
       toast({
         title: "Rota excluída",
         description: `A rota ${rotaToDelete.nome} foi excluída com sucesso.`,
+      });
+    } catch (error) {
+      console.error("Error deleting rota:", error);
+      toast({
+        title: "Erro ao excluir rota",
+        description: "Não foi possível excluir a rota.",
+        variant: "destructive"
       });
     }
   };
 
   const filteredRotas = rotas.filter(rota => 
     rota.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rota.bairros.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rota.prioridade.toLowerCase().includes(searchTerm.toLowerCase())
+    (rota.bairros && rota.bairros.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (rota.prioridade && rota.prioridade.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getPriorityBadge = (prioridade: string) => {
@@ -101,9 +100,23 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
       case 'Baixa':
         return <Badge className="bg-green-500">{prioridade}</Badge>;
       default:
-        return <Badge>{prioridade}</Badge>;
+        return <Badge>{prioridade || "Normal"}</Badge>;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="w-1/3">
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -128,61 +141,69 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
         </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableCaption>Lista de rotas de patrulhamento cadastradas.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Bairros</TableHead>
-              <TableHead>Tempo (min)</TableHead>
-              <TableHead>Prioridade</TableHead>
-              <TableHead>Último Patrulhamento</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRotas.length > 0 ? (
-              filteredRotas.map((rota) => (
-                <TableRow key={rota.id}>
-                  <TableCell className="font-medium">{rota.nome}</TableCell>
-                  <TableCell>{rota.bairros}</TableCell>
-                  <TableCell>{rota.tempoPrevisto}</TableCell>
-                  <TableCell>{getPriorityBadge(rota.prioridade)}</TableCell>
-                  <TableCell>{rota.ultimoPatrulhamento}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="ghost" size="icon" title="Visualizar">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" title="Editar">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        title="Excluir"
-                        onClick={() => handleDeleteRota(rota.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" title="Ver no mapa">
-                        <Map className="h-4 w-4" />
-                      </Button>
-                    </div>
+      {rotas.length === 0 ? (
+        <EmptyState
+          title="Sem rotas"
+          description="Não há rotas cadastradas ainda."
+          icon="map"
+        />
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableCaption>Lista de rotas de patrulhamento cadastradas.</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Bairros</TableHead>
+                <TableHead>Tempo (min)</TableHead>
+                <TableHead>Prioridade</TableHead>
+                <TableHead>Último Patrulhamento</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRotas.length > 0 ? (
+                filteredRotas.map((rota) => (
+                  <TableRow key={rota.id}>
+                    <TableCell className="font-medium">{rota.nome}</TableCell>
+                    <TableCell>{rota.bairros || "-"}</TableCell>
+                    <TableCell>{rota.tempoPrevisto || "-"}</TableCell>
+                    <TableCell>{getPriorityBadge(rota.prioridade || "Normal")}</TableCell>
+                    <TableCell>{rota.ultimoPatrulhamento || "-"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="ghost" size="icon" title="Visualizar">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Editar">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Excluir"
+                          onClick={() => handleDeleteRota(rota.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Ver no mapa">
+                          <Map className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4">
+                    Nenhuma rota encontrada.
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  Nenhuma rota encontrada.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };

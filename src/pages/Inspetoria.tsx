@@ -21,7 +21,7 @@ const InspetoriaPage: React.FC = () => {
 
   return (
     <Dashboard>
-      <div className="container mx-auto p-4 sm:p-6">
+      <div className="container mx-auto p-4 sm:p-6 pb-16">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex items-center">
             <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-gcm-600 mr-2 sm:mr-3" />

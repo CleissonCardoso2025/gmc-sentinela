@@ -1,17 +1,29 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Edit, Trash2, Users } from "lucide-react";
+import { Edit, Trash2, UserX, Users, UserCheck, Car, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "../Dashboard/EmptyState";
+
+interface Membro {
+  id: string;
+  nome: string;
+  funcao: string;
+  guarnicao_id?: string;
+}
+
+interface Guarnicao {
+  id: string;
+  nome: string;
+  supervisor: string;
+  updated_at: string;
+  membros?: Membro[];
+}
 
 interface GuarnicoesListProps {
   onCreateNew: () => void;
@@ -19,113 +31,217 @@ interface GuarnicoesListProps {
 
 const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
   const { toast } = useToast();
+  const [guarnicoes, setGuarnicoes] = useState<Guarnicao[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedGuarnicao, setSelectedGuarnicao] = useState<Guarnicao | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Mock data for garrisons
-  const guarnicoes = [
-    {
-      id: 1,
-      name: "Guarnição Centro",
-      supervisor: "Sgt. Roberto Silva",
-      team: ["Agente Carlos Pereira", "Agente Ana Melo", "Agente Paulo Santos"],
-      status: "Ativo",
-      date: "Hoje - Diurno"
-    },
-    {
-      id: 2,
-      name: "Guarnição Norte",
-      supervisor: "Sgt. Marcos Oliveira",
-      team: ["Agente Juliana Campos", "Agente Ricardo Alves", "Agente Fernanda Lima"],
-      status: "Programado",
-      date: "Hoje - Noturno"
-    },
-    {
-      id: 3,
-      name: "Guarnição Sul",
-      supervisor: "Sgt. Pedro Costa",
-      team: ["Agente Lucas Martins", "Agente Carla Dias", "Agente Bruno Sousa"],
-      status: "Programado",
-      date: "Amanhã - Diurno"
-    },
-  ];
+  useEffect(() => {
+    fetchGuarnicoes();
+  }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'ativo':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'programado':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'concluído':
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+  const fetchGuarnicoes = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch all guarnicoes
+      const { data: guarnicoesData, error: guarnicoesError } = await supabase
+        .from('guarnicoes')
+        .select('*')
+        .order('nome', { ascending: true });
+      
+      if (guarnicoesError) throw guarnicoesError;
+      
+      // Fetch all membros_guarnicao
+      const { data: membrosData, error: membrosError } = await supabase
+        .from('membros_guarnicao')
+        .select('*');
+      
+      if (membrosError) throw membrosError;
+      
+      // Combine the data
+      const guarnicoesWithMembros = guarnicoesData.map(guarnicao => {
+        const membros = membrosData.filter(membro => membro.guarnicao_id === guarnicao.id);
+        return { ...guarnicao, membros };
+      });
+      
+      setGuarnicoes(guarnicoesWithMembros);
+    } catch (error) {
+      console.error("Error fetching guarnicoes:", error);
+      toast({
+        title: "Erro ao carregar guarnições",
+        description: "Não foi possível carregar as guarnições cadastradas.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = (id: number) => {
-    toast({
-      title: "Guarnição removida",
-      description: "A guarnição foi removida com sucesso.",
-    });
+  const handleViewDetails = (guarnicao: Guarnicao) => {
+    setSelectedGuarnicao(guarnicao);
+    setIsDialogOpen(true);
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center mb-4">
-        <Users className="h-5 w-5 mr-2 text-gcm-600" />
-        <h3 className="text-lg font-medium">Guarnições do Dia</h3>
-      </div>
+  const handleDeleteGuarnicao = async (id: string) => {
+    try {
+      // First delete all members associated with this guarnicao
+      const { error: membrosError } = await supabase
+        .from('membros_guarnicao')
+        .delete()
+        .eq('guarnicao_id', id);
+      
+      if (membrosError) throw membrosError;
+      
+      // Then delete the guarnicao
+      const { error: guarnicaoError } = await supabase
+        .from('guarnicoes')
+        .delete()
+        .eq('id', id);
+      
+      if (guarnicaoError) throw guarnicaoError;
+      
+      setGuarnicoes(guarnicoes.filter(g => g.id !== id));
+      
+      toast({
+        title: "Guarnição excluída",
+        description: "A guarnição foi excluída com sucesso."
+      });
+    } catch (error) {
+      console.error("Error deleting guarnicao:", error);
+      toast({
+        title: "Erro ao excluir guarnição",
+        description: "Não foi possível excluir a guarnição.",
+        variant: "destructive"
+      });
+    }
+  };
 
-      <div className="rounded-md border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="font-medium">Nome</TableHead>
-              <TableHead className="font-medium">Data/Período</TableHead>
-              <TableHead className="font-medium">Supervisor</TableHead>
-              <TableHead className="font-medium">Equipe</TableHead>
-              <TableHead className="font-medium">Status</TableHead>
-              <TableHead className="font-medium">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {guarnicoes.map((guarnicao) => (
-              <TableRow key={guarnicao.id}>
-                <TableCell>{guarnicao.name}</TableCell>
-                <TableCell>{guarnicao.date}</TableCell>
-                <TableCell>{guarnicao.supervisor}</TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    {guarnicao.team.map((member, index) => (
-                      <span key={index} className="text-sm">
-                        {member}
-                      </span>
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedGuarnicao(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {guarnicoes.length === 0 ? (
+        <div className="mb-4">
+          <EmptyState
+            title="Sem guarnições"
+            description="Não há guarnições cadastradas no momento."
+            icon="users"
+          />
+          <div className="flex justify-center mt-4">
+            <Button onClick={onCreateNew}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Guarnição
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {guarnicoes.map((guarnicao) => (
+            <Card key={guarnicao.id} className="p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-bold text-lg">{guarnicao.nome}</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Supervisor:</span> {guarnicao.supervisor}
+                  </p>
+                </div>
+                <div className="flex space-x-1">
+                  <Button variant="ghost" size="sm" onClick={() => handleViewDetails(guarnicao)}>
+                    <Users className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleDeleteGuarnicao(guarnicao.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 mb-2">Membros:</p>
+                <div className="flex flex-wrap gap-2">
+                  {guarnicao.membros && guarnicao.membros.length > 0 ? (
+                    guarnicao.membros.map((membro, index) => (
+                      <Badge key={index} variant="outline" className="flex items-center">
+                        <UserCheck className="h-3 w-3 mr-1" />
+                        <span className="text-xs">{membro.nome}</span>
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-400">Sem membros cadastrados</p>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-xl">Detalhes da Guarnição</DialogTitle>
+          </DialogHeader>
+          
+          {selectedGuarnicao && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-bold text-lg mb-2">{selectedGuarnicao.nome}</h3>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Supervisor:</span> {selectedGuarnicao.supervisor}
+                </p>
+                <p className="text-sm text-gray-500">
+                  <span className="font-medium">Última atualização:</span> {new Date(selectedGuarnicao.updated_at).toLocaleString('pt-BR')}
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-md mb-2">Membros da Guarnição</h4>
+                {selectedGuarnicao.membros && selectedGuarnicao.membros.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedGuarnicao.membros.map((membro, index) => (
+                      <div key={index} className="p-2 border rounded-md flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{membro.nome}</p>
+                          <p className="text-sm text-gray-600">{membro.funcao}</p>
+                        </div>
+                        <Badge variant="outline">{membro.funcao}</Badge>
+                      </div>
                     ))}
                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(guarnicao.status)}>
-                    {guarnicao.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleDelete(guarnicao.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                ) : (
+                  <div className="text-center py-4 border rounded-md">
+                    <UserX className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-gray-500">Sem membros cadastrados</p>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                )}
+              </div>
+              
+              <div className="mt-4 flex justify-end space-x-2">
+                <Button variant="outline" onClick={closeDialog}>Fechar</Button>
+                <Button>Editar Guarnição</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

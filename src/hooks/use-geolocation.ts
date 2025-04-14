@@ -136,6 +136,7 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
           // Same error handling as in updatePosition
           let errorMessage = "Erro ao monitorar localização";
           
+          // Properly type-check the error
           if (error instanceof GeolocationPositionError) {
             switch (error.code) {
               case 1:
@@ -148,8 +149,8 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
                 errorMessage = "Tempo limite excedido ao obter localização.";
                 break;
             }
-          } else if (error instanceof Error) {
-            errorMessage = error.message;
+          } else if (typeof error === 'object' && error !== null && 'message' in error) {
+            errorMessage = (error as { message: string }).message;
           }
           
           setState(prev => ({

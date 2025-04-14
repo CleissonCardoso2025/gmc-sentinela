@@ -7,8 +7,6 @@ import Footer from "@/components/Dashboard/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AccessControlDialog from "@/components/Configuracoes/AccessControlDialog";
 import { useAuthorization } from "@/hooks/use-authorization";
-import { Shield } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
@@ -23,15 +21,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   // Get the user profile from localStorage
   const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
   const { pageAccessSettings, updatePageAccess, isLoading: isLoadingAccess } = useAuthorization(userProfile);
-
-  const handleOpenAccessControl = () => {
-    // Only allow Inspetores to access the control panel
-    if (userProfile !== 'Inspetor') {
-      toast.error('Apenas Inspetores podem gerenciar permissões de acesso');
-      return;
-    }
-    setShowAccessDialog(true);
-  };
 
   const handleSavePageAccess = async (pages: typeof pageAccessSettings): Promise<void> => {
     try {
@@ -49,9 +38,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     return Promise.resolve();
   };
 
-  // Only show the access control button for Inspetores
-  const showAccessButton = userProfile === 'Inspetor';
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header notifications={3} />
@@ -62,14 +48,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         )}
         <div className={`flex-1 transition-all duration-300 ${!isMobile && !sidebarCollapsed ? 'ml-64' : !isMobile && sidebarCollapsed ? 'ml-20' : ''} ${isMobile ? 'pt-16' : ''}`}>
           <main className="flex-grow pt-8 pb-12 sm:pb-16 px-4 sm:px-6">
-            {showAccessButton && (
-              <div className="flex justify-end mb-4">
-                <Button onClick={handleOpenAccessControl} variant="outline" className="gap-1">
-                  <Shield className="h-4 w-4" />
-                  Controle de Acesso
-                </Button>
-              </div>
-            )}
             {children}
           </main>
           <Footer />

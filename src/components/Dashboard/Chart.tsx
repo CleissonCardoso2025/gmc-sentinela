@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { DateRange } from "@/components/ui/date-range-picker";
+import { DateRangeType } from "@/hooks/use-occurrence-data";
 
 interface ChartProps {
-  date: DateRange;
+  date: DateRangeType;
 }
 
 const Chart: React.FC<ChartProps> = ({ date }) => {

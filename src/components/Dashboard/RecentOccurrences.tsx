@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -8,8 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { subDays } from 'date-fns';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
-import { DateRange } from "@/components/ui/date-range-picker";
-import { Occurrence, DateRangeOption } from "@/hooks/use-occurrence-data";
+import { DateRangeType, Occurrence, DateRangeOption } from "@/hooks/use-occurrence-data";
 
 interface RecentOccurrencesProps {
   limit?: number;
@@ -32,10 +30,9 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
 
         if (error) throw error;
         
-        // Map the data to add the titulo field
         const mappedData = data?.map(item => ({
           ...item,
-          titulo: item.tipo, // Use tipo as titulo
+          titulo: item.tipo,
           latitude: 0,
           longitude: 0
         })) || [];
@@ -56,7 +53,6 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
     fetchOccurrences();
   }, [limit, toast]);
 
-  // Helper function to get the status icon
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case 'resolvida':
@@ -114,11 +110,11 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
   );
 };
 
-export const useOccurrenceData = (dateRange: string | DateRange) => {
+export const useOccurrenceData = (dateRange: string | DateRangeType) => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const [currentDateRange, setCurrentDateRange] = useState<DateRange>({
+  const [currentDateRange, setCurrentDateRange] = useState<DateRangeType>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
@@ -127,7 +123,6 @@ export const useOccurrenceData = (dateRange: string | DateRange) => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        // In a real app, you'd use the dateRange to filter occurrences
         const { data, error } = await supabase
           .from('ocorrencias')
           .select('*')
@@ -135,10 +130,9 @@ export const useOccurrenceData = (dateRange: string | DateRange) => {
 
         if (error) throw new Error(error.message);
         
-        // Map the data to add the titulo field
         const mappedData = data?.map(item => ({
           ...item,
-          titulo: item.tipo, // Use tipo as titulo
+          titulo: item.tipo,
           latitude: 0,
           longitude: 0
         })) || [];
@@ -160,7 +154,7 @@ export const useOccurrenceData = (dateRange: string | DateRange) => {
     isLoading,
     dateRange: currentDateRange,
     setDateRange: setCurrentDateRange,
-    refetchOccurrences: () => {}, // Add an empty function for now
+    refetchOccurrences: () => {},
   };
 };
 

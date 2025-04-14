@@ -3,6 +3,7 @@ import React from 'react';
 import { UserFormData } from './UserManagement/types';
 import { toast } from "sonner";
 import { useUserForm } from '@/hooks/use-user-form';
+import { Form } from '@/components/ui/form';
 
 // Import form field components
 import NameField from './FormFields/NameField';
@@ -43,78 +44,80 @@ const UserForm: React.FC<UserFormProps> = ({
   };
 
   return (
-    <form onSubmit={onFormSubmit} className="space-y-4">
-      <NameField 
-        value={form.watch('nome')}
-        onChange={(value) => form.setValue('nome', value)}
-        error={form.formState.errors.nome?.message}
-        readOnly={readOnly}
-      />
+    <Form {...form}>
+      <form onSubmit={onFormSubmit} className="space-y-4">
+        <NameField 
+          value={form.watch('nome')}
+          onChange={(value) => form.setValue('nome', value)}
+          error={form.formState.errors.nome?.message}
+          readOnly={readOnly}
+        />
 
-      <EmailField 
-        value={form.watch('email')}
-        onChange={(value) => form.setValue('email', value)}
-        error={form.formState.errors.email?.message}
-        isChecking={false}
-        readOnly={readOnly}
-      />
+        <EmailField 
+          value={form.watch('email')}
+          onChange={(value) => form.setValue('email', value)}
+          error={form.formState.errors.email?.message}
+          isChecking={false}
+          readOnly={readOnly}
+        />
 
-      <MatriculaField 
-        value={form.watch('matricula')}
-        onChange={(value) => form.setValue('matricula', value)}
-        error={form.formState.errors.matricula?.message}
-        isChecking={false}
-        readOnly={readOnly}
-      />
+        <MatriculaField 
+          value={form.watch('matricula')}
+          onChange={(value) => form.setValue('matricula', value)}
+          error={form.formState.errors.matricula?.message}
+          isChecking={false}
+          readOnly={readOnly}
+        />
 
-      <DateField 
-        value={form.watch('data_nascimento')}
-        onChange={(value) => form.setValue('data_nascimento', value)}
-        error={form.formState.errors.data_nascimento?.message}
-        readOnly={readOnly}
-      />
+        <DateField 
+          value={form.watch('data_nascimento')}
+          onChange={(value) => form.setValue('data_nascimento', value)}
+          error={form.formState.errors.data_nascimento?.message}
+          readOnly={readOnly}
+        />
 
-      <ProfileField 
-        value={form.watch('perfil')}
-        onChange={handleProfileChange}
-        readOnly={readOnly}
-      />
+        <ProfileField 
+          value={form.watch('perfil')}
+          onChange={handleProfileChange}
+          readOnly={readOnly}
+        />
 
-      <StatusField 
-        checked={form.watch('status')}
-        onChange={(checked) => form.setValue('status', checked)}
-        readOnly={readOnly}
-      />
+        <StatusField 
+          checked={form.watch('status')}
+          onChange={(checked) => form.setValue('status', checked)}
+          readOnly={readOnly}
+        />
 
-      {/* Password fields */}
-      {!isEditing && (
-        <>
-          <PasswordField 
-            label="Senha"
-            value={form.watch('password') || ''}
-            onChange={(value) => form.setValue('password', value)}
-            error={form.formState.errors.password?.message}
-            readOnly={readOnly}
-          />
+        {/* Password fields */}
+        {!isEditing && (
+          <>
+            <PasswordField 
+              label="Senha"
+              value={form.watch('password') || ''}
+              onChange={(value) => form.setValue('password', value)}
+              error={form.formState.errors.password?.message}
+              readOnly={readOnly}
+            />
 
-          <PasswordField 
-            label="Confirmar Senha"
-            value={form.watch('confirmPassword') || ''}
-            onChange={(value) => form.setValue('confirmPassword', value)}
-            error={form.formState.errors.confirmPassword?.message}
-            placeholder="Confirme sua senha"
-            readOnly={readOnly}
-          />
-        </>
-      )}
+            <PasswordField 
+              label="Confirmar Senha"
+              value={form.watch('confirmPassword') || ''}
+              onChange={(value) => form.setValue('confirmPassword', value)}
+              error={form.formState.errors.confirmPassword?.message}
+              placeholder="Confirme sua senha"
+              readOnly={readOnly}
+            />
+          </>
+        )}
 
-      <FormActions 
-        onCancel={handleCancel}
-        isEditing={isEditing}
-        isSubmitting={isSubmitting}
-        readOnly={readOnly}
-      />
-    </form>
+        <FormActions 
+          onCancel={handleCancel}
+          isEditing={isEditing}
+          isSubmitting={isSubmitting}
+          readOnly={readOnly}
+        />
+      </form>
+    </Form>
   );
 };
 

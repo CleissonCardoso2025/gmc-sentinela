@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { User } from '@/types/database';
 import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
 
-// Form schema for user data
+// Form schema for user data with password fields
 const userFormSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('Email inválido'),
@@ -14,6 +14,17 @@ const userFormSchema = z.object({
   data_nascimento: z.string().min(1, 'Data de nascimento é obrigatória'),
   perfil: z.enum(['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente']),
   status: z.boolean().default(true),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres').or(z.string().length(0)).optional(),
+  confirmPassword: z.string().or(z.string().length(0)).optional(),
+}).refine((data) => {
+  // If password is provided, confirmPassword must match
+  if (data.password && data.password.length > 0) {
+    return data.password === data.confirmPassword;
+  }
+  return true;
+}, {
+  message: "As senhas não correspondem",
+  path: ["confirmPassword"],
 });
 
 // Type for form data derived from the schema
@@ -38,6 +49,8 @@ export const useUserForm = ({ initialData, onSubmit, onCancel }: UseUserFormProp
       data_nascimento: '',
       perfil: 'Agente',
       status: true,
+      password: '',
+      confirmPassword: '',
     },
   });
 
@@ -53,7 +66,8 @@ export const useUserForm = ({ initialData, onSubmit, onCancel }: UseUserFormProp
         matricula: data.matricula,
         data_nascimento: data.data_nascimento,
         perfil: data.perfil,
-        status: data.status
+        status: data.status,
+        password: data.password,
       };
       
       await onSubmit(userData);

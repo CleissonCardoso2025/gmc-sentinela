@@ -9,4 +9,5 @@ export type UserFormData = {
   data_nascimento: string; // Making this required for the form
   perfil: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente';
   status: boolean;
+  password?: string;
 };

@@ -11,6 +11,7 @@ import MatriculaField from './FormFields/MatriculaField';
 import DateField from './FormFields/DateField';
 import ProfileField from './FormFields/ProfileField';
 import StatusField from './FormFields/StatusField';
+import PasswordField from './FormFields/PasswordField';
 import FormActions from './FormFields/FormActions';
 
 interface UserFormProps {
@@ -84,6 +85,28 @@ const UserForm: React.FC<UserFormProps> = ({
         onChange={(checked) => form.setValue('status', checked)}
         readOnly={readOnly}
       />
+
+      {/* Password fields */}
+      {!isEditing && (
+        <>
+          <PasswordField 
+            label="Senha"
+            value={form.watch('password') || ''}
+            onChange={(value) => form.setValue('password', value)}
+            error={form.formState.errors.password?.message}
+            readOnly={readOnly}
+          />
+
+          <PasswordField 
+            label="Confirmar Senha"
+            value={form.watch('confirmPassword') || ''}
+            onChange={(value) => form.setValue('confirmPassword', value)}
+            error={form.formState.errors.confirmPassword?.message}
+            placeholder="Confirme sua senha"
+            readOnly={readOnly}
+          />
+        </>
+      )}
 
       <FormActions 
         onCancel={handleCancel}

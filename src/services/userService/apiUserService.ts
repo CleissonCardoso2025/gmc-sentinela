@@ -48,13 +48,48 @@ export const getUserById = async (id: string): Promise<User | null> => {
 };
 
 // Create new user
-export const createUser = async (user: Omit<User, 'id'>): Promise<User | null> => {
+export const createUser = async (user: Omit<User, 'id'> & { password?: string }): Promise<User | null> => {
   try {
     console.log("Creating user with data:", user);
     
+    // Create an object without the password for the users table
+    const { password, ...userData } = user;
+    
+    // If password is provided, create auth user first
+    if (password && password.length > 0) {
+      console.log("Creating auth user with email:", user.email);
+      
+      // First attempt to create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: user.email,
+        password: password,
+        options: {
+          data: {
+            nome: user.nome,
+            perfil: user.perfil
+          }
+        }
+      });
+      
+      if (authError) {
+        console.error("Error creating auth user:", authError);
+        
+        let errorMessage = "Erro ao criar usuário";
+        if (authError.message.includes("already registered")) {
+          errorMessage = "Este email já está registrado";
+        }
+        
+        toast.error(errorMessage);
+        return null;
+      }
+      
+      console.log("Auth user created successfully");
+    }
+
+    // Create user record in users table
     const { data, error } = await supabase
       .from('users')
-      .insert([user])
+      .insert([userData])
       .select()
       .single();
 

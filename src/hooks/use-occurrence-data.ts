@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from 'date-fns';
-import { DateRange as DateRangeType } from "@/components/ui/date-range-picker";
+import { DateRange } from "@/components/ui/date-range-picker";
 
 // Define the exported types
 export type DateRangeOption = '1d' | '7d' | '30d' | 'all' | '3m' | '6m' | '12m';
@@ -21,6 +21,12 @@ export interface Occurrence {
   updated_at?: string;
   latitude?: number;
   longitude?: number;
+}
+
+// Define DateRangeType interface
+export interface DateRangeType {
+  from: Date;
+  to: Date;
 }
 
 export const useOccurrenceData = (initialRange: DateRangeOption = '7d') => {
@@ -61,8 +67,8 @@ export const useOccurrenceData = (initialRange: DateRangeOption = '7d') => {
           ...item,
           titulo: item.tipo, // Use tipo as titulo
           // Add default values for latitude and longitude
-          latitude: item.latitude || 0,
-          longitude: item.longitude || 0
+          latitude: 0,
+          longitude: 0
         }));
         setOccurrences(mappedData);
       }
@@ -90,6 +96,3 @@ export const useOccurrenceData = (initialRange: DateRangeOption = '7d') => {
     refetchOccurrences: () => fetchOccurrences(dateRange)
   };
 };
-
-// Export the DateRange type from the hook for convenience
-export type { DateRangeType };

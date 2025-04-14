@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -110,7 +111,7 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
   );
 };
 
-export const useOccurrenceData = (dateRange: string | DateRangeType) => {
+export const useOccurrenceData = (dateRange: string | DateRangeOption) => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);

@@ -1,90 +1,108 @@
 
 import React from 'react';
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import EmptyState from './EmptyState';
+import { Badge } from "@/components/ui/badge";
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle, Calendar, Clock, Eye } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Occurrence } from '@/hooks/use-occurrence-data';
+import { useOccurrenceData } from '@/hooks/use-occurrence-data';
+import EmptyState from './EmptyState';
 
-interface OccurrenceListProps {
-  occurrences?: Occurrence[];
-  limit?: number;
-  isLoading?: boolean;
-}
+const OccurrenceList = () => {
+  const navigate = useNavigate();
+  const { occurrences, isLoading } = useOccurrenceData('7d');
 
-const OccurrenceList: React.FC<OccurrenceListProps> = ({ 
-  occurrences = [], 
-  limit,
-  isLoading = false
-}) => {
-  // Apply limit if provided
-  const displayedOccurrences = limit ? occurrences.slice(0, limit) : occurrences;
-  
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="p-4 space-y-3">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      );
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
+    } catch (error) {
+      return dateString;
     }
-    
-    if (displayedOccurrences.length === 0) {
-      return (
-        <div className="p-4">
-          <EmptyState 
-            title="Sem ocorrências" 
-            description="Não há ocorrências registradas." 
-            icon="info"
-          />
-        </div>
-      );
-    }
-    
-    return (
-      <div className="p-4 space-y-3">
-        {displayedOccurrences.map((occurrence, index) => (
-          <div 
-            key={index} 
-            className={cn(
-              "p-3 rounded-lg border border-gray-100 transition-all duration-300",
-              "hover:border-gray-200 hover:shadow-sm cursor-pointer",
-              "animate-fade-up",
-              { "animation-delay-100": index === 0 },
-              { "animation-delay-200": index === 1 },
-              { "animation-delay-300": index === 2 }
-            )}
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <h4 className="font-semibold text-gcm-600">{occurrence.titulo || occurrence.tipo}</h4>
-            <p className="text-gray-600 text-sm">{occurrence.local}</p>
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-gray-500 text-xs">
-                {new Date(occurrence.data).toLocaleString('pt-BR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-              <span className="text-xs text-gcm-600 font-medium hover:underline">Ver detalhes</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
   };
-  
+
   return (
-    <Card className="shadow-md h-full animate-fade-up">
-      <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">Últimas Ocorrências</h2>
-      </div>
-      
-      {renderContent()}
+    <Card className="h-full animate-fade-up">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2 text-yellow-500" />
+          Ocorrências Recentes
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="px-6 pb-6 space-y-3">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ) : occurrences.length === 0 ? (
+          <div className="p-6">
+            <EmptyState 
+              title="Sem ocorrências" 
+              description="Não há ocorrências registradas recentemente." 
+              icon="info" 
+            />
+          </div>
+        ) : (
+          <div className="divide-y">
+            {occurrences.slice(0, 5).map((occurrence, index) => (
+              <div 
+                key={occurrence.id} 
+                className="p-4 hover:bg-gray-50 transition-colors"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-medium text-gray-900">
+                      {occurrence.titulo || occurrence.tipo}
+                    </h3>
+                    <p className="text-sm text-gray-600">{occurrence.local}</p>
+                  </div>
+                  <Badge 
+                    variant={occurrence.status === 'Aberta' ? 'destructive' : 'outline'}
+                    className="ml-2"
+                  >
+                    {occurrence.status}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-end mt-2">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {formatDate(occurrence.data)}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 text-xs"
+                    onClick={() => navigate(`/ocorrencias/${occurrence.id}`)}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Detalhes
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {occurrences.length > 0 && (
+          <div className="p-3 border-t bg-gray-50">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs"
+              onClick={() => navigate('/ocorrencias')}
+            >
+              Ver todas as ocorrências
+            </Button>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };

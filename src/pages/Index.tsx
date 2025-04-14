@@ -1,77 +1,63 @@
+
 import React from 'react';
-import Header from '@/components/Dashboard/Header';
-import Navbar from '@/components/Dashboard/Navbar';
 import StatCard from '@/components/Dashboard/StatCard';
 import OccurrenceMap from '@/components/Dashboard/OccurrenceMap';
 import VehicleTrackingMap from '@/components/Dashboard/VehicleTrackingMap';
 import VehicleTable from '@/components/Dashboard/VehicleTable';
 import OccurrenceList from '@/components/Dashboard/OccurrenceList';
-import Footer from '@/components/Dashboard/Footer';
 import { Car, AlertTriangle, Users, Settings } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Dashboard from '@/layouts/Dashboard';
-import { Occurrence } from '@/hooks/use-occurrence-data';
+import { useOccurrenceData } from '@/hooks/use-occurrence-data';
+import { useVehicleLocations } from '@/hooks/use-vehicle-locations';
+import { QuickStats } from '@/components/Dashboard/QuickStats';
 
 const Index = () => {
-  // State
-  const [notifications, setNotifications] = React.useState(3);
-
-  // Mock data for the component props
-  const viaturasData = [
-    { id: 1, placa: 'GCM-1234', status: 'Em serviço', condutor: 'Carlos Silva', quilometragem: '45.678', proximaManutencao: '2025-04-15' },
-    { id: 2, placa: 'GCM-5678', status: 'Manutenção', condutor: 'Ana Oliveira', quilometragem: '32.456', proximaManutencao: '2025-03-20' },
-    { id: 3, placa: 'GCM-9012', status: 'Em serviço', condutor: 'Pedro Santos', quilometragem: '28.901', proximaManutencao: '2025-05-01' },
-  ];
-
-  const manutencaoData = [
-    { id: 1, placa: 'GCM-5678', tipo: 'Preventiva', dataInicio: '2025-03-06', previsaoTermino: '2025-03-08', descricao: 'Troca de óleo e filtros', status: 'Em andamento' },
-    { id: 2, placa: 'GCM-1234', tipo: 'Corretiva', dataInicio: '2025-02-28', previsaoTermino: '2025-03-01', descricao: 'Substituição de pastilhas de freio', status: 'Concluída' },
-    { id: 3, placa: 'GCM-9012', tipo: 'Preventiva', dataInicio: '2025-02-15', previsaoTermino: '2025-02-16', descricao: 'Alinhamento e balanceamento', status: 'Concluída' },
-  ];
-
-  // Format mock data to match the Occurrence type
-  const ocorrenciasData: Occurrence[] = [
-    { id: "1", titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', data: new Date().toISOString(), numero: "001", tipo: "Perturbação", status: "Aberta", descricao: "" },
-    { id: "2", titulo: 'Acidente de Trânsito', local: 'Av. Principal, 456', data: new Date().toISOString(), numero: "002", tipo: "Acidente", status: "Aberta", descricao: "" },
-    { id: "3", titulo: 'Apoio ao Cidadão', local: 'Praça Central', data: new Date().toISOString(), numero: "003", tipo: "Apoio", status: "Aberta", descricao: "" },
-  ];
-
+  // Usar hooks reais para obter dados do banco de dados
+  const { occurrences } = useOccurrenceData('7d');
+  const { vehicles } = useVehicleLocations();
+  
   return (
     <Dashboard>
       <div className="p-6 h-full">
-        {/* Stats Cards */}
+        {/* Stats/Métricas */}
+        <div className="mb-6">
+          <QuickStats />
+        </div>
+        
+        {/* Estatísticas principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <StatCard 
             title="Viaturas em Operação" 
-            value={12} 
+            value={vehicles.length} 
             icon={<Car className="h-5 w-5 text-gcm-600" />}
             color="text-gcm-600"
             className="animate-fade-up"
           />
           <StatCard 
             title="Ocorrências Ativas" 
-            value={5} 
+            value={occurrences.filter(o => o.status === 'Aberta').length} 
             icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
             color="text-red-600"
             className="animate-fade-up"
           />
           <StatCard 
             title="Efetivo em Serviço" 
-            value={28} 
+            value={0} 
             icon={<Users className="h-5 w-5 text-green-600" />}
             color="text-green-600"
             className="animate-fade-up delay-75"
           />
           <StatCard 
             title="Alertas de Manutenção" 
-            value={3} 
+            value={0} 
             icon={<Settings className="h-5 w-5 text-amber-600" />}
             color="text-amber-600"
             className="animate-fade-up delay-100"
           />
         </div>
         
-        {/* Maps with Tabs */}
+        {/* Mapas com Tabs */}
         <div className="mb-6">
           <Tabs defaultValue="occurrences" className="w-full">
             <TabsList className="w-full max-w-md mx-auto mb-4 relative z-20">
@@ -91,13 +77,13 @@ const Index = () => {
           </Tabs>
         </div>
         
-        {/* Tables and Lists */}
+        {/* Tabelas e Listas */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
           <div className="lg:col-span-2">
-            <VehicleTable vehicles={viaturasData} maintenances={manutencaoData} />
+            <VehicleTable vehicles={[]} maintenances={[]} />
           </div>
           <div>
-            <OccurrenceList occurrences={ocorrenciasData} />
+            <OccurrenceList occurrences={[]} />
           </div>
         </div>
       </div>

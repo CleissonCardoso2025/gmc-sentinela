@@ -1,168 +1,109 @@
 
-import React, { useState } from 'react';
-import { Card } from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-
-interface Vehicle {
-  id: number;
-  placa: string;
-  status: string;
-  condutor: string;
-  quilometragem: string;
-  proximaManutencao: string;
-}
-
-interface Maintenance {
-  id: number;
-  placa: string;
-  tipo: string;
-  dataInicio: string;
-  previsaoTermino: string;
-  descricao: string;
-  status: string;
-}
+import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
+import { Car, CheckCircle, AlertCircle, Clock, Tool, Eye } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
+import { useVehicleLocations } from '@/hooks/use-vehicle-locations';
+import EmptyState from './EmptyState';
 
 interface VehicleTableProps {
-  vehicles?: Vehicle[];
-  maintenances?: Maintenance[];
-  limit?: number;
+  vehicles?: Array<any>;
+  maintenances?: Array<any>;
 }
 
-const VehicleTable: React.FC<VehicleTableProps> = ({ 
-  vehicles = [], 
-  maintenances = [],
-  limit
-}) => {
-  // Apply limit if provided
-  const displayedVehicles = limit ? vehicles.slice(0, limit) : vehicles;
-  const displayedMaintenances = limit ? maintenances.slice(0, limit) : maintenances;
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+const VehicleTable: React.FC<VehicleTableProps> = () => {
+  const navigate = useNavigate();
+  const { vehicles, isLoading } = useVehicleLocations();
+  
+  const getStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
       case 'em serviço':
-        return 'bg-green-100 text-green-800 border-green-300';
+      case 'ativo':
+      case 'disponível':
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Em serviço</Badge>;
       case 'manutenção':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'inoperante':
-        return 'bg-red-100 text-red-800 border-red-300';
-      case 'em andamento':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'concluída':
-        return 'bg-green-100 text-green-800 border-green-300';
+        return <Badge className="bg-amber-100 text-amber-800 border-amber-200">Manutenção</Badge>;
+      case 'indisponível':
+      case 'baixada':
+        return <Badge className="bg-red-100 text-red-800 border-red-200">Indisponível</Badge>;
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Desconhecido</Badge>;
     }
   };
-
+  
   return (
-    <Card className="shadow-md animate-fade-up">
-      <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">Gestão de Viaturas</h2>
-      </div>
-      
-      <Tabs defaultValue="vehicles" className="w-full">
-        <div className="px-4 pt-3">
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="vehicles" className="text-sm">Lista de Viaturas</TabsTrigger>
-            <TabsTrigger value="maintenance" className="text-sm">Manutenções</TabsTrigger>
-          </TabsList>
-        </div>
-        
-        <TabsContent value="vehicles" className="p-4 pt-2">
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-medium">Placa</TableHead>
-                  <TableHead className="font-medium">Status</TableHead>
-                  <TableHead className="font-medium">Condutor</TableHead>
-                  <TableHead className="font-medium">Quilometragem</TableHead>
-                  <TableHead className="font-medium">Próxima Manutenção</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayedVehicles.length > 0 ? (
-                  displayedVehicles.map((vehicle) => (
-                    <TableRow key={vehicle.id} className="hover:bg-gray-50 transition-colors">
-                      <TableCell className="font-medium">{vehicle.placa}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("font-normal", getStatusColor(vehicle.status))}>
-                          {vehicle.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{vehicle.condutor}</TableCell>
-                      <TableCell>{vehicle.quilometragem} km</TableCell>
-                      <TableCell>{vehicle.proximaManutencao}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      Nenhuma viatura disponível
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+    <Card className="w-full h-full animate-fade-up">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold flex items-center">
+          <Car className="h-5 w-5 mr-2 text-gcm-600" />
+          Situação das Viaturas
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="px-6 pb-6 space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
-        </TabsContent>
-        
-        <TabsContent value="maintenance" className="p-4 pt-2">
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-medium">Placa</TableHead>
-                  <TableHead className="font-medium">Tipo</TableHead>
-                  <TableHead className="font-medium">Data Início</TableHead>
-                  <TableHead className="font-medium">Previsão Término</TableHead>
-                  <TableHead className="font-medium">Descrição</TableHead>
-                  <TableHead className="font-medium">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayedMaintenances.length > 0 ? (
-                  displayedMaintenances.map((maintenance) => (
-                    <TableRow key={maintenance.id} className="hover:bg-gray-50 transition-colors">
-                      <TableCell className="font-medium">{maintenance.placa}</TableCell>
-                      <TableCell>{maintenance.tipo}</TableCell>
-                      <TableCell>{maintenance.dataInicio}</TableCell>
-                      <TableCell>{maintenance.previsaoTermino}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{maintenance.descricao}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("font-normal", getStatusColor(maintenance.status))}>
-                          {maintenance.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      Nenhuma manutenção registrada
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+        ) : vehicles.length === 0 ? (
+          <div className="p-6">
+            <EmptyState 
+              title="Sem viaturas" 
+              description="Não há viaturas cadastradas no sistema." 
+              icon="car" 
+            />
           </div>
-        </TabsContent>
-      </Tabs>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Viatura</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">Condutor</TableHead>
+                <TableHead className="hidden md:table-cell">Última Atualização</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {vehicles.map((viatura) => (
+                <TableRow key={viatura.id}>
+                  <TableCell className="font-medium">{viatura.placa}</TableCell>
+                  <TableCell>{getStatusBadge(viatura.status)}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {viatura.condutor || "Não designado"}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {viatura.lastUpdate ? new Date(viatura.lastUpdate).toLocaleString('pt-BR') : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="h-7 p-0">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        
+        {vehicles.length > 0 && (
+          <div className="p-3 border-t bg-gray-50">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs"
+              onClick={() => navigate('/viaturas')}
+            >
+              Gerenciar viaturas
+            </Button>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };

@@ -7,7 +7,6 @@ import UserFilters from './UserFilters';
 import UserActions from './UserActions';
 import UserFormDialog from './UserFormDialog';
 import UserDeleteDialog from './UserDeleteDialog';
-import AccessControlDialog from '@/components/Configuracoes/AccessControlDialog';
 
 const UserManagement = () => {
   const {
@@ -21,8 +20,6 @@ const UserManagement = () => {
     setStatusFilter,
     showUserDialog,
     setShowUserDialog,
-    showAccessDialog,
-    setShowAccessDialog,
     editingUser,
     showDeleteDialog,
     setShowDeleteDialog,
@@ -34,10 +31,6 @@ const UserManagement = () => {
     confirmDeleteUser,
     handleAddNewUser,
     handleCloseUserDialog,
-    pageAccessSettings,
-    isLoadingAccess,
-    handleOpenAccessControl,
-    handleSavePageAccess
   } = useUserManagement();
 
   // Get the user profile from localStorage
@@ -72,7 +65,6 @@ const UserManagement = () => {
         
         <UserActions 
           onAddUser={handleAddNewUser}
-          onOpenAccessControl={handleOpenAccessControl}
         />
       </div>
 
@@ -90,14 +82,6 @@ const UserManagement = () => {
         editingUser={editingUser}
         onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
         onCancel={handleCloseUserDialog}
-      />
-
-      <AccessControlDialog 
-        isOpen={showAccessDialog}
-        onOpenChange={setShowAccessDialog}
-        pageAccessSettings={pageAccessSettings}
-        isLoading={isLoadingAccess}
-        onSave={handleSavePageAccess}
       />
 
       <UserDeleteDialog 

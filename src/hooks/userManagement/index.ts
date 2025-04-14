@@ -2,9 +2,7 @@
 import { useUserData } from './useUserData';
 import { useUserFilters } from './useUserFilters';
 import { useUserActions } from './useUserActions';
-import { useAccessControl } from './useAccessControl';
 import { UserManagementHook } from './types';
-import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 
 export const useUserManagement = (): UserManagementHook => {
   // Mock current user profile - This would come from authentication in a real app
@@ -42,15 +40,6 @@ export const useUserManagement = (): UserManagementHook => {
     handleAddNewUser,
     handleCloseUserDialog
   } = useUserActions(users, setUsers, refetchUsers);
-  
-  const {
-    showAccessDialog,
-    setShowAccessDialog,
-    pageAccessSettings,
-    isLoadingAccess,
-    handleOpenAccessControl,
-    handleSavePageAccess
-  } = useAccessControl(userProfile);
 
   // Return all state and functions combined
   return {
@@ -65,8 +54,6 @@ export const useUserManagement = (): UserManagementHook => {
     setStatusFilter,
     showUserDialog,
     setShowUserDialog,
-    showAccessDialog,
-    setShowAccessDialog,
     editingUser,
     userToDelete,
     showDeleteDialog,
@@ -79,10 +66,6 @@ export const useUserManagement = (): UserManagementHook => {
     confirmDeleteUser,
     handleAddNewUser,
     handleCloseUserDialog,
-    handleOpenAccessControl,
-    handleSavePageAccess,
-    pageAccessSettings,
-    isLoadingAccess,
     refetchUsers
   };
 };

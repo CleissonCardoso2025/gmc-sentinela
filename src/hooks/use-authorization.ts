@@ -1,31 +1,12 @@
+
 import { useEffect, useState } from 'react';
 import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Get page access settings from local storage or default settings
+// Função que retorna um array vazio de configurações de acesso
 const getPageAccessSettings = (): PageAccess[] => {
-  const storedSettings = localStorage.getItem('pageAccessSettings');
-  
-  if (storedSettings) {
-    try {
-      return JSON.parse(storedSettings) as PageAccess[];
-    } catch (error) {
-      console.error('Error parsing stored page access settings:', error);
-    }
-  }
-  
-  // Default settings if nothing is stored
-  return [
-    { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: ['Inspetor', 'Supervisor', 'Corregedor', 'Agente'] },
-    { id: 'viaturas', name: 'Viaturas', path: '/viaturas', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor'] },
-    { id: 'inspetoria', name: 'Inspetoria', path: '/inspetoria', allowedProfiles: ['Inspetor', 'Subinspetor'] },
-    { id: 'ocorrencias', name: 'Ocorrências', path: '/ocorrencias', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] },
-    { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: ['Inspetor', 'Corregedor'] },
-    { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: ['Inspetor'] },
-    { id: 'perfil', name: 'Perfil', path: '/perfil', allowedProfiles: ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] },
-    { id: 'index', name: 'Centro de Comando', path: '/index', allowedProfiles: ['Inspetor', 'Subinspetor'] },
-  ];
+  return [];
 };
 
 // Usuários especiais com perfis específicos
@@ -96,6 +77,9 @@ export const useAuthorization = (userProfile: string) => {
   useEffect(() => {
     setPageAccessSettings(getPageAccessSettings());
     setIsLoading(false);
+    
+    // Limpa qualquer configuração salva anteriormente no localStorage
+    localStorage.removeItem('pageAccessSettings');
   }, []);
   
   // Check if user has access to a specific page based on path
@@ -126,8 +110,9 @@ export const useAuthorization = (userProfile: string) => {
     const page = pageAccessSettings.find(p => p.path === basePath);
     
     if (!page) {
-      // If page isn't in the settings, default to restricted
-      return false;
+      // Se não encontrar a página nas configurações e as configurações estão vazias, permitir acesso
+      // para não bloquear todos os usuários enquanto as configurações estão sendo reconfiguradas
+      return pageAccessSettings.length === 0;
     }
     
     return page.allowedProfiles.includes(effectiveProfile as any);

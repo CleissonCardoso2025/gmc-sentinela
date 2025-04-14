@@ -56,7 +56,10 @@ export const useOccurrenceData = (initialRange: DateRange = '7d') => {
         // Map tipo as titulo for compatibility
         const mappedData = data.map(item => ({
           ...item,
-          titulo: item.tipo
+          titulo: item.tipo,
+          // Add default values for latitude and longitude if they don't exist
+          latitude: 0,
+          longitude: 0
         }));
         setOccurrences(mappedData);
       }

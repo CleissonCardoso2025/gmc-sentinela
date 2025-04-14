@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,14 +10,11 @@ import {
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import { Calendar } from "lucide-react";
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +38,7 @@ const EscalaTrabalho: React.FC = () => {
   const [periodo, setPeriodo] = useState('');
   const [agent, setAgent] = useState('');
   const [role, setRole] = useState('');
-  const [schedule, setSchedule] = useState<any[]>([]);
+  const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
 
   // Fetch options for selects
   useEffect(() => {
@@ -69,7 +67,7 @@ const EscalaTrabalho: React.FC = () => {
         setViaturas(viaturaData || []);
 
         const { data, error } = await supabase
-          .from('escala')
+          .from('escala_items') // Changed from 'escala' to 'escala_items'
           .select('*');
 
         if (error) throw error;
@@ -147,7 +145,7 @@ const EscalaTrabalho: React.FC = () => {
       return;
     }
 
-    const newItem = {
+    const newItem: EscalaItem = {
       id: selectedEscalaItem || uuidv4(),
       guarnicao,
       supervisor,
@@ -164,7 +162,7 @@ const EscalaTrabalho: React.FC = () => {
       if (isEditing && selectedEscalaItem) {
         // Update existing item
         const { error } = await supabase
-          .from('escala')
+          .from('escala_items') // Changed from 'escala' to 'escala_items'
           .update(newItem)
           .eq('id', selectedEscalaItem);
 
@@ -178,7 +176,7 @@ const EscalaTrabalho: React.FC = () => {
       } else {
         // Create new item
         const { error } = await supabase
-          .from('escala')
+          .from('escala_items') // Changed from 'escala' to 'escala_items'
           .insert(newItem);
 
         if (error) throw error;
@@ -206,7 +204,7 @@ const EscalaTrabalho: React.FC = () => {
     try {
       setIsLoading(true);
       const { error } = await supabase
-        .from('escala')
+        .from('escala_items') // Changed from 'escala' to 'escala_items'
         .delete()
         .eq('id', id);
 

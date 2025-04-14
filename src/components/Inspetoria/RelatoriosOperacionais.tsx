@@ -1,183 +1,299 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { DateRange } from "react-day-picker";
-import { cn } from "@/lib/utils";
-import { FileText, Download } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { 
+  Table, 
+  TableBody, 
+  TableCaption, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, Printer, Download, BarChart2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { ScheduleDay } from "@/types/database";
+import { useToast } from "@/hooks/use-toast";
+import { EscalaItem } from './Escala/types';
 
 const RelatoriosOperacionais: React.FC = () => {
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(new Date().getFullYear(), 0, 1),
-    to: new Date(),
-  });
-  const [escalaData, setEscalaData] = useState<any[]>([]);
+  const [reportType, setReportType] = useState<string>('escalas');
+  const [escalaItems, setEscalaItems] = useState<EscalaItem[]>([]);
+  const [guarnicoesStats, setGuarnicoesStats] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
-  
+
   useEffect(() => {
     const fetchEscalaData = async () => {
+      setIsLoading(true);
       try {
         const { data, error } = await supabase
-          .from('escala')
-          .select('*')
-          .gte('created_at', date?.from?.toISOString() || new Date(new Date().getFullYear(), 0, 1).toISOString())
-          .lte('created_at', date?.to?.toISOString() || new Date().toISOString());
+          .from('escala_items')  // Use 'escala_items' instead of 'escala'
+          .select('*');
+          
+        if (error) throw error;
         
-        if (error) {
-          throw new Error(error.message);
-        }
+        // Convert JSON data to ScheduleDay array
+        const transformedData = data.map(item => ({
+          ...item,
+          schedule: Array.isArray(item.schedule) ? item.schedule.map((scheduleItem: any) => ({
+            day: scheduleItem.day || '',
+            shift: scheduleItem.shift || '',
+            status: scheduleItem.status || ''
+          })) : []
+        }));
         
-        setEscalaData(data || []);
-      } catch (error: any) {
-        console.error("Error fetching escala data:", error.message);
+        setEscalaItems(transformedData);
+        
+        // Calculate statistics for each guarnição
+        const stats = calculateGuarnicaoStats(transformedData);
+        setGuarnicoesStats(stats);
+      } catch (error) {
+        console.error("Error fetching escala data:", error);
         toast({
-          title: "Erro ao carregar dados da escala",
-          description: "Não foi possível obter os dados da escala de trabalho.",
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados das escalas.",
           variant: "destructive"
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchEscalaData();
-  }, [date, toast]);
+  }, [toast]);
 
-  const downloadRelatorio = () => {
-    if (!date?.from || !date?.to) {
-      toast({
-        title: "Datas inválidas",
-        description: "Por favor, selecione um período válido para gerar o relatório.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const startDate = format(date.from, "dd/MM/yyyy", { locale: ptBR });
-    const endDate = format(date.to, "dd/MM/yyyy", { locale: ptBR });
-
-    // Calculate total de agentes por dia e turno
-    const agentesPorDiaTurno = escalaData.reduce((acc, escala) => {
-      if (!escala.schedule || !Array.isArray(escala.schedule)) {
-        console.warn(`Invalid schedule data for escala item ${escala.id}`);
-        return acc;
+  const calculateGuarnicaoStats = (data: EscalaItem[]): any[] => {
+    const guarnicoesMap = new Map();
+    
+    data.forEach(item => {
+      if (!guarnicoesMap.has(item.guarnicao)) {
+        guarnicoesMap.set(item.guarnicao, {
+          guarnicao: item.guarnicao,
+          supervisor: item.supervisor,
+          agentCount: 0,
+          totalShifts: 0,
+          completedShifts: 0,
+          pendingShifts: 0
+        });
       }
       
-      escala.schedule.forEach(dia => {
-        const key = `${dia.day}-${dia.shift}`;
-        acc[key] = (acc[key] || 0) + 1;
-      });
-      return acc;
-    }, {});
-
-    // Calculate total de horas trabalhadas por período
-    const totalHorasPorPeriodo = escalaData.reduce((acc, escala) => {
-      if (!escala.schedule || !Array.isArray(escala.schedule)) {
-        console.warn(`Invalid schedule data for escala item ${escala.id}`);
-        return acc;
+      const stats = guarnicoesMap.get(item.guarnicao);
+      stats.agentCount += 1;
+      
+      if (Array.isArray(item.schedule)) {
+        item.schedule.forEach((day: any) => {
+          stats.totalShifts += 1;
+          if (day.status === 'Completo') {
+            stats.completedShifts += 1;
+          } else if (day.status === 'Pendente') {
+            stats.pendingShifts += 1;
+          }
+        });
       }
-
-      escala.schedule.forEach(dia => {
-        const key = dia.shift;
-        const horas = key === 'Manhã' ? 8 : 12; // Assumindo turnos de 8h ou 12h
-        acc[key] = (acc[key] || 0) + horas;
-      });
-      return acc;
-    }, {});
-
-    // Calculate turnos manhã e noite
-    const turnosManha = (escalaData[0]?.schedule as any) as ScheduleDay[];
-    const turnosNoite = (escalaData[0]?.schedule as any) as ScheduleDay[];
-
-    // Calculate total de ocorrências por tipo
-    const totalOcorrenciasPorTipo = escalaData.reduce((acc, escala) => {
-      const tipo = escala.tipo || 'Não especificado';
-      acc[tipo] = (acc[tipo] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Calculate total de rotas percorridas
-    const totalRotasPercorridas = escalaData.length;
-
-    // Create the content for the report
-    let content = `Relatório Operacional\nPeríodo: ${startDate} - ${endDate}\n\n`;
-    content += "--- Estatísticas Gerais ---\n";
-    content += `Total de agentes em serviço por dia/turno:\n${JSON.stringify(agentesPorDiaTurno, null, 2)}\n\n`;
-    content += `Total de horas trabalhadas por período:\n${JSON.stringify(totalHorasPorPeriodo, null, 2)}\n\n`;
-    content += `Total de ocorrências por tipo:\n${JSON.stringify(totalOcorrenciasPorTipo, null, 2)}\n\n`;
-    content += `Total de rotas percorridas: ${totalRotasPercorridas}\n\n`;
-    content += "--- Detalhes da Escala ---\n";
-    escalaData.forEach((escala, index) => {
-      content += `Escala ${index + 1}:\n`;
-      content += `  Guarnição: ${escala.guarnicao}\n`;
-      content += `  Supervisor: ${escala.supervisor}\n`;
-      content += `  Rota: ${escala.rota}\n`;
-      content += `  Viatura: ${escala.viatura}\n`;
-      content += `  Período: ${escala.periodo}\n`;
-      content += `  Agente: ${escala.agent}\n`;
-      content += `  Função: ${escala.role}\n`;
-      content += `  Turnos Manhã: ${JSON.stringify(turnosManha, null, 2)}\n`;
-      content += `  Turnos Noite: ${JSON.stringify(turnosNoite, null, 2)}\n`;
-      content += `  Data de Criação: ${format(new Date(escala.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}\n`;
-      content += `  Data de Atualização: ${format(new Date(escala.updated_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}\n`;
-      content += "\n";
     });
+    
+    return Array.from(guarnicoesMap.values());
+  };
 
-    // Create a Blob from the content
-    const blob = new Blob([content], { type: 'text/plain' });
+  const renderReport = () => {
+    switch (reportType) {
+      case 'escalas':
+        return renderEscalasReport();
+      case 'estatisticas':
+        return renderEstatisticasReport();
+      default:
+        return (
+          <div className="text-center py-10">
+            <p>Selecione um tipo de relatório para visualizar</p>
+          </div>
+        );
+    }
+  };
 
-    // Create a temporary URL for the Blob
-    const url = URL.createObjectURL(blob);
+  const renderEscalasReport = () => {
+    return (
+      <Table>
+        <TableCaption>Relatório de Escalas de Trabalho</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[150px]">Guarnição</TableHead>
+            <TableHead>Supervisor</TableHead>
+            <TableHead>Agente</TableHead>
+            <TableHead>Função</TableHead>
+            <TableHead>Período</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {escalaItems.length > 0 ? (
+            escalaItems.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-medium">{item.guarnicao}</TableCell>
+                <TableCell>{item.supervisor}</TableCell>
+                <TableCell>{item.agent}</TableCell>
+                <TableCell>{item.role}</TableCell>
+                <TableCell>{item.periodo}</TableCell>
+                <TableCell>
+                  {Array.isArray(item.schedule) && item.schedule.length > 0 
+                    ? `${item.schedule.filter((day: any) => day.status === 'Completo').length} / ${item.schedule.length} dias completos` 
+                    : 'Sem dados'}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center">Nenhum dado de escala encontrado</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    );
+  };
 
-    // Create a link element
-    const link = document.createElement('a');
+  const renderEstatisticasReport = () => {
+    return (
+      <div>
+        <Table>
+          <TableCaption>Estatísticas por Guarnição</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[150px]">Guarnição</TableHead>
+              <TableHead>Supervisor</TableHead>
+              <TableHead>Agentes</TableHead>
+              <TableHead>Turnos Completos</TableHead>
+              <TableHead>Turnos Pendentes</TableHead>
+              <TableHead>Taxa de Conclusão</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {guarnicoesStats.length > 0 ? (
+              guarnicoesStats.map((stat, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{stat.guarnicao}</TableCell>
+                  <TableCell>{stat.supervisor}</TableCell>
+                  <TableCell>{stat.agentCount}</TableCell>
+                  <TableCell>{stat.completedShifts}</TableCell>
+                  <TableCell>{stat.pendingShifts}</TableCell>
+                  <TableCell>
+                    {stat.totalShifts > 0 
+                      ? `${Math.round((stat.completedShifts / stat.totalShifts) * 100)}%` 
+                      : '0%'}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center">Nenhum dado estatístico encontrado</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
 
-    // Set the link's href to the Blob URL
-    link.href = url;
+  const handlePrint = () => {
+    window.print();
+  };
 
-    // Set the link's download attribute
-    link.download = `relatorio_operacional_${startDate}_${endDate}.txt`;
-
-    // Programmatically click the link to trigger the download
+  const handleExportCSV = () => {
+    let csvContent = "";
+    
+    if (reportType === 'escalas') {
+      // Header
+      csvContent = "Guarnição,Supervisor,Agente,Função,Período,Status\n";
+      
+      // Rows
+      escalaItems.forEach(item => {
+        const statusText = Array.isArray(item.schedule) && item.schedule.length > 0 
+          ? `${item.schedule.filter((day: any) => day.status === 'Completo').length} / ${item.schedule.length} dias completos` 
+          : 'Sem dados';
+          
+        csvContent += `"${item.guarnicao}","${item.supervisor}","${item.agent}","${item.role}","${item.periodo}","${statusText}"\n`;
+      });
+    } else {
+      // Header
+      csvContent = "Guarnição,Supervisor,Agentes,Turnos Completos,Turnos Pendentes,Taxa de Conclusão\n";
+      
+      // Rows
+      guarnicoesStats.forEach(stat => {
+        const completionRate = stat.totalShifts > 0 
+          ? `${Math.round((stat.completedShifts / stat.totalShifts) * 100)}%` 
+          : '0%';
+          
+        csvContent += `"${stat.guarnicao}","${stat.supervisor}","${stat.agentCount}","${stat.completedShifts}","${stat.pendingShifts}","${completionRate}"\n`;
+      });
+    }
+    
+    // Create download link
+    const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `relatorio_${reportType}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
-
-    // Clean up by removing the link and revoking the Blob URL
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Relatório gerado",
-      description: "O relatório operacional foi gerado com sucesso e está pronto para download."
-    });
   };
 
   return (
-    <Card className="w-full">
-      <CardContent className="space-y-4">
-        <h2 className="text-lg font-semibold">Gerar Relatório Operacional</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div>
-            <Label htmlFor="date">Período</Label>
-            <Calendar
-              mode="range"
-              selected={date}
-              onSelect={setDate}
-              className={cn("border rounded-md")}
-            />
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="w-full md:w-1/3">
+              <Label htmlFor="report-type" className="block mb-2">Tipo de Relatório</Label>
+              <Select value={reportType} onValueChange={setReportType}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o tipo de relatório" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="escalas">Escalas de Trabalho</SelectItem>
+                  <SelectItem value="estatisticas">Estatísticas por Guarnição</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+            </div>
           </div>
-          <Button onClick={downloadRelatorio}>
-            <Download className="h-4 w-4 mr-2" />
-            Gerar Relatório
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold flex items-center mb-4">
+              {reportType === 'escalas' ? (
+                <>
+                  <FileText className="h-5 w-5 mr-2 text-primary" />
+                  Relatório de Escalas de Trabalho
+                </>
+              ) : (
+                <>
+                  <BarChart2 className="h-5 w-5 mr-2 text-primary" />
+                  Estatísticas por Guarnição
+                </>
+              )}
+            </h3>
+            
+            {isLoading ? (
+              <div className="py-10 text-center">
+                <p>Carregando dados...</p>
+              </div>
+            ) : (
+              renderReport()
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -2,56 +2,31 @@
 import React from 'react';
 import { FileText, Calendar, Clock } from 'lucide-react';
 import { Card } from "@/components/ui/card";
-import { useQuery } from '@tanstack/react-query';
 import { cn } from "@/lib/utils";
+import { useOccurrenceStats } from '@/hooks/use-occurrence-stats';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export const QuickStats: React.FC = () => {
-  // Simulated data - in a real scenario, these would be API calls
-  const { data: todayStats, isLoading: isLoadingToday } = useQuery({
-    queryKey: ['occurrences', 'today'],
-    queryFn: async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return { count: 8 };
-    },
-  });
-
-  const { data: monthStats, isLoading: isLoadingMonth } = useQuery({
-    queryKey: ['occurrences', 'month'],
-    queryFn: async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 700));
-      return { count: 127 };
-    },
-  });
-
-  const { data: recentStats, isLoading: isLoadingRecent } = useQuery({
-    queryKey: ['occurrences', 'recent'],
-    queryFn: async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 600));
-      return { count: 34 };
-    },
-  });
+  const { stats, isLoading } = useOccurrenceStats();
 
   const statItems = [
     {
       title: "Ocorrências hoje",
-      value: isLoadingToday ? "..." : todayStats?.count,
+      value: isLoading ? null : stats.todayCount,
       icon: <Clock className="h-5 w-5 text-blue-600" />,
       bgColor: "bg-blue-100",
       textColor: "text-blue-600"
     },
     {
       title: "Ocorrências no mês",
-      value: isLoadingMonth ? "..." : monthStats?.count,
+      value: isLoading ? null : stats.monthCount,
       icon: <Calendar className="h-5 w-5 text-green-600" />,
       bgColor: "bg-green-100",
       textColor: "text-green-600"
     },
     {
       title: "Ocorrências recentes",
-      value: isLoadingRecent ? "..." : recentStats?.count,
+      value: isLoading ? null : stats.recentCount,
       icon: <FileText className="h-5 w-5 text-purple-600" />,
       bgColor: "bg-purple-100",
       textColor: "text-purple-600"
@@ -72,9 +47,13 @@ export const QuickStats: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-sm text-gray-500">{item.title}</p>
-              <p className={cn("text-2xl font-bold", item.textColor)}>
-                {item.value}
-              </p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className={cn("text-2xl font-bold", item.textColor)}>
+                  {item.value}
+                </p>
+              )}
             </div>
             <div className={cn("rounded-full p-3", item.bgColor)}>
               {item.icon}

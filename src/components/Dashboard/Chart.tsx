@@ -2,21 +2,27 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { DateRangeType } from "@/hooks/use-occurrence-data";
+import EmptyState from '@/components/Dashboard/EmptyState';
 
 interface ChartProps {
   date: DateRangeType;
 }
 
 const Chart: React.FC<ChartProps> = ({ date }) => {
-  // Mock data for the chart
-  const data = [
-    { name: 'Desordem', quantidade: 12 },
-    { name: 'Furto', quantidade: 8 },
-    { name: 'Barulho', quantidade: 20 },
-    { name: 'Assistência', quantidade: 15 },
-    { name: 'Vandalismo', quantidade: 6 },
-    { name: 'Trânsito', quantidade: 25 },
-  ];
+  // Dados demonstrativos vazios
+  const data: { name: string; quantidade: number }[] = [];
+
+  if (data.length === 0) {
+    return (
+      <div className="h-[300px] flex items-center justify-center">
+        <EmptyState
+          title="Sem dados"
+          description="Não há dados para exibir no gráfico"
+          icon="chart"
+        />
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={300}>

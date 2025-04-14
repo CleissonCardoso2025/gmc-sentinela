@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Users, Car, AlertTriangle } from "lucide-react";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Users, Car, Clock } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DateRange } from "@/components/ui/date-range-picker";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 import AlertPanel from './AlertPanel';
+import EmptyState from "@/components/Dashboard/EmptyState";
 
 // Lazy load the components for better performance
 const RecentOccurrences = React.lazy(() => import('@/components/Dashboard/RecentOccurrences'));
@@ -56,88 +54,15 @@ const InspetoriaDashboard: React.FC = () => {
     from: subDays(new Date(), 7),
     to: new Date(),
   });
-  const [totalUsers, setTotalUsers] = useState<number>(0);
-  const [activeUsers, setActiveUsers] = useState<number>(0);
-  const [totalVehicles, setTotalVehicles] = useState<number>(0);
-  const [availableVehicles, setAvailableVehicles] = useState<number>(0);
-  const [recentLogs, setRecentLogs] = useState<any[]>([]);
-  const [usersData, setUsersData] = useState<any[]>([]);
-  const [vehiclesData, setVehiclesData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch total users
-        const { data: users, error: usersError } = await supabase
-          .from('users')
-          .select('count', { count: 'exact' });
-        if (usersError) throw usersError;
-        setTotalUsers(users ? users[0].count : 0);
-
-        // Fetch active users
-        const { data: active, error: activeError } = await supabase
-          .from('users')
-          .select('count', { count: 'exact' })
-          .eq('status', true);
-        if (activeError) throw activeError;
-        setActiveUsers(active ? active[0].count : 0);
-        
-        // Fetch users data
-        const { data: usersDataResult, error: usersDataError } = await supabase
-          .from('users')
-          .select('*')
-          .limit(5);
-        if (usersDataError) throw usersDataError;
-        setUsersData(usersDataResult || []);
-
-        // Fetch total vehicles
-        const { data: vehicles, error: vehiclesError } = await supabase
-          .from('viaturas')
-          .select('count', { count: 'exact' });
-        if (vehiclesError) throw vehiclesError;
-        setTotalVehicles(vehicles ? vehicles[0].count : 0);
-
-        // Fetch available vehicles (you might need to adjust the query based on your database structure)
-        const { data: available, error: availableError } = await supabase
-          .from('viaturas')
-          .select('count', { count: 'exact' }); // Add condition if you have a status column
-        if (availableError) throw availableError;
-        setAvailableVehicles(available ? available[0].count : 0);
-				
-				// Fetch vehicles data
-        const { data: vehiclesDataResult, error: vehiclesDataError } = await supabase
-          .from('viaturas')
-          .select('*')
-          .limit(5);
-        if (vehiclesDataError) throw vehiclesDataError;
-        setVehiclesData(vehiclesDataResult || []);
-
-        // Fetch recent logs (example, adjust based on your actual logs table)
-        const { data: logs, error: logsError } = await supabase
-          .from('ocorrencias')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(5);
-        if (logsError) throw logsError;
-        setRecentLogs(logs || []);
-
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        toast({
-          title: "Erro ao carregar dados",
-          description: "Não foi possível carregar os dados do painel.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [toast]);
+  // Limpa todos os dados, mantendo apenas os valores de estado inicial
+  const totalUsers = 0;
+  const activeUsers = 0;
+  const totalVehicles = 0;
+  const availableVehicles = 0;
+  const usersData = [];
+  const vehiclesData = [];
+  const isLoading = false;
 
   return (
     <div className="grid gap-4">
@@ -175,25 +100,33 @@ const InspetoriaDashboard: React.FC = () => {
               <h2 className="text-lg font-semibold">Ocorrências por tipo</h2>
               <DateRangePicker date={date} setDate={setDate} />
             </div>
-            <React.Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
-              <Chart date={date} />
-            </React.Suspense>
+            <EmptyState
+              title="Sem dados disponíveis"
+              description="Não há dados de ocorrências para exibir"
+              icon="chart"
+            />
           </CardContent>
         </Card>
 
         <Card className="shadow-md">
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold mb-4">Alertas do Sistema</h2>
-            <AlertPanel />
+            <EmptyState
+              title="Sem alertas"
+              description="Não há alertas pendentes no momento"
+              icon="info"
+            />
           </CardContent>
         </Card>
 
         <Card className="shadow-md">
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold mb-4">Progresso das Operações</h2>
-            <React.Suspense fallback={<Skeleton className="h-[240px] w-full" />}>
-              <TasksProgress />
-            </React.Suspense>
+            <EmptyState
+              title="Sem operações"
+              description="Não há operações em andamento"
+              icon="info"
+            />
           </CardContent>
         </Card>
       </div>
@@ -209,9 +142,11 @@ const InspetoriaDashboard: React.FC = () => {
               </Badge>
             </div>
           </div>
-          <React.Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
-            {usersData && <UserList users={usersData} />}
-          </React.Suspense>
+          <EmptyState
+            title="Sem usuários"
+            description="Não há usuários cadastrados"
+            icon="users"
+          />
         </Card>
 
         <Card className="shadow-md">
@@ -224,18 +159,11 @@ const InspetoriaDashboard: React.FC = () => {
               </Badge>
             </div>
           </div>
-          <React.Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
-            {vehiclesData && (
-              <VehicleList 
-                vehicles={vehiclesData.map(vehicle => ({
-                  ...vehicle,
-                  status: vehicle.status || "Ativo", // Provide default status
-                  quilometragem: vehicle.quilometragem || 0, // Provide default quilometragem
-                  proximaManutencao: vehicle.proximaManutencao || new Date().toISOString() // Provide default proximaManutencao
-                }))} 
-              />
-            )}
-          </React.Suspense>
+          <EmptyState
+            title="Sem viaturas"
+            description="Não há viaturas cadastradas"
+            icon="vehicle"
+          />
         </Card>
       </div>
     </div>

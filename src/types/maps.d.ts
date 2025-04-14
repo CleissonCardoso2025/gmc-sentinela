@@ -12,4 +12,7 @@ export interface MapMarker {
   title: string;
   content?: string;
   icon?: string;
+  lat?: number;
+  lng?: number;
+  address?: string;
 }

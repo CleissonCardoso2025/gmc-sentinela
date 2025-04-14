@@ -141,7 +141,7 @@ export const OcorrenciaForm = () => {
       };
       
       // Save to database
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('ocorrencias')
         .insert(ocorrenciaData);
       
@@ -426,7 +426,7 @@ export const OcorrenciaForm = () => {
           <div className="h-[500px] w-full">
             <GoogleMapComponent 
               markers={position ? [position] : []} 
-              onMarkerAdd={handleMapClick}
+              onMapClick={handleMapClick}
               draggable
               searchBox
             />

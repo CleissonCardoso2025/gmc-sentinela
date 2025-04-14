@@ -24,6 +24,8 @@ interface GoogleMapComponentProps {
   onMapClick?: (location: { lat: number, lng: number }) => void;
   markerType?: 'default' | 'police' | 'incident';
   showUserLocation?: boolean;
+  draggable?: boolean;
+  searchBox?: boolean;
 }
 
 // Optimize map loading with useJsApiLoader
@@ -76,7 +78,9 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   className = '',
   onMapClick,
   markerType = 'default',
-  showUserLocation = false
+  showUserLocation = false,
+  draggable = false,
+  searchBox = false
 }) => {
   const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(center || defaultCenter);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
@@ -144,7 +148,32 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     if (onMapClick && e.latLng) {
       const lat = e.latLng.lat();
       const lng = e.latLng.lng();
-      onMapClick({ lat, lng });
+      
+      // Create a MapMarker with the required fields
+      const newMarker: MapMarker = {
+        id: Date.now().toString(),
+        position: [lat, lng],
+        title: 'Nova Localização',
+        lat: lat,
+        lng: lng,
+        address: 'Endereço pendente...' // Default address
+      };
+      
+      // If we have a searchBox, we can try to get the address
+      if (window.google && window.google.maps && window.google.maps.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode(
+          { location: { lat, lng } },
+          (results, status) => {
+            if (status === "OK" && results && results[0]) {
+              newMarker.address = results[0].formatted_address;
+            }
+            onMapClick(newMarker);
+          }
+        );
+      } else {
+        onMapClick(newMarker);
+      }
     }
   }, [onMapClick]);
   
@@ -230,7 +259,8 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
           fullscreenControl: true,
           zoomControl: true,
           disableDefaultUI: false,
-          clickableIcons: false
+          clickableIcons: false,
+          draggableCursor: draggable ? 'crosshair' : 'default'
         }}
         onClick={handleMapClick}
         onLoad={onLoad}

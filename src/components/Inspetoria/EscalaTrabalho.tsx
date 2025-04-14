@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import NovaEscala from './NovaEscala';
+import { supabase } from "@/integrations/supabase/client";
+import EmptyState from "@/components/Dashboard/EmptyState";
 
 // Import refactored components
 import EscalaFilters from './Escala/EscalaFilters';
@@ -18,8 +20,8 @@ import EscalaInfo from './Escala/EscalaInfo';
 import EscalaTable from './Escala/EscalaTable';
 import EscalaLegend from './Escala/EscalaLegend';
 
-// Import mock data and utilities
-import { escalaData, weekDays, guarnicoes, rotas, viaturas } from './Escala/mockData';
+// Import types and utilities
+import { EscalaItem, GuarnicaoOption, RotaOption, ViaturaOption } from './Escala/types';
 import { getStatusColor } from './Escala/utils';
 
 const EscalaTrabalho: React.FC = () => {
@@ -31,6 +33,82 @@ const EscalaTrabalho: React.FC = () => {
   const [selectedViatura, setSelectedViatura] = useState("todas");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<number | null>(null);
+  
+  // State for data from Supabase
+  const [escalaData, setEscalaData] = useState<EscalaItem[]>([]);
+  const [guarnicoes, setGuarnicoes] = useState<GuarnicaoOption[]>([]);
+  const [rotas, setRotas] = useState<RotaOption[]>([]);
+  const [viaturas, setViaturas] = useState<ViaturaOption[]>([]);
+  const [weekDays] = useState(["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch escala items
+        const { data: escalaItems, error: escalaError } = await supabase
+          .from('escala_items')
+          .select('*');
+        
+        if (escalaError) throw escalaError;
+        
+        // Fetch guarnicoes
+        const { data: guarnicoesData, error: guarnicoesError } = await supabase
+          .from('guarnicoes')
+          .select('*');
+        
+        if (guarnicoesError) throw guarnicoesError;
+        
+        // Fetch rotas
+        const { data: rotasData, error: rotasError } = await supabase
+          .from('rotas')
+          .select('*');
+        
+        if (rotasError) throw rotasError;
+        
+        // Fetch viaturas
+        const { data: viaturasData, error: viaturasError } = await supabase
+          .from('viaturas')
+          .select('*');
+        
+        if (viaturasError) throw viaturasError;
+        
+        // Format and set data
+        setEscalaData(escalaItems || []);
+        
+        setGuarnicoes(guarnicoesData?.map(g => ({
+          id: g.id,
+          nome: g.nome,
+          supervisor: g.supervisor
+        })) || []);
+        
+        setRotas(rotasData?.map(r => ({
+          id: r.id,
+          nome: r.nome
+        })) || []);
+        
+        setViaturas(viaturasData?.map(v => ({
+          id: v.id,
+          codigo: v.codigo,
+          modelo: v.modelo
+        })) || []);
+        
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados da escala.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [toast]);
 
   const handleExportPDF = () => {
     toast({
@@ -53,11 +131,31 @@ const EscalaTrabalho: React.FC = () => {
     });
   };
 
-  const handleDeleteShift = (id: number) => {
-    toast({
-      title: "Turno removido",
-      description: "O turno foi removido da escala."
-    });
+  const handleDeleteShift = async (id: number) => {
+    try {
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('escala_items')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setEscalaData(prev => prev.filter(item => item.id !== id));
+      
+      toast({
+        title: "Turno removido",
+        description: "O turno foi removido da escala com sucesso."
+      });
+    } catch (error) {
+      console.error("Error deleting shift:", error);
+      toast({
+        title: "Erro ao remover turno",
+        description: "Não foi possível remover o turno da escala.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSubstituteAgent = (id: number) => {
@@ -72,13 +170,33 @@ const EscalaTrabalho: React.FC = () => {
     setIsCreateModalOpen(true);
   };
 
-  const handleSaveSchedule = () => {
+  const handleSaveSchedule = async () => {
     setIsCreateModalOpen(false);
+    
+    try {
+      // Re-fetch data to get the updated schedule
+      const { data, error } = await supabase
+        .from('escala_items')
+        .select('*');
+      
+      if (error) throw error;
+      
+      setEscalaData(data || []);
+      
+      toast({
+        title: "Escala salva",
+        description: editingSchedule ? "Escala atualizada com sucesso." : "Nova escala criada com sucesso."
+      });
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Erro ao atualizar dados",
+        description: "A escala foi salva, mas não foi possível atualizar a visualização.",
+        variant: "destructive"
+      });
+    }
+    
     setEditingSchedule(null);
-    toast({
-      title: "Escala salva",
-      description: editingSchedule ? "Escala atualizada com sucesso." : "Nova escala criada com sucesso."
-    });
   };
 
   const filteredData = escalaData.filter(item => {
@@ -93,6 +211,14 @@ const EscalaTrabalho: React.FC = () => {
     
     return true;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -128,14 +254,24 @@ const EscalaTrabalho: React.FC = () => {
       <EscalaInfo />
 
       <div className="overflow-x-auto">
-        <EscalaTable
-          weekDays={weekDays}
-          filteredData={filteredData}
-          onEditSchedule={handleEditSchedule}
-          onSubstituteAgent={handleSubstituteAgent}
-          onDeleteShift={handleDeleteShift}
-          getStatusColor={getStatusColor}
-        />
+        {filteredData.length > 0 ? (
+          <EscalaTable
+            weekDays={weekDays}
+            filteredData={filteredData}
+            onEditSchedule={handleEditSchedule}
+            onSubstituteAgent={handleSubstituteAgent}
+            onDeleteShift={handleDeleteShift}
+            getStatusColor={getStatusColor}
+          />
+        ) : (
+          <EmptyState 
+            icon="info"
+            title="Nenhuma escala encontrada" 
+            description="Não existem escalas cadastradas ou que correspondam aos filtros selecionados."
+            actionLabel="Criar Nova Escala"
+            onAction={() => setIsCreateModalOpen(true)}
+          />
+        )}
       </div>
 
       <EscalaLegend

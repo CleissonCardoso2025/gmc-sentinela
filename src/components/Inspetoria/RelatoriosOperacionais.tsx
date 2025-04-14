@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,48 +50,278 @@ import {
   Legend
 } from "recharts";
 import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart";
+import { supabase } from "@/integrations/supabase/client";
+import { format, subDays, startOfWeek, endOfWeek } from "date-fns";
+import EmptyState from "@/components/Dashboard/EmptyState";
 
 const RelatoriosOperacionais: React.FC = () => {
   const { toast } = useToast();
   const [reportType, setReportType] = useState("plantoes");
   const [dateRange, setDateRange] = useState({
-    start: "",
-    end: ""
+    start: format(subDays(new Date(), 7), "yyyy-MM-dd"),
+    end: format(new Date(), "yyyy-MM-dd")
+  });
+  
+  // State for data from Supabase
+  const [isLoading, setIsLoading] = useState(true);
+  const [plantoesData, setPlantoesData] = useState<any[]>([]);
+  const [ocorrenciasData, setOcorrenciasData] = useState<any[]>([]);
+  const [viaturasData, setViaturasData] = useState<any[]>([]);
+  const [faltasData, setFaltasData] = useState<any[]>([]);
+  const [totais, setTotais] = useState({
+    plantoes: 0,
+    plantoesDiurnos: 0,
+    plantoesNoturnos: 0,
+    mediaAgentes: 0,
+    plantoesIncompletos: 0,
+    ocorrencias: 0,
+    ocorrenciasAlta: 0,
+    ocorrenciasMeida: 0,
+    ocorrenciasBaixa: 0,
+    tempoMedioResposta: 0,
+    viaturas: 0,
+    quilometragemTotal: 0,
+    mediaDiaria: 0,
+    manutencoes: 0,
+    custoManutencao: 0,
+    agentes: 0,
+    faltas: 0,
+    licencas: 0,
+    ferias: 0,
+    substituicoes: 0
   });
 
-  // Mock data
-  const plantoesData = [
-    { name: 'Segunda', plantoes: 4 },
-    { name: 'Terça', plantoes: 5 },
-    { name: 'Quarta', plantoes: 3 },
-    { name: 'Quinta', plantoes: 4 },
-    { name: 'Sexta', plantoes: 5 },
-    { name: 'Sábado', plantoes: 2 },
-    { name: 'Domingo', plantoes: 2 },
-  ];
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Get start and end dates for filtering
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        
+        // Fetch escala data for plantoes
+        const { data: escalaData, error: escalaError } = await supabase
+          .from('escala_items')
+          .select('*')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+        
+        if (escalaError) throw escalaError;
+        
+        // Fetch vehicles data for viaturas
+        const { data: vehiclesData, error: vehiclesError } = await supabase
+          .from('vehicles')
+          .select('*');
+          
+        if (vehiclesError) throw vehiclesError;
+        
+        // Fetch ocorrencias data
+        const { data: ocorrenciasDbData, error: ocorrenciasError } = await supabase
+          .from('ocorrencias')
+          .select('*')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+          
+        if (ocorrenciasError) throw ocorrenciasError;
+        
+        // Process plantoes data
+        const daysOfWeek = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+        const plantoesByDay = daysOfWeek.map(day => ({
+          name: day,
+          plantoes: 0
+        }));
+        
+        let totalPlantoes = 0;
+        let plantoesDiurnos = 0;
+        let plantoesNoturnos = 0;
+        let agentesTotal = 0;
+        let plantoesIncompletos = 0;
+        
+        if (escalaData && escalaData.length > 0) {
+          escalaData.forEach(item => {
+            if (item.schedule) {
+              const scheduleDays = item.schedule;
+              scheduleDays.forEach((day: any) => {
+                const dayIndex = daysOfWeek.indexOf(day.day);
+                if (dayIndex >= 0 && day.shift === "24h") {
+                  plantoesByDay[dayIndex].plantoes += 1;
+                  totalPlantoes += 1;
+                  
+                  // Count day/night shifts based on some logic
+                  if (dayIndex < 5) { // Weekday
+                    plantoesDiurnos += 1;
+                  } else { // Weekend
+                    plantoesNoturnos += 1;
+                  }
+                  
+                  agentesTotal += 1;
+                  
+                  // Count incomplete shifts based on status
+                  if (day.status !== 'presente') {
+                    plantoesIncompletos += 1;
+                  }
+                }
+              });
+            }
+          });
+        }
+        
+        // Process ocorrencias data
+        const ocorrenciasByDay = daysOfWeek.map(day => ({
+          name: day,
+          ocorrencias: 0
+        }));
+        
+        let ocorrenciasAlta = 0;
+        let ocorrenciasMeida = 0;
+        let ocorrenciasBaixa = 0;
+        
+        if (ocorrenciasDbData && ocorrenciasDbData.length > 0) {
+          ocorrenciasDbData.forEach(item => {
+            const date = new Date(item.created_at || item.data);
+            const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Convert 0-6 (Sun-Sat) to 0-6 (Mon-Sun)
+            if (dayIndex >= 0) {
+              ocorrenciasByDay[dayIndex].ocorrencias += 1;
+            }
+            
+            // Count by priority
+            switch (item.status?.toLowerCase()) {
+              case 'alta':
+                ocorrenciasAlta += 1;
+                break;
+              case 'média':
+                ocorrenciasMeida += 1;
+                break;
+              case 'baixa':
+                ocorrenciasBaixa += 1;
+                break;
+            }
+          });
+        }
+        
+        // Process viaturas data
+        const viaturasProcessed = [
+          { name: 'Em operação', value: 0, color: '#22c55e' },
+          { name: 'Em manutenção', value: 0, color: '#f59e0b' },
+          { name: 'Inoperantes', value: 0, color: '#ef4444' },
+        ];
+        
+        let quilometragemTotal = 0;
+        let manutencoes = 0;
+        
+        if (vehiclesData && vehiclesData.length > 0) {
+          vehiclesData.forEach(vehicle => {
+            switch (vehicle.status?.toLowerCase()) {
+              case 'operacional':
+                viaturasProcessed[0].value += 1;
+                break;
+              case 'manutenção':
+                viaturasProcessed[1].value += 1;
+                manutencoes += 1;
+                break;
+              case 'inoperante':
+                viaturasProcessed[2].value += 1;
+                break;
+            }
+            
+            quilometragemTotal += (vehicle.quilometragem || 0);
+          });
+        }
+        
+        // Process faltas data (using escala data)
+        const faltasProcessed = [
+          { name: 'Presentes', value: 0, color: '#3b82f6' },
+          { name: 'Faltas', value: 0, color: '#ef4444' },
+          { name: 'Licenças', value: 0, color: '#a855f7' },
+          { name: 'Férias', value: 0, color: '#06b6d4' },
+        ];
+        
+        let substituicoes = 0;
+        
+        if (escalaData && escalaData.length > 0) {
+          escalaData.forEach(item => {
+            if (item.schedule) {
+              const scheduleDays = item.schedule;
+              scheduleDays.forEach((day: any) => {
+                switch (day.status?.toLowerCase()) {
+                  case 'presente':
+                    faltasProcessed[0].value += 1;
+                    break;
+                  case 'falta':
+                    faltasProcessed[1].value += 1;
+                    break;
+                  case 'licença':
+                    faltasProcessed[2].value += 1;
+                    substituicoes += 1; // Assume each license requires a substitution
+                    break;
+                  case 'folga':
+                    faltasProcessed[3].value += 1;
+                    break;
+                }
+              });
+            }
+          });
+        }
+        
+        // Set all the processed data
+        setPlantoesData(plantoesByDay);
+        setOcorrenciasData(ocorrenciasByDay);
+        setViaturasData(viaturasProcessed);
+        setFaltasData(faltasProcessed);
+        
+        // Set totals
+        setTotais({
+          plantoes: totalPlantoes,
+          plantoesDiurnos,
+          plantoesNoturnos,
+          mediaAgentes: totalPlantoes > 0 ? +(agentesTotal / totalPlantoes).toFixed(1) : 0,
+          plantoesIncompletos,
+          ocorrencias: ocorrenciasDbData?.length || 0,
+          ocorrenciasAlta,
+          ocorrenciasMeida,
+          ocorrenciasBaixa,
+          tempoMedioResposta: 12, // Mock data for now
+          viaturas: vehiclesData?.length || 0,
+          quilometragemTotal,
+          mediaDiaria: quilometragemTotal > 0 ? Math.round(quilometragemTotal / 7) : 0,
+          manutencoes,
+          custoManutencao: manutencoes * 1500, // Mock data for now
+          agentes: faltasProcessed.reduce((acc, curr) => acc + curr.value, 0),
+          faltas: faltasProcessed[1].value,
+          licencas: faltasProcessed[2].value,
+          ferias: faltasProcessed[3].value,
+          substituicoes
+        });
+        
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados dos relatórios.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [dateRange, toast]);
 
-  const ocorrenciasData = [
-    { name: 'Segunda', ocorrencias: 12 },
-    { name: 'Terça', ocorrencias: 8 },
-    { name: 'Quarta', ocorrencias: 15 },
-    { name: 'Quinta', ocorrencias: 10 },
-    { name: 'Sexta', ocorrencias: 18 },
-    { name: 'Sábado', ocorrencias: 22 },
-    { name: 'Domingo', ocorrencias: 14 },
-  ];
+  const handleExportPDF = () => {
+    toast({
+      title: "Exportando relatório",
+      description: "O relatório está sendo exportado para PDF."
+    });
+  };
 
-  const viaturasData = [
-    { name: 'Em operação', value: 6, color: '#22c55e' },
-    { name: 'Em manutenção', value: 2, color: '#f59e0b' },
-    { name: 'Inoperantes', value: 1, color: '#ef4444' },
-  ];
-
-  const faltasData = [
-    { name: 'Presentes', value: 28, color: '#3b82f6' },
-    { name: 'Faltas', value: 2, color: '#ef4444' },
-    { name: 'Licenças', value: 4, color: '#a855f7' },
-    { name: 'Férias', value: 3, color: '#06b6d4' },
-  ];
+  const handlePrint = () => {
+    toast({
+      title: "Imprimindo relatório",
+      description: "O relatório está sendo enviado para impressão."
+    });
+  };
 
   const chartConfig = {
     plantoes: {
@@ -110,19 +340,29 @@ const RelatoriosOperacionais: React.FC = () => {
     },
   };
 
-  const handleExportPDF = () => {
-    toast({
-      title: "Exportando relatório",
-      description: "O relatório está sendo exportado para PDF."
-    });
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
-  const handlePrint = () => {
-    toast({
-      title: "Imprimindo relatório",
-      description: "O relatório está sendo enviado para impressão."
-    });
-  };
+  const hasNoData = 
+    plantoesData.every(item => item.plantoes === 0) && 
+    ocorrenciasData.every(item => item.ocorrencias === 0) && 
+    viaturasData.every(item => item.value === 0) && 
+    faltasData.every(item => item.value === 0);
+
+  if (hasNoData) {
+    return (
+      <EmptyState 
+        icon="info"
+        title="Sem dados para exibir" 
+        description="Não há dados disponíveis para o período selecionado. Tente selecionar um período diferente ou cadastrar novas informações."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -231,23 +471,23 @@ const RelatoriosOperacionais: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Total de Plantões:</span>
-                  <span className="text-xl font-bold">25</span>
+                  <span className="text-xl font-bold">{totais.plantoes}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Plantões Diurnos:</span>
-                  <span className="text-lg">15</span>
+                  <span className="text-lg">{totais.plantoesDiurnos}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Plantões Noturnos:</span>
-                  <span className="text-lg">10</span>
+                  <span className="text-lg">{totais.plantoesNoturnos}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Média de Agentes por Plantão:</span>
-                  <span className="text-lg">3.5</span>
+                  <span className="text-lg">{totais.mediaAgentes}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Plantões Incompletos:</span>
-                  <span className="text-lg text-yellow-600">2</span>
+                  <span className="text-lg text-yellow-600">{totais.plantoesIncompletos}</span>
                 </div>
               </CardContent>
             </Card>
@@ -294,23 +534,23 @@ const RelatoriosOperacionais: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Total de Ocorrências:</span>
-                  <span className="text-xl font-bold">99</span>
+                  <span className="text-xl font-bold">{totais.ocorrencias}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Alta Prioridade:</span>
-                  <span className="text-lg text-red-600">12</span>
+                  <span className="text-lg text-red-600">{totais.ocorrenciasAlta}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Média Prioridade:</span>
-                  <span className="text-lg text-yellow-600">35</span>
+                  <span className="text-lg text-yellow-600">{totais.ocorrenciasMeida}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Baixa Prioridade:</span>
-                  <span className="text-lg text-green-600">52</span>
+                  <span className="text-lg text-green-600">{totais.ocorrenciasBaixa}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Tempo Médio de Resposta:</span>
-                  <span className="text-lg">12 min</span>
+                  <span className="text-lg">{totais.tempoMedioResposta} min</span>
                 </div>
               </CardContent>
             </Card>
@@ -361,23 +601,23 @@ const RelatoriosOperacionais: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Total de Viaturas:</span>
-                  <span className="text-xl font-bold">9</span>
+                  <span className="text-xl font-bold">{totais.viaturas}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Quilometragem Total:</span>
-                  <span className="text-lg">125.489 km</span>
+                  <span className="text-lg">{totais.quilometragemTotal.toLocaleString()} km</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Média Diária:</span>
-                  <span className="text-lg">356 km</span>
+                  <span className="text-lg">{totais.mediaDiaria.toLocaleString()} km</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Manutenções Realizadas:</span>
-                  <span className="text-lg">12</span>
+                  <span className="text-lg">{totais.manutencoes}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Custo de Manutenção:</span>
-                  <span className="text-lg">R$ 8.450,00</span>
+                  <span className="text-lg">R$ {totais.custoManutencao.toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>
@@ -425,48 +665,54 @@ const RelatoriosOperacionais: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Total de Agentes:</span>
-                  <span className="text-xl font-bold">37</span>
+                  <span className="text-xl font-bold">{totais.agentes}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Faltas Registradas:</span>
-                  <span className="text-lg text-red-600">2</span>
+                  <span className="text-lg text-red-600">{totais.faltas}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Licenças Médicas:</span>
-                  <span className="text-lg">4</span>
+                  <span className="text-lg">{totais.licencas}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium">Férias:</span>
-                  <span className="text-lg">3</span>
+                  <span className="text-lg">{totais.ferias}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Substituições Realizadas:</span>
-                  <span className="text-lg">6</span>
+                  <span className="text-lg">{totais.substituicoes}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="col-span-1 lg:col-span-3">
-              <CardHeader>
-                <CardTitle>Alerta de Faltas Recentes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Agente Carlos Pereira</AlertTitle>
-                  <AlertDescription>
-                    Falta não justificada em 12/03/2025. Segunda ocorrência no mês.
-                  </AlertDescription>
-                </Alert>
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Agente Ana Melo</AlertTitle>
-                  <AlertDescription>
-                    Licença médica de 10/03/2025 a 17/03/2025. Atestado médico registrado.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+            {(totais.faltas > 0 || totais.licencas > 0) && (
+              <Card className="col-span-1 lg:col-span-3">
+                <CardHeader>
+                  <CardTitle>Alerta de Faltas Recentes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {totais.faltas > 0 && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Faltas registradas</AlertTitle>
+                      <AlertDescription>
+                        Foram registradas {totais.faltas} faltas no período selecionado.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {totais.licencas > 0 && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Licenças registradas</AlertTitle>
+                      <AlertDescription>
+                        Foram registradas {totais.licencas} licenças médicas no período selecionado.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
       </Tabs>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 interface EmptyStateProps {
   title?: string;
   description?: string;
-  icon?: 'alert' | 'search' | 'info' | 'users' | 'map';
+  icon?: 'alert' | 'search' | 'info' | 'users' | 'map' | 'error';
   actionLabel?: string;
   onAction?: () => void;
 }
@@ -23,7 +23,8 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     search: <Search className="h-12 w-12 text-blue-500" />,
     info: <Info className="h-12 w-12 text-gray-500" />,
     users: <Users className="h-12 w-12 text-blue-500" />,
-    map: <Map className="h-12 w-12 text-green-500" />
+    map: <Map className="h-12 w-12 text-green-500" />,
+    error: <AlertCircle className="h-12 w-12 text-red-500" />
   };
 
   return (

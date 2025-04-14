@@ -30,6 +30,7 @@ export const useUserData = () => {
   useEffect(() => {
     fetchUsers();
 
+    // Set up a realtime subscription to listen for database changes
     const channel = supabase
       .channel('public:users')
       .on('postgres_changes', 
@@ -41,30 +42,13 @@ export const useUserData = () => {
         (payload: any) => {
           console.log('Mudança detectada em usuários:', payload);
           fetchUsers();
-          
-          if (payload.eventType === 'INSERT') {
-            toast({
-              title: "Novo usuário criado",
-              description: "Um novo usuário foi adicionado ao sistema.",
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            toast({
-              title: "Usuário atualizado",
-              description: "Um usuário foi atualizado no sistema.",
-            });
-          } else if (payload.eventType === 'DELETE') {
-            toast({
-              title: "Usuário removido",
-              description: "Um usuário foi removido do sistema.",
-            });
-          }
         })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchUsers, toast]);
+  }, [fetchUsers]);
 
   return {
     users,

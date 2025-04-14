@@ -21,7 +21,7 @@ type UserFormValues = z.infer<typeof userFormSchema>;
 
 interface UseUserFormProps {
   initialData?: UserFormData;
-  onSubmit: (data: UserFormData) => void;
+  onSubmit: (data: UserFormData) => Promise<void> | void;
   onCancel: () => void;
 }
 

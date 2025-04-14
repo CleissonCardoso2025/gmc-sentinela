@@ -48,11 +48,8 @@ const UserManagement = () => {
     refetchUsers
   } = useUserManagement();
 
-  const mockCurrentUserProfile = {
-    perfil: 'Inspetor'
-  };
-
-  const userProfile = mockCurrentUserProfile.perfil;
+  // Get the user profile from localStorage - this would normally come from an auth context
+  const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
   const hasAccess = userProfile === 'Inspetor';
 
   if (!hasAccess) {

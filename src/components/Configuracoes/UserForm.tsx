@@ -34,7 +34,7 @@ const UserForm: React.FC<UserFormProps> = ({
     isEditing
   } = useUserForm({ initialData, onSubmit, onCancel });
 
-  // Não precisamos mais desta verificação já que handleSubmit do useUserForm já aplica a validação
+  // Handle form submission with validation
   const onFormSubmit = handleSubmit;
 
   const handleProfileChange = (value: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente') => {
@@ -88,6 +88,7 @@ const UserForm: React.FC<UserFormProps> = ({
       <FormActions 
         onCancel={handleCancel}
         isEditing={isEditing}
+        isSubmitting={isSubmitting}
         readOnly={readOnly}
       />
     </form>

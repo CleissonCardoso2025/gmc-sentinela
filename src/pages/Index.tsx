@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/Dashboard/Header';
 import Navbar from '@/components/Dashboard/Navbar';
@@ -32,9 +31,9 @@ const Index = () => {
 
   // Format mock data to match the Occurrence type
   const ocorrenciasData: Occurrence[] = [
-    { id: 1, titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', data: new Date().toISOString() },
-    { id: 2, titulo: 'Acidente de Trânsito', local: 'Av. Principal, 456', data: new Date().toISOString() },
-    { id: 3, titulo: 'Apoio ao Cidadão', local: 'Praça Central', data: new Date().toISOString() },
+    { id: "1", titulo: 'Perturbação do Sossego', local: 'Rua das Flores, 123', data: new Date().toISOString(), numero: "001", tipo: "Perturbação", status: "Aberta", descricao: "" },
+    { id: "2", titulo: 'Acidente de Trânsito', local: 'Av. Principal, 456', data: new Date().toISOString(), numero: "002", tipo: "Acidente", status: "Aberta", descricao: "" },
+    { id: "3", titulo: 'Apoio ao Cidadão', local: 'Praça Central', data: new Date().toISOString(), numero: "003", tipo: "Apoio", status: "Aberta", descricao: "" },
   ];
 
   return (

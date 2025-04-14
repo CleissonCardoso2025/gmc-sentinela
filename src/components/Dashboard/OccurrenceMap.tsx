@@ -16,7 +16,7 @@ import { useGeolocation } from '@/hooks/use-geolocation';
 type OccurrenceType = 'all' | 'transito' | 'crime' | 'apoio' | 'perturbacao';
 
 const OccurrenceMap: React.FC = () => {
-  const [dateRange, setDateRange] = useState<DateRange>('3m');
+  const [dateRange, setDateRange] = useState<DateRange>('7d');
   const [occurrenceType, setOccurrenceType] = useState<OccurrenceType>('all');
   const { occurrences, isLoading: dataLoading, refetchOccurrences } = useOccurrenceData(dateRange);
   const isMobile = useIsMobile();
@@ -81,20 +81,25 @@ const OccurrenceMap: React.FC = () => {
       'perturbacao': ['Perturbação do Sossego']
     };
     
-    return typeMapping[occurrenceType]?.includes(occurrence.titulo);
+    return typeMapping[occurrenceType]?.includes(occurrence.titulo || occurrence.tipo);
   });
   
   // Prepare markers for the map
-  const markers: MapMarker[] = filteredOccurrences.filter(o => o.latitude && o.longitude).map(occurrence => ({
-    id: occurrence.id,
-    position: [occurrence.latitude || -23.550520, occurrence.longitude || -46.633308], // Default to São Paulo if invalid
-    title: occurrence.titulo,
-    content: `
-      <p>${occurrence.local}</p>
-      <p>Data: ${formatDateBR(occurrence.data)}</p>
-    `,
-    icon: 'incident'
-  }));
+  const markers: MapMarker[] = filteredOccurrences
+    .filter(o => o.latitude !== undefined && o.longitude !== undefined)
+    .map(occurrence => ({
+      id: occurrence.id,
+      position: [
+        occurrence.latitude || -23.550520, 
+        occurrence.longitude || -46.633308
+      ],
+      title: occurrence.titulo || occurrence.tipo,
+      content: `
+        <p>${occurrence.local}</p>
+        <p>Data: ${formatDateBR(occurrence.data)}</p>
+      `,
+      icon: 'incident'
+    }));
   
   // Add user location marker if available
   if (geolocation.location.latitude && geolocation.location.longitude) {
@@ -118,7 +123,9 @@ const OccurrenceMap: React.FC = () => {
       };
     }
     
-    const validOccurrences = filteredOccurrences.filter(o => o.latitude && o.longitude);
+    const validOccurrences = filteredOccurrences.filter(o => 
+      o.latitude !== undefined && o.longitude !== undefined
+    );
     
     if (validOccurrences.length === 0) {
       // If no occurrences but we have user location, use that
@@ -153,6 +160,8 @@ const OccurrenceMap: React.FC = () => {
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
                 <SelectItem value="3m">Últimos 3 meses</SelectItem>
                 <SelectItem value="6m">Últimos 6 meses</SelectItem>
                 <SelectItem value="12m">Últimos 12 meses</SelectItem>
@@ -213,7 +222,11 @@ const OccurrenceMap: React.FC = () => {
                 }</span>
               )}
               {' dos últimos '}
-              {dateRange === '3m' ? '3' : dateRange === '6m' ? '6' : '12'} meses.
+              {dateRange === '3m' ? '3 meses' : 
+               dateRange === '6m' ? '6 meses' : 
+               dateRange === '12m' ? '12 meses' :
+               dateRange === '30d' ? '30 dias' :
+               dateRange === '7d' ? '7 dias' : ''}
             </span>
             <div className="flex gap-2">
               <button 

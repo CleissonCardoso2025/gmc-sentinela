@@ -5,7 +5,7 @@ import { useOccurrenceData } from '@/hooks/use-occurrence-data';
 import OccurrenceList from './OccurrenceList';
 
 export const RecentOccurrences = () => {
-  const { occurrences, isLoading } = useOccurrenceData('3m');
+  const { occurrences, isLoading } = useOccurrenceData('7d');
   
   return (
     <Card className="shadow-md h-full">

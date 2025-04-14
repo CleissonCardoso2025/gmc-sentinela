@@ -19,7 +19,7 @@ const OccurrenceEditForm: React.FC<OccurrenceEditFormProps> = ({
   onSave, 
   onCancel 
 }) => {
-  const [title, setTitle] = useState(occurrence.titulo);
+  const [title, setTitle] = useState(occurrence.titulo || occurrence.tipo);
   const [location, setLocation] = useState(occurrence.local);
   const [description, setDescription] = useState(occurrence.descricao || "");
   const { toast } = useToast();
@@ -38,6 +38,7 @@ const OccurrenceEditForm: React.FC<OccurrenceEditFormProps> = ({
 
     onSave({
       ...occurrence,
+      tipo: title,
       titulo: title,
       local: location,
       descricao: description

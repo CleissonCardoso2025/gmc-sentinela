@@ -58,7 +58,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             )}
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <h4 className="font-semibold text-gcm-600">{occurrence.titulo}</h4>
+            <h4 className="font-semibold text-gcm-600">{occurrence.titulo || occurrence.tipo}</h4>
             <p className="text-gray-600 text-sm">{occurrence.local}</p>
             <div className="flex justify-between items-center mt-2">
               <p className="text-gray-500 text-xs">

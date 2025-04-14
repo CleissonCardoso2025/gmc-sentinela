@@ -12,7 +12,7 @@ import EmptyState from '@/components/Dashboard/EmptyState';
 
 const InspetoriaOccurrences: React.FC = () => {
   const { occurrences, isLoading, refetchOccurrences } = useOccurrenceData('12m');
-  const [editingOccurrence, setEditingOccurrence] = useState<number | null>(null);
+  const [editingOccurrence, setEditingOccurrence] = useState<string | null>(null);
 
   const handleSaveEdit = (updatedOccurrence: any) => {
     // In a real application, this would update the occurrence in the database
@@ -84,7 +84,7 @@ const InspetoriaOccurrences: React.FC = () => {
               ) : (
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-lg">{occurrence.titulo}</h3>
+                    <h3 className="font-semibold text-lg">{occurrence.titulo || occurrence.tipo}</h3>
                     <Button 
                       variant="ghost" 
                       size="sm" 

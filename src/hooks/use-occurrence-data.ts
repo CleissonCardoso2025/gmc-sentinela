@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from 'date-fns';
 
-export type DateRange = '1d' | '7d' | '30d' | 'all';
+export type DateRange = '1d' | '7d' | '30d' | 'all' | '3m' | '6m' | '12m';
 
 export interface Occurrence {
   id: string;
@@ -15,6 +15,9 @@ export interface Occurrence {
   status: string;
   descricao: string;
   created_at?: string;
+  titulo?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const useOccurrenceData = (initialRange: DateRange = '7d') => {
@@ -31,7 +34,14 @@ export const useOccurrenceData = (initialRange: DateRange = '7d') => {
       
       // Apply date filter
       if (range !== 'all') {
-        const days = parseInt(range.replace('d', ''));
+        let days = 7; // default for '7d'
+        
+        if (range === '1d') days = 1;
+        else if (range === '30d') days = 30;
+        else if (range === '3m') days = 90;
+        else if (range === '6m') days = 180;
+        else if (range === '12m') days = 365;
+        
         const startDate = subDays(new Date(), days);
         query = query.gte('created_at', startDate.toISOString());
       }
@@ -43,7 +53,12 @@ export const useOccurrenceData = (initialRange: DateRange = '7d') => {
       }
       
       if (data) {
-        setOccurrences(data);
+        // Map tipo as titulo for compatibility
+        const mappedData = data.map(item => ({
+          ...item,
+          titulo: item.tipo
+        }));
+        setOccurrences(mappedData);
       }
     } catch (error) {
       console.error("Error fetching occurrences:", error);
@@ -65,6 +80,7 @@ export const useOccurrenceData = (initialRange: DateRange = '7d') => {
     occurrences,
     isLoading,
     dateRange,
-    setDateRange
+    setDateRange,
+    refetchOccurrences: () => fetchOccurrences(dateRange)
   };
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +10,11 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from "@/components/ui/date-range-picker";
-import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import AlertPanel from './AlertPanel';
 
+// Lazy load the components for better performance
 const RecentOccurrences = React.lazy(() => import('@/components/Dashboard/RecentOccurrences'));
 const TasksProgress = React.lazy(() => import('@/components/Dashboard/TasksProgress'));
 const Chart = React.lazy(() => import('@/components/Dashboard/Chart'));
@@ -50,7 +51,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, icon, loadi
 };
 
 const InspetoriaDashboard: React.FC = () => {
-  const [date, setDate] = useState<DateRange>({
+  const [date, setDate] = useState<{
+    from: Date;
+    to: Date;
+  }>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
@@ -241,8 +245,8 @@ const InspetoriaDashboard: React.FC = () => {
 };
 
 interface DateRangePickerProps {
-  date: DateRange;
-  setDate: (date: DateRange) => void;
+  date: { from: Date; to: Date };
+  setDate: (date: { from: Date; to: Date }) => void;
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({ date, setDate }) => {

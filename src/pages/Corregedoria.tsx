@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Dashboard from '@/layouts/Dashboard';
 import { NovaInvestigacao } from '@/components/Corregedoria/NovaInvestigacao';
 import { InvestigacaoList } from '@/components/Corregedoria/InvestigacaoList';
+import { InvestigationStats } from '@/components/Corregedoria/InvestigationStats';
 import { 
   Dialog,
   DialogContent,
@@ -25,6 +26,8 @@ const Corregedoria = () => {
             Nova Sindicância
           </Button>
         </div>
+        
+        <InvestigationStats />
         
         <InvestigacaoList />
         

@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { AlertTriangle, Search, Info } from 'lucide-react';
+import { AlertTriangle, Search, Info, Users, Map, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
   title?: string;
   description?: string;
-  icon?: 'alert' | 'search' | 'info';
+  icon?: 'alert' | 'search' | 'info' | 'users' | 'map';
   actionLabel?: string;
   onAction?: () => void;
 }
@@ -21,7 +21,9 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   const icons = {
     alert: <AlertTriangle className="h-12 w-12 text-yellow-500" />,
     search: <Search className="h-12 w-12 text-blue-500" />,
-    info: <Info className="h-12 w-12 text-gray-500" />
+    info: <Info className="h-12 w-12 text-gray-500" />,
+    users: <Users className="h-12 w-12 text-blue-500" />,
+    map: <Map className="h-12 w-12 text-green-500" />
   };
 
   return (

@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { updateGcmRibeiraProfile } from '../scripts/updateGcmRibeiraProfile';
 import { toast } from 'sonner';
+import { RefreshCcw, ShieldCheck } from 'lucide-react';
 
 const UserProfile = () => {
   const [userProfile, setUserProfile] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isSpecialUser, setIsSpecialUser] = useState<boolean>(false);
   
   useEffect(() => {
     // Get user profile from localStorage
@@ -19,14 +21,21 @@ const UserProfile = () => {
     
     // Check if user is an admin (has Inspetor role)
     setIsAdmin(profile === 'Inspetor');
+    
+    // Check if this is our special user
+    setIsSpecialUser(email === 'gcmribeiradopombal@hotmail.com');
   }, []);
   
   const handleUpdateGcmRibeiraProfile = async () => {
-    if (isAdmin) {
-      await updateGcmRibeiraProfile();
+    const success = await updateGcmRibeiraProfile();
+    if (success) {
       toast.success("Perfil do usuário gcmribeiradopombal@hotmail.com atualizado para Inspetor");
+      if (userEmail === 'gcmribeiradopombal@hotmail.com') {
+        setUserProfile('Inspetor');
+        setIsAdmin(true);
+      }
     } else {
-      toast.error("Apenas administradores podem realizar esta ação");
+      toast.error("Erro ao atualizar perfil do usuário");
     }
   };
   
@@ -51,8 +60,28 @@ const UserProfile = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Perfil</p>
-                <p>{userProfile}</p>
+                <div className="flex items-center gap-2">
+                  <p>{userProfile}</p>
+                  {isAdmin && <ShieldCheck className="h-4 w-4 text-green-500" title="Administrador" />}
+                </div>
               </div>
+              
+              {isSpecialUser && !isAdmin && (
+                <div className="pt-4 border-t mt-6">
+                  <h3 className="text-lg font-semibold mb-2">Atualizar Perfil</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Seu usuário tem acesso a funcionalidades administrativas, mas o seu perfil ainda não está configurado como Inspetor.
+                  </p>
+                  <Button 
+                    variant="default"
+                    onClick={handleUpdateGcmRibeiraProfile}
+                    className="gap-2"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                    Atualizar meu perfil para Inspetor
+                  </Button>
+                </div>
+              )}
               
               {isAdmin && (
                 <div className="pt-4 border-t mt-6">
@@ -60,7 +89,9 @@ const UserProfile = () => {
                   <Button 
                     variant="secondary" 
                     onClick={handleUpdateGcmRibeiraProfile}
+                    className="gap-2"
                   >
+                    <RefreshCcw className="h-4 w-4" />
                     Atualizar perfil do gcmribeiradopombal@hotmail.com para Inspetor
                   </Button>
                 </div>

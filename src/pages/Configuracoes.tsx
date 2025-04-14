@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import UserManagement from '@/components/Configuracoes/UserManagement';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,15 +7,24 @@ import DashboardLayout from '@/layouts/Dashboard';
 import PageAccessControl from '@/components/Configuracoes/PageAccessControl';
 import { Shield } from 'lucide-react';
 import { useAuthorization } from '@/hooks/use-authorization';
+import { updateGcmRibeiraProfile } from '@/scripts/updateGcmRibeiraProfile';
 
 const Configuracoes = () => {
   // Get the user profile from localStorage
-  const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
+  const userProfile = localStorage.getItem('userProfile') || '';
+  const userEmail = localStorage.getItem('userEmail') || '';
   const { pageAccessSettings, updatePageAccess, isLoading: isLoadingAccess, hasAccessToPage } = useAuthorization(userProfile);
+
+  // Atualiza o perfil do usuário especial na montagem do componente
+  useEffect(() => {
+    if (userEmail === 'gcmribeiradopombal@hotmail.com') {
+      updateGcmRibeiraProfile();
+    }
+  }, [userEmail]);
 
   // Check if the user has Inspetor permissions (either by profile or by special access)
   const isInspetor = userProfile === 'Inspetor' || 
-                     localStorage.getItem('userEmail') === 'gcmribeiradopombal@hotmail.com' ||
+                     userEmail === 'gcmribeiradopombal@hotmail.com' ||
                      localStorage.getItem('currentUserId') === 'e632890d-208e-489b-93a3-eae0dd0a9a08';
 
   const handleSavePageAccess = async (pages: typeof pageAccessSettings): Promise<void> => {

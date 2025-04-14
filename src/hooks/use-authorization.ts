@@ -79,12 +79,16 @@ export const useAuthorization = (userProfile: string) => {
     const specialUser = SPECIAL_USERS.find(u => u.userId === userId);
     if (specialUser) {
       setEffectiveProfile(specialUser.specificProfile);
+      // Também atualiza o localStorage para que outras partes do app saibam
+      localStorage.setItem('userProfile', specialUser.specificProfile);
     } 
     // Ou verifica se o usuário tem um perfil específico designado por email
     else if (userEmail) {
       const emailUser = EMAIL_USERS.find(u => u.email === userEmail);
       if (emailUser) {
         setEffectiveProfile(emailUser.specificProfile);
+        // Também atualiza o localStorage para que outras partes do app saibam
+        localStorage.setItem('userProfile', emailUser.specificProfile);
       } else {
         setEffectiveProfile(userProfile);
       }

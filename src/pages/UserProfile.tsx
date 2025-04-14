@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { updateGcmRibeiraProfile } from '../scripts/updateGcmRibeiraProfile';
 import { toast } from 'sonner';
 import { RefreshCcw, ShieldCheck } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const UserProfile = () => {
   const [userProfile, setUserProfile] = useState<string>('');
@@ -62,7 +63,18 @@ const UserProfile = () => {
                 <p className="text-sm font-medium text-muted-foreground">Perfil</p>
                 <div className="flex items-center gap-2">
                   <p>{userProfile}</p>
-                  {isAdmin && <ShieldCheck className="h-4 w-4 text-green-500" title="Administrador" />}
+                  {isAdmin && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span><ShieldCheck className="h-4 w-4 text-green-500" /></span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Administrador</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
               </div>
               

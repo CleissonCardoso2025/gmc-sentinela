@@ -209,8 +209,10 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
+          data_nascimento: string | null
           email: string
           id: string
+          matricula: string | null
           nome: string
           perfil: string
           status: boolean | null
@@ -218,8 +220,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          data_nascimento?: string | null
           email: string
           id?: string
+          matricula?: string | null
           nome: string
           perfil: string
           status?: boolean | null
@@ -227,8 +231,10 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          data_nascimento?: string | null
           email?: string
           id?: string
+          matricula?: string | null
           nome?: string
           perfil?: string
           status?: boolean | null

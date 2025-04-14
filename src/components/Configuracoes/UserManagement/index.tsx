@@ -40,12 +40,14 @@ const UserManagement = () => {
     handleSavePageAccess
   } = useUserManagement();
 
-  const mockCurrentUserProfile = {
-    perfil: 'Inspetor'
-  };
-
-  const userProfile = mockCurrentUserProfile.perfil;
-  const hasAccess = userProfile === 'Inspetor';
+  // Get the user profile from localStorage
+  const userProfile = localStorage.getItem('userProfile') || '';
+  const userEmail = localStorage.getItem('userEmail') || '';
+  
+  // Check if the user has Inspetor permissions (either by profile or by special access)
+  const hasAccess = userProfile === 'Inspetor' || 
+                    userEmail === 'gcmribeiradopombal@hotmail.com' ||
+                    localStorage.getItem('currentUserId') === 'e632890d-208e-489b-93a3-eae0dd0a9a08';
 
   if (!hasAccess) {
     return (

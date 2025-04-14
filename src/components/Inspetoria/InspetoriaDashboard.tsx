@@ -103,7 +103,7 @@ const InspetoriaDashboard: React.FC = () => {
             <EmptyState
               title="Sem dados disponíveis"
               description="Não há dados de ocorrências para exibir"
-              icon="chart"
+              icon="info"
             />
           </CardContent>
         </Card>
@@ -162,7 +162,7 @@ const InspetoriaDashboard: React.FC = () => {
           <EmptyState
             title="Sem viaturas"
             description="Não há viaturas cadastradas"
-            icon="vehicle"
+            icon="car"
           />
         </Card>
       </div>

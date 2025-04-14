@@ -18,7 +18,7 @@ const Chart: React.FC<ChartProps> = ({ date }) => {
         <EmptyState
           title="Sem dados"
           description="Não há dados para exibir no gráfico"
-          icon="chart"
+          icon="info"
         />
       </div>
     );

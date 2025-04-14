@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export interface GeolocationOptions {
   enableHighAccuracy?: boolean;
@@ -28,7 +28,6 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
       longitude: null,
     }
   });
-  const { toast } = useToast();
   
   const getPosition = useCallback(async (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
@@ -46,7 +45,7 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
   }, [options.enableHighAccuracy, options.timeout, options.maximumAge]);
   
   const updatePosition = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true }));
+    setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
       const position = await getPosition();
@@ -69,19 +68,40 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
       });
     } catch (error) {
       console.error("Geolocation error:", error);
+      
+      // Convert error to string to ensure we're not trying to stringify an empty object
+      let errorMessage = "Erro desconhecido ao obter localização";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object') {
+        // GeolocationPositionError handling
+        if ('code' in error && 'message' in error) {
+          switch ((error as GeolocationPositionError).code) {
+            case 1:
+              errorMessage = "Acesso à localização negado. Verifique as permissões do navegador.";
+              break;
+            case 2:
+              errorMessage = "Localização indisponível no momento. Tente novamente.";
+              break;
+            case 3:
+              errorMessage = "Tempo limite excedido ao obter localização.";
+              break;
+          }
+        }
+      }
+      
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : "Erro desconhecido ao obter localização"
+        error: errorMessage
       }));
       
-      toast({
-        title: "Erro de localização",
-        description: "Não foi possível obter sua localização atual. Verifique as permissões do navegador.",
-        variant: "destructive"
+      toast.error("Não foi possível obter sua localização atual. Verifique as permissões do navegador.", {
+        description: errorMessage
       });
     }
-  }, [getPosition, toast]);
+  }, [getPosition]);
   
   useEffect(() => {
     // Initial position update
@@ -112,10 +132,30 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
         },
         (error) => {
           console.error("Geolocation watch error:", error);
+          
+          // Same error handling as in updatePosition
+          let errorMessage = "Erro ao monitorar localização";
+          
+          if (error instanceof GeolocationPositionError) {
+            switch (error.code) {
+              case 1:
+                errorMessage = "Acesso à localização negado. Verifique as permissões do navegador.";
+                break;
+              case 2:
+                errorMessage = "Localização indisponível no momento. Tente novamente.";
+                break;
+              case 3:
+                errorMessage = "Tempo limite excedido ao obter localização.";
+                break;
+            }
+          } else if (error instanceof Error) {
+            errorMessage = `Erro ao monitorar localização: ${error.message}`;
+          }
+          
           setState(prev => ({
             ...prev,
             loading: false,
-            error: `Erro ao monitorar localização: ${error.message}`
+            error: errorMessage
           }));
         },
         {

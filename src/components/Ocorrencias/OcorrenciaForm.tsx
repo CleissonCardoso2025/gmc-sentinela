@@ -134,6 +134,7 @@ export const OcorrenciaForm = () => {
           if (error) {
             console.error('Error getting address:', error);
             toast.error('Não foi possível obter o endereço, mas suas coordenadas foram salvas');
+            setLocal(`Coordenadas: ${location.latitude}, ${location.longitude}`);
             return;
           }
           
@@ -150,6 +151,8 @@ export const OcorrenciaForm = () => {
           setLocal(`Coordenadas: ${location.latitude}, ${location.longitude}`);
           toast.warning('Localização obtida, mas sem endereço identificável');
         }
+      } else if (locationError) {
+        toast.error(locationError);
       } else {
         toast.error('Não foi possível obter sua localização. Verifique as permissões do navegador.');
       }

@@ -3,30 +3,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from 'date-fns';
+import { DateRange } from "@/components/ui/date-range-picker";
+import { Occurrence } from '@/components/Dashboard/RecentOccurrences';
 
-export type DateRange = '1d' | '7d' | '30d' | 'all' | '3m' | '6m' | '12m';
+export type DateRangeOption = '1d' | '7d' | '30d' | 'all' | '3m' | '6m' | '12m';
 
-export interface Occurrence {
-  id: string;
-  numero: string;
-  data: string;
-  local: string;
-  tipo: string;
-  status: string;
-  descricao: string;
-  created_at?: string;
-  titulo?: string;
-  latitude?: number;
-  longitude?: number;
-}
-
-export const useOccurrenceData = (initialRange: DateRange = '7d') => {
+export const useOccurrenceData = (initialRange: DateRangeOption = '7d') => {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange>(initialRange);
+  const [dateRange, setDateRange] = useState<DateRangeOption>(initialRange);
   const { toast } = useToast();
   
-  const fetchOccurrences = useCallback(async (range: DateRange) => {
+  const fetchOccurrences = useCallback(async (range: DateRangeOption) => {
     setIsLoading(true);
     
     try {
@@ -53,13 +41,13 @@ export const useOccurrenceData = (initialRange: DateRange = '7d') => {
       }
       
       if (data) {
-        // Map tipo as titulo for compatibility
+        // Map the data to match the Occurrence interface
         const mappedData = data.map(item => ({
           ...item,
-          titulo: item.tipo,
+          titulo: item.tipo, // Use tipo as titulo
           // Add default values for latitude and longitude if they don't exist
-          latitude: 0,
-          longitude: 0
+          latitude: item.latitude || 0,
+          longitude: item.longitude || 0
         }));
         setOccurrences(mappedData);
       }

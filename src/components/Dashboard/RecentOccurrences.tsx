@@ -1,20 +1,26 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { subDays } from 'date-fns';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { DateRange as DateRangeType } from "@/components/ui/date-range-picker";
 
-interface Occurrence {
+export interface Occurrence {
   id: string;
   titulo: string;
   tipo: string;
   descricao: string;
   status: string;
   created_at: string;
+  data: string;
+  local: string;
+  numero: string;
+  updated_at?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -39,7 +45,14 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
           .limit(limit);
 
         if (error) throw error;
-        setOccurrences(data || []);
+        
+        // Map the data to add the titulo field
+        const mappedData = data?.map(item => ({
+          ...item,
+          titulo: item.tipo // Use tipo as titulo
+        })) || [];
+        
+        setOccurrences(mappedData);
       } catch (error) {
         console.error('Error fetching occurrences:', error);
         toast({
@@ -113,16 +126,16 @@ const RecentOccurrences: React.FC<RecentOccurrencesProps> = ({ limit = 5 }) => {
   );
 };
 
-export function useOccurrenceData(dateRange: string | DateRange) {
-  const [occurrences, setOccurrences] = React.useState<Occurrence[]>([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
-  const [error, setError] = React.useState<Error | null>(null);
-  const [currentDateRange, setCurrentDateRange] = React.useState<DateRange>({
+export const useOccurrenceData = (dateRange: string | DateRangeType) => {
+  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [currentDateRange, setCurrentDateRange] = useState<DateRangeType>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -133,7 +146,14 @@ export function useOccurrenceData(dateRange: string | DateRange) {
           .order('created_at', { ascending: false });
 
         if (error) throw new Error(error.message);
-        setOccurrences(data || []);
+        
+        // Map the data to add the titulo field
+        const mappedData = data?.map(item => ({
+          ...item,
+          titulo: item.tipo // Use tipo as titulo
+        })) || [];
+        
+        setOccurrences(mappedData);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         console.error("Error fetching occurrence data:", err);
@@ -150,7 +170,8 @@ export function useOccurrenceData(dateRange: string | DateRange) {
     isLoading,
     dateRange: currentDateRange,
     setDateRange: setCurrentDateRange,
+    refetchOccurrences: () => {}, // Add an empty function for now
   };
-}
+};
 
 export default RecentOccurrences;

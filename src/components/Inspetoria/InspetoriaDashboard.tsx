@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { BarChart, FileText, Users, Car, MapPin, AlertTriangle } from "lucide-react";
+import { Users, Car, AlertTriangle } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -64,7 +62,7 @@ const InspetoriaDashboard: React.FC = () => {
   const [availableVehicles, setAvailableVehicles] = useState<number>(0);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [usersData, setUsersData] = useState<any[]>([]);
-	const [vehiclesData, setVehiclesData] = useState<any[]>([]);
+  const [vehiclesData, setVehiclesData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 

@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { DateRange } from "react-day-picker";
+import { DateRange } from "@/components/ui/date-range-picker";
 
 interface ChartProps {
   date: DateRange;

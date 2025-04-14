@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PatrolRouteCard } from './PatrolRouteCard';
 import { WorkScheduleCard } from './WorkScheduleCard';
-import { RecentOccurrences } from './RecentOccurrences';
+import RecentOccurrences from './RecentOccurrences';
 import VehicleList from './VehicleList';
 
 interface PatrolRouteLocation {

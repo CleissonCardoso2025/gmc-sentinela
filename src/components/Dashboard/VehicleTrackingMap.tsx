@@ -1,192 +1,53 @@
-
-import React, { useEffect, useState, useCallback } from 'react';
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useVehicleLocations } from "@/hooks/use-vehicle-locations";
-import VehicleList from "./VehicleList";
-import { useToast } from "@/hooks/use-toast";
-import GoogleMapComponent from '../Map/GoogleMap';
-import { MapMarker } from '@/types/maps';
+import React, { useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import LeafletMap from '@/components/Map/LeafletMap';
 import { useGeolocation } from '@/hooks/use-geolocation';
-import { formatDateBR } from '@/utils/maps-utils';
-import { MapPin } from 'lucide-react';
 
-const VehicleTrackingMap: React.FC = () => {
-  const { vehicles, isLoading: vehiclesLoading, refetchVehicles } = useVehicleLocations();
-  const { toast } = useToast();
-  const [retryCount, setRetryCount] = useState(0);
-  const geolocation = useGeolocation({ enableHighAccuracy: true });
-  const [centered, setCentered] = useState(false);
-  
-  // If failed to load vehicles, retry with exponential backoff
-  useEffect(() => {
-    if (vehiclesLoading && retryCount < 3) {
-      const timeout = setTimeout(() => {
-        console.log(`Retrying vehicle load (attempt ${retryCount + 1})`);
-        setRetryCount(prev => prev + 1);
-        refetchVehicles();
-      }, Math.pow(2, retryCount) * 1000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [vehiclesLoading, retryCount, refetchVehicles]);
-  
-  // Prepare markers for the map
-  const markers: MapMarker[] = vehicles
-    .filter(v => v.latitude && v.longitude)
-    .map(vehicle => ({
-      id: vehicle.id,
-      position: [vehicle.latitude || -23.550520, vehicle.longitude || -46.633308],
-      title: `${vehicle.placa} - ${vehicle.modelo || ""}`,
-      content: `
-        <div>
-          <p>${vehicle.marca || ""} ${vehicle.modelo || ""}</p>
-          ${vehicle.condutor ? `<p>Condutor: ${vehicle.condutor}</p>` : ''}
-          ${vehicle.location_name ? `<p>Local: ${vehicle.location_name}</p>` : ''}
-          <p>Última atualização: ${formatDateBR(vehicle.lastUpdate || '')}</p>
-        </div>
-      `,
-      icon: 'police',
-      lat: vehicle.latitude || -23.550520,
-      lng: vehicle.longitude || -46.633308
-    }));
-  
-  // Add user's location as a marker if available
-  const allMarkers = [...markers];
-  if (geolocation.location.latitude && geolocation.location.longitude) {
-    allMarkers.push({
-      id: 'user-location',
-      position: [geolocation.location.latitude, geolocation.location.longitude],
-      title: 'Sua localização',
-      content: geolocation.location.accuracy 
-        ? `<p>Precisão: ~${Math.round(geolocation.location.accuracy)}m</p>` 
-        : '',
-      icon: 'default',
-      lat: geolocation.location.latitude,
-      lng: geolocation.location.longitude
+interface MapMarker {
+  id: string;
+  position: [number, number];
+  title: string;
+}
+
+const VehicleTrackingMap = () => {
+  const [vehicleLocation, setVehicleLocation] = useState<MapMarker>({
+    id: 'vehicle-1',
+    position: [-23.5505, -46.6333], // Initial vehicle location (São Paulo)
+    title: 'Viatura XYZ-1234',
+  });
+
+  const { location, refreshPosition } = useGeolocation();
+
+  React.useEffect(() => {
+    // Call refreshPosition without arguments
+    refreshPosition();
+  }, [refreshPosition]);
+
+  const updateVehicleLocation = () => {
+    // Simulate vehicle moving to a new location
+    const newLat = vehicleLocation.position[0] + (Math.random() - 0.5) * 0.01;
+    const newLng = vehicleLocation.position[1] + (Math.random() - 0.5) * 0.01;
+
+    setVehicleLocation({
+      ...vehicleLocation,
+      position: [newLat, newLng],
     });
-  }
-  
-  // Calculate center point - prioritize user location if available
-  const calculateCenter = useCallback(() => {
-    if (centered && geolocation.location.latitude && geolocation.location.longitude) {
-      return {
-        lat: geolocation.location.latitude,
-        lng: geolocation.location.longitude
-      };
-    }
-    
-    const validVehicles = vehicles.filter(v => v.latitude && v.longitude);
-    if (validVehicles.length === 0) {
-      // If no vehicles but we have user location, use that
-      if (geolocation.location.latitude && geolocation.location.longitude) {
-        return {
-          lat: geolocation.location.latitude,
-          lng: geolocation.location.longitude
-        };
-      }
-      // Default to São Paulo if no valid coordinates
-      return { lat: -23.550520, lng: -46.633308 };
-    }
-    
-    const sumLat = validVehicles.reduce((sum, v) => sum + (v.latitude || 0), 0);
-    const sumLng = validVehicles.reduce((sum, v) => sum + (v.longitude || 0), 0);
-    
-    return {
-      lat: sumLat / validVehicles.length,
-      lng: sumLng / validVehicles.length
-    };
-  }, [vehicles, geolocation.location.latitude, geolocation.location.longitude, centered]);
-  
-  const handleRefresh = useCallback(() => {
-    refetchVehicles();
-    geolocation.refreshPosition();
-    toast({
-      title: "Atualizando dados",
-      description: "Buscando a localização mais recente das viaturas e sua posição."
-    });
-  }, [refetchVehicles, geolocation, toast]);
-  
-  const handleGetUserLocation = useCallback(() => {
-    if (geolocation.error) {
-      toast({
-        title: "Erro de localização",
-        description: geolocation.error,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    geolocation.refreshPosition();
-    setCentered(true);
-    
-    if (geolocation.location.latitude && geolocation.location.longitude) {
-      toast({
-        title: "Localização encontrada",
-        description: `O mapa foi centralizado na sua localização atual. Precisão: ~${
-          geolocation.location.accuracy ? Math.round(geolocation.location.accuracy) : '?'
-        }m`,
-      });
-    } else {
-      toast({
-        title: "Obtendo localização",
-        description: "Aguarde enquanto obtemos sua localização atual."
-      });
-    }
-  }, [geolocation, toast]);
-  
+  };
+
   return (
-    <Card className="w-full overflow-hidden shadow-md relative animate-fade-up">
-      {vehiclesLoading ? (
-        <div className="w-full h-[300px] md:h-[400px] p-4 flex items-center justify-center">
-          <div className="space-y-4 w-full">
-            <Skeleton className="h-[250px] md:h-[350px] w-full rounded-md" />
-          </div>
-        </div>
-      ) : (
-        <div className="w-full" style={{ position: 'relative', zIndex: 1 }}>
-          <GoogleMapComponent 
-            center={calculateCenter()} 
-            markers={allMarkers}
-            zoom={13}
-            height="h-[300px] md:h-[400px]"
-            markerType="police"
-            showUserLocation={true}
-          />
-          
-          {vehicles.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-80">
-              <p className="text-gray-600 italic">
-                Nenhuma viatura encontrada. Adicione viaturas na seção de Gestão de Viaturas.
-              </p>
-            </div>
-          )}
-          
-          <VehicleList vehicles={vehicles} />
-          
-          <div className="p-4 pt-0 flex flex-wrap space-x-2">
-            <button 
-              onClick={handleGetUserLocation}
-              className="text-xs bg-gcm-600 text-white px-3 py-1 rounded-md hover:bg-gcm-700 transition-colors flex items-center"
-              disabled={geolocation.loading}
-            >
-              <MapPin className="h-3 w-3 mr-1" />
-              {geolocation.loading ? "Localizando..." : "Ir para minha localização"}
-            </button>
-            <button 
-              onClick={handleRefresh}
-              className="text-xs bg-gray-600 text-white px-3 py-1 rounded-md hover:bg-gray-700 transition-colors"
-            >
-              Atualizar dados
-            </button>
-            {geolocation.location.accuracy && (
-              <span className="text-xs text-gray-600 ml-2 flex items-center">
-                Precisão: ~{Math.round(geolocation.location.accuracy)}m
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+    <Card className="w-full">
+      <div className="flex items-center justify-between p-4">
+        <h2 className="text-lg font-semibold">Rastreamento da Viatura</h2>
+        <Button variant="outline" size="sm" onClick={updateVehicleLocation}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Atualizar Localização
+        </Button>
+      </div>
+      <div className="h-[400px]">
+        <LeafletMap markers={[vehicleLocation]} />
+      </div>
     </Card>
   );
 };

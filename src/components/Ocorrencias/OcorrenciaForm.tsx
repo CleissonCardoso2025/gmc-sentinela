@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon, Wand2, Plus, Trash2, Phone, User, Ambulance, ClipboardCheck, ClipboardList, Shield, Locate } from 'lucide-react';
+import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon, Wand2, Plus, Trash2, Phone, User, Ambulance, ClipboardCheck, ClipboardList, Shield, Locate, File, FileImage, Video } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
@@ -40,6 +40,14 @@ interface ProvidenciaTomada {
   checked: boolean;
 }
 
+interface MediaAttachment {
+  id: string;
+  file: File | null;
+  preview: string;
+  type: 'image' | 'document' | 'video';
+  description: string;
+}
+
 export const OcorrenciaForm = () => {
   const [numero, setNumero] = useState('');
   const [tipo, setTipo] = useState<OcorrenciaTipo>('Trânsito');
@@ -55,6 +63,17 @@ export const OcorrenciaForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [isCorrectingText, setIsCorrectingText] = useState(false);
+  
+  const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
+  const [showCameraDialog, setShowCameraDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   
   const { agents, isLoading: agentsLoading, error: agentsError } = useAgentsData();
   const { location, loading: locationLoading, error: locationError, refreshPosition } = useGeolocation();
@@ -87,6 +106,150 @@ export const OcorrenciaForm = () => {
     setData(formattedDate);
     setHora(formattedTime);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [videoStream]);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const preview = e.target?.result as string;
+        const newAttachment: MediaAttachment = {
+          id: `attachment-${Date.now()}`,
+          file,
+          preview,
+          type,
+          description: '',
+        };
+        
+        setAttachments(prev => [...prev, newAttachment]);
+        toast.success(`${type === 'image' ? 'Imagem' : 'Documento'} anexado com sucesso`);
+      };
+      
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true,
+        audio: false
+      });
+      
+      setVideoStream(stream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      setShowCameraDialog(true);
+    } catch (err) {
+      console.error('Erro ao acessar câmera:', err);
+      toast.error('Não foi possível acessar a câmera. Verifique as permissões.');
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+        
+        const imageDataUrl = canvasRef.current.toDataURL('image/png');
+        
+        fetch(imageDataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], `photo-${Date.now()}.png`, { type: 'image/png' });
+            
+            const newAttachment: MediaAttachment = {
+              id: `attachment-${Date.now()}`,
+              file,
+              preview: imageDataUrl,
+              type: 'image',
+              description: 'Foto capturada pela câmera',
+            };
+            
+            setAttachments(prev => [...prev, newAttachment]);
+            toast.success('Foto capturada com sucesso');
+          });
+      }
+    }
+  };
+
+  const startRecording = () => {
+    if (videoStream && videoRef.current) {
+      const mediaRecorder = new MediaRecorder(videoStream);
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setRecordedChunks(prev => [...prev, event.data]);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const file = new File([blob], `video-${Date.now()}.webm`, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(blob);
+        
+        const newAttachment: MediaAttachment = {
+          id: `attachment-${Date.now()}`,
+          file,
+          preview: videoUrl,
+          type: 'video',
+          description: 'Vídeo capturado pela câmera',
+        };
+        
+        setAttachments(prev => [...prev, newAttachment]);
+        setRecordedChunks([]);
+        toast.success('Vídeo gravado com sucesso');
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const closeCamera = () => {
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      setVideoStream(null);
+    }
+    
+    setShowCameraDialog(false);
+    setIsRecording(false);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(attachments.filter(attachment => attachment.id !== id));
+    toast.info('Anexo removido');
+  };
+
+  const updateAttachmentDescription = (id: string, description: string) => {
+    setAttachments(attachments.map(attachment => 
+      attachment.id === id ? { ...attachment, description } : attachment
+    ));
+  };
 
   const handleMapClick = (marker: MapMarker) => {
     setPosition(marker);
@@ -208,6 +371,33 @@ export const OcorrenciaForm = () => {
       
       const dateTime = `${data}T${hora}`;
       
+      const uploadedAttachments = [];
+      
+      if (attachments.length > 0) {
+        for (const attachment of attachments) {
+          if (attachment.file) {
+            const fileExt = attachment.file.name.split('.').pop();
+            const filePath = `${numero}/${attachment.id}.${fileExt}`;
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('ocorrencia-attachments')
+              .upload(filePath, attachment.file);
+              
+            if (uploadError) {
+              console.error('Error uploading file:', uploadError);
+              toast.error(`Erro ao enviar anexo: ${attachment.file.name}`);
+              continue;
+            }
+            
+            uploadedAttachments.push({
+              path: filePath,
+              type: attachment.type,
+              description: attachment.description
+            });
+          }
+        }
+      }
+      
       const ocorrenciaData = {
         numero,
         tipo,
@@ -220,6 +410,7 @@ export const OcorrenciaForm = () => {
         providencias: providencias.filter(p => p.checked).map(p => p.label),
         envolvidos,
         agentes_envolvidos: selectedAgents,
+        attachments: uploadedAttachments,
         created_at: new Date().toISOString()
       };
       
@@ -239,6 +430,7 @@ export const OcorrenciaForm = () => {
       setEnvolvidos([]);
       setProvidencias(providencias.map(p => ({ ...p, checked: false })));
       setSelectedAgents([]);
+      setAttachments([]);
       
       const now = new Date();
       const year = now.getFullYear();
@@ -399,6 +591,171 @@ export const OcorrenciaForm = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-xl flex items-center text-gcm-600">
+                <Paperclip className="mr-2 h-5 w-5" />
+                Anexos da Ocorrência
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gcm-500"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <FileImage className="mr-1 h-4 w-4" />
+                    Anexar Imagem
+                  </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e, 'image')}
+                    accept="image/*"
+                  />
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gcm-500"
+                    onClick={startCamera}
+                  >
+                    <Camera className="mr-1 h-4 w-4" />
+                    Tirar Foto
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gcm-500"
+                    onClick={() => videoInputRef.current?.click()}
+                  >
+                    <Video className="mr-1 h-4 w-4" />
+                    Anexar Vídeo
+                  </Button>
+                  <input
+                    type="file"
+                    ref={videoInputRef}
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e, 'video')}
+                    accept="video/*"
+                  />
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gcm-500"
+                    onClick={() => {
+                      startCamera();
+                    }}
+                  >
+                    <Video className="mr-1 h-4 w-4" />
+                    Gravar Vídeo
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gcm-500"
+                    onClick={() => {
+                      const fileInput = document.createElement('input');
+                      fileInput.type = 'file';
+                      fileInput.accept = '.pdf,.doc,.docx,.txt';
+                      fileInput.onchange = (e) => handleFileSelect(e as React.ChangeEvent<HTMLInputElement>, 'document');
+                      fileInput.click();
+                    }}
+                  >
+                    <File className="mr-1 h-4 w-4" />
+                    Anexar Documento
+                  </Button>
+                </div>
+                
+                {attachments.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    {attachments.map((attachment) => (
+                      <div key={attachment.id} className="border rounded-md p-3 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <Badge variant="outline" className={
+                            attachment.type === 'image' 
+                              ? "bg-blue-50 text-blue-800 border-blue-200" 
+                              : attachment.type === 'video'
+                                ? "bg-purple-50 text-purple-800 border-purple-200"
+                                : "bg-amber-50 text-amber-800 border-amber-200"
+                          }>
+                            {attachment.type === 'image' ? 'Imagem' : attachment.type === 'video' ? 'Vídeo' : 'Documento'}
+                          </Badge>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                            onClick={() => removeAttachment(attachment.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {attachment.type === 'image' && (
+                          <div className="h-32 bg-gray-100 rounded-md overflow-hidden">
+                            <img 
+                              src={attachment.preview} 
+                              alt="Attachment preview" 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        
+                        {attachment.type === 'video' && (
+                          <div className="h-32 bg-gray-100 rounded-md overflow-hidden">
+                            <video 
+                              src={attachment.preview} 
+                              className="w-full h-full object-cover"
+                              controls
+                            />
+                          </div>
+                        )}
+                        
+                        {attachment.type === 'document' && (
+                          <div className="h-32 bg-gray-100 rounded-md flex items-center justify-center">
+                            <File className="h-12 w-12 text-gray-400" />
+                          </div>
+                        )}
+                        
+                        <div className="space-y-1">
+                          <Label htmlFor={`description-${attachment.id}`} className="text-xs">
+                            Descrição
+                          </Label>
+                          <Input
+                            id={`description-${attachment.id}`}
+                            value={attachment.description}
+                            onChange={(e) => updateAttachmentDescription(attachment.id, e.target.value)}
+                            placeholder="Descreva este anexo"
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-md border border-dashed">
+                    <Paperclip className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p>Nenhum anexo adicionado</p>
+                    <p className="text-sm">Clique em um dos botões acima para adicionar fotos, vídeos ou documentos</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl flex items-center text-gcm-600">
                 <ClipboardCheck className="mr-2 h-5 w-5" />
                 Providências Tomadas
               </CardTitle>
@@ -505,6 +862,7 @@ export const OcorrenciaForm = () => {
                 setEnvolvidos([]);
                 setProvidencias(providencias.map(p => ({ ...p, checked: false })));
                 setSelectedAgents([]);
+                setAttachments([]);
               }}
             >
               <X className="mr-2 h-4 w-4" />
@@ -514,25 +872,15 @@ export const OcorrenciaForm = () => {
         </div>
       </div>
 
-      <Dialog open={showMap} onOpenChange={setShowMap}>
-        <DialogContent className="max-w-4xl">
+      <Dialog open={showCameraDialog} onOpenChange={(open) => {
+        if (!open) closeCamera();
+        else setShowCameraDialog(true);
+      }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Selecione a localização da ocorrência</DialogTitle>
+            <DialogTitle>
+              {isRecording ? "Gravando vídeo..." : "Capturar foto/vídeo"}
+            </DialogTitle>
             <DialogDescription>
-              Clique no mapa para marcar o local exato da ocorrência
-            </DialogDescription>
-          </DialogHeader>
-          <div className="h-[500px] w-full">
-            <GoogleMapComponent 
-              markers={position ? [position] : []} 
-              onMapClick={handleMapClick}
-              draggable
-              searchBox
-              showUserLocation
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </form>
-  );
-};
+              {isRecording 
+                ? "Clique em Parar quando terminar

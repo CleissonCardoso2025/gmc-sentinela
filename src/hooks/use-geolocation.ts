@@ -44,7 +44,7 @@ export const useGeolocation = (): UseGeolocationReturn => {
     setError(null);
   }, []);
 
-  const handleError = useCallback((error: any) => {
+  const handleError = useCallback((error: GeolocationPositionError | Error | unknown) => {
     setLoading(false);
     
     let errorMessage = 'Erro desconhecido ao obter localização';
@@ -52,7 +52,7 @@ export const useGeolocation = (): UseGeolocationReturn => {
     if (error instanceof Error) {
       errorMessage = error.message;
     } else if (error && typeof error === 'object' && 'code' in error) {
-      switch (error.code) {
+      switch ((error as GeolocationPositionError).code) {
         case 1:
           errorMessage = 'Permissão de localização negada';
           break;
@@ -63,7 +63,7 @@ export const useGeolocation = (): UseGeolocationReturn => {
           errorMessage = 'Tempo de espera esgotado';
           break;
         default:
-          errorMessage = `Erro de localização: ${error.message || 'Desconhecido'}`;
+          errorMessage = `Erro de localização: ${(error as {message?: string}).message || 'Desconhecido'}`;
       }
     }
     

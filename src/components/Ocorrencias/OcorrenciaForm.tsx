@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { MapPin, Search, FileText, Check, Users, Paperclip, Save, X, Camera, Clock, AlertTriangle, List, MapIcon, Wand2, Plus, Trash2, Phone, User, Ambulance, ClipboardCheck, ClipboardList, Shield, Locate, File, FileImage, Video } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { MapMarker } from '@/types/maps';
 import { supabase } from '@/integrations/supabase/client';
@@ -115,7 +115,7 @@ export const OcorrenciaForm = () => {
     };
   }, [videoStream]);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document' | 'video') => {
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
@@ -132,7 +132,7 @@ export const OcorrenciaForm = () => {
         };
         
         setAttachments(prev => [...prev, newAttachment]);
-        toast.success(`${type === 'image' ? 'Imagem' : 'Documento'} anexado com sucesso`);
+        toast.success(`${type === 'image' ? 'Imagem' : type === 'video' ? 'Vídeo' : 'Documento'} anexado com sucesso`);
       };
       
       reader.readAsDataURL(file);
@@ -883,4 +883,64 @@ export const OcorrenciaForm = () => {
             </DialogTitle>
             <DialogDescription>
               {isRecording 
-                ? "Clique em Parar quando terminar
+                ? "Clique em Parar quando terminar a gravação"
+                : "Use os botões abaixo para capturar uma foto ou gravar um vídeo"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="relative bg-black rounded-md overflow-hidden">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-64 object-cover"
+            />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+          
+          <div className="flex justify-center space-x-4 mt-4">
+            {isRecording ? (
+              <Button 
+                type="button" 
+                onClick={stopRecording}
+                variant="destructive"
+              >
+                <Square className="mr-2 h-4 w-4" />
+                Parar Gravação
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  type="button" 
+                  onClick={capturePhoto}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Tirar Foto
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={startRecording}
+                  variant="secondary"
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  Iniciar Gravação
+                </Button>
+              </>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={closeCamera}
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </form>
+  );
+};

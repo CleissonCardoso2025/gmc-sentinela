@@ -1,47 +1,27 @@
 
 import { MapMarker } from '@/types/maps';
 
-export type OcorrenciaStatus = 'Aberta' | 'Encerrada' | 'Encaminhada' | 'Sob Investigação';
-export type OcorrenciaTipo = 'Trânsito' | 'Crime' | 'Dano ao patrimônio público' | 'Maria da Penha' | 'Apoio a outra instituição' | 'Outros';
-export type VinculoOcorrencia = 'Vítima' | 'Suspeito' | 'Testemunha';
-export type EstadoAparente = 'Lúcido' | 'Alterado' | 'Ferido';
-
-export interface Envolvido {
-  nome: string;
-  apelido?: string;
-  dataNascimento: string;
-  rg: string;
-  cpf: string;
-  endereco: string;
-  telefone: string;
-  vinculo: VinculoOcorrencia;
-  estadoAparente: EstadoAparente;
-}
-
 export interface ProvidenciaTomada {
   id: string;
   label: string;
   checked: boolean;
 }
 
-export interface MediaAttachment {
-  id: string;
-  file: File | null;
-  preview: string;
-  type: 'image' | 'document' | 'video';
-  description: string;
-}
-
-export interface AgentParticipation {
+export interface AgentData {
   id: string;
   name: string;
-  role: string;
-  nome: string;
-  patente: string;
+}
+
+export interface AttachmentFile {
+  id: string;
+  file: File | null;
+  type: string;
+  description: string;
+  preview?: string;
 }
 
 export interface OcorrenciaContextType {
-  // Form data
+  // Form state
   numero: string;
   setNumero: (value: string) => void;
   tipo: string;
@@ -56,49 +36,43 @@ export interface OcorrenciaContextType {
   setData: (value: string) => void;
   hora: string;
   setHora: (value: string) => void;
+  isLoading: boolean;
   
-  // Agents
-  agents: AgentParticipation[];
-  agentsLoading: boolean;
-  agentsError: string | null;
-  selectedAgents: string[];
-  handleAgentSelection: (agentId: string) => void;
+  // Attachments
+  attachments: AttachmentFile[];
+  handleAddAttachment: (file: File, type: string, description: string) => void;
+  handleRemoveAttachment: (id: string) => void;
+  handleUpdateAttachment: (id: string, description: string) => void;
+  resetAttachments: () => void;
   
   // Location
   position: MapMarker | null;
-  setPosition: (position: MapMarker | null) => void;
+  setPosition: React.Dispatch<React.SetStateAction<MapMarker | null>>;
   showMap: boolean;
-  setShowMap: (show: boolean) => void;
+  setShowMap: React.Dispatch<React.SetStateAction<boolean>>;
   handleMapClick: (marker: MapMarker) => void;
   locationLoading: boolean;
-  locationError: string | null;
+  locationError: GeolocationPositionError | null;
   handleGetCurrentLocation: () => Promise<void>;
-  
-  // Text correction
-  isCorrectingText: boolean;
-  handleCorrectText: () => Promise<void>;
-  
-  // Attachments
-  attachments: MediaAttachment[];
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  videoInputRef: React.RefObject<HTMLInputElement>;
-  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document' | 'video') => void;
-  removeAttachment: (id: string) => void;
-  updateAttachmentDescription: (id: string, description: string) => void;
-  handleDocumentSelect: () => void;
-  
-  // Camera
-  showCameraDialog: boolean;
-  setShowCameraDialog: (show: boolean) => void;
-  startCamera: () => void;
-  addAttachment: (attachment: MediaAttachment) => void;
+  resetLocation: () => void;
   
   // Providencias
   providencias: ProvidenciaTomada[];
   handleToggleProvidencia: (id: string) => void;
+  resetProvidencias: () => void;
+  
+  // Text correction
+  isCorrecting: boolean;
+  applyCorrection: () => void;
+  toggleCorrection: () => void;
+  
+  // Agents
+  agents: AgentData[];
+  selectedAgents: string[];
+  handleAgentSelect: (agentId: string) => void;
+  resetAgents: () => void;
   
   // Form actions
   handleSubmit: (e: React.FormEvent) => Promise<void>;
-  isLoading: boolean;
   resetForm: () => void;
 }

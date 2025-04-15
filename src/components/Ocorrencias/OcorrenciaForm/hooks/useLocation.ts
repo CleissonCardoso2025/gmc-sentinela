@@ -37,6 +37,7 @@ export const useLocation = (setLocal: (value: string) => void) => {
         });
 
         try {
+          // Use the geocode edge function to get the address
           const { data, error } = await supabase.functions.invoke('geocode', {
             body: {
               address: `${location.latitude},${location.longitude}`,

@@ -1,306 +1,149 @@
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GoogleMap, LoadScript, Marker, InfoWindow, useJsApiLoader, Circle } from '@react-google-maps/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { MapMarker } from '@/types/maps';
-import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const containerStyle = {
+const mapContainerStyle = {
   width: '100%',
-  height: '100%'
+  height: '100%',
 };
 
-// Default center (São Paulo, Brazil)
-const defaultCenter = {
-  lat: -23.550520,
-  lng: -46.633308
-};
-
-interface GoogleMapComponentProps {
-  center?: google.maps.LatLngLiteral;
+export interface GoogleMapComponentProps {
   markers?: MapMarker[];
+  center?: [number, number];
   zoom?: number;
-  height?: string;
   className?: string;
-  onMapClick?: (marker: MapMarker) => void;
-  markerType?: 'default' | 'police' | 'incident';
   showUserLocation?: boolean;
   draggable?: boolean;
-  searchBox?: boolean;
+  onClick?: (marker: MapMarker) => void;
 }
 
-// Optimize map loading with useJsApiLoader
-const MapWrapper: React.FC<GoogleMapComponentProps> = (props) => {
-  const [apiKey, setApiKey] = useState<string>('');
-  
-  useEffect(() => {
-    async function fetchApiKey() {
-      try {
-        const { data, error } = await supabase.functions.invoke('geocode', {
-          body: { getApiKey: true }
-        });
-        
-        if (error) {
-          console.error('Error fetching API key:', error);
-          return;
-        }
-        
-        if (data && data.apiKey) {
-          setApiKey(data.apiKey);
-        }
-      } catch (error) {
-        console.error('Failed to fetch Google Maps API key:', error);
-      }
-    }
-    
-    fetchApiKey();
-  }, []);
-  
-  if (!apiKey) {
-    return (
-      <div className={`${props.height} w-full ${props.className} flex items-center justify-center bg-gray-100`}>
-        <p className="text-gray-500">Carregando mapa...</p>
-      </div>
-    );
-  }
-  
-  return (
-    <LoadScript googleMapsApiKey={apiKey} loadingElement={<div className="h-full w-full flex items-center justify-center"><p>Carregando Google Maps...</p></div>}>
-      <GoogleMapComponent {...props} />
-    </LoadScript>
-  );
-};
-
 const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
-  center,
   markers = [],
+  center = [-23.5505, -46.6333], // Default to São Paulo
   zoom = 12,
-  height = 'h-[400px]',
   className = '',
-  onMapClick,
-  markerType = 'default',
   showUserLocation = false,
   draggable = false,
-  searchBox = false
+  onClick,
 }) => {
-  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(center || defaultCenter);
-  const [mapZoom, setMapZoom] = useState<number>(zoom);
-  const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
-  
-  // Update map center when the center prop changes
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+
   useEffect(() => {
-    if (center) {
-      setMapCenter(center);
-    }
-  }, [center]);
-  
-  // Update map zoom when the zoom prop changes
-  useEffect(() => {
-    setMapZoom(zoom);
-  }, [zoom]);
-  
-  // Get user's location if showUserLocation is true
-  useEffect(() => {
-    if (showUserLocation && navigator.geolocation) {
-      const options = {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      };
-      
-      const successCallback = (position: GeolocationPosition) => {
-        const userPos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        
-        setUserLocation(userPos);
-        setLocationAccuracy(position.coords.accuracy);
-        console.log("User location set:", userPos, "Accuracy:", position.coords.accuracy);
-        
-        // If no center is provided and we have user location, center the map on user
-        if (!center && mapRef.current) {
-          mapRef.current.panTo(userPos);
-          setMapCenter(userPos);
+    if (showUserLocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserPosition([position.coords.latitude, position.coords.longitude]);
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
         }
-      };
-      
-      const errorCallback = (error: GeolocationPositionError) => {
-        console.error("Error getting user location:", error.message);
-      };
-      
-      const watchId = navigator.geolocation.watchPosition(
-        successCallback,
-        errorCallback,
-        options
       );
-      
-      return () => {
-        navigator.geolocation.clearWatch(watchId);
-      };
     }
-  }, [showUserLocation, center]);
-  
-  // Handle map click event
-  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-    if (onMapClick && e.latLng) {
-      const lat = e.latLng.lat();
-      const lng = e.latLng.lng();
+  }, [showUserLocation]);
+
+  const onLoad = React.useCallback(function callback(map: google.maps.Map) {
+    geocoderRef.current = new google.maps.Geocoder();
+    setMap(map);
+  }, []);
+
+  const onUnmount = React.useCallback(function callback() {
+    setMap(null);
+  }, []);
+
+  const handleMapClick = async (e: google.maps.MapMouseEvent) => {
+    if (!onClick || !e.latLng || !geocoderRef.current) return;
+    
+    const lat = e.latLng.lat();
+    const lng = e.latLng.lng();
+    
+    try {
+      const response = await geocoderRef.current.geocode({
+        location: { lat, lng }
+      });
       
-      // Create a MapMarker with the required fields
+      const address = response.results[0]?.formatted_address || 'Endereço não identificado';
+      
       const newMarker: MapMarker = {
-        id: Date.now().toString(),
+        id: `marker-${Date.now()}`,
         position: [lat, lng],
-        title: 'Nova Localização',
+        title: address,
         lat,
         lng,
-        address: 'Endereço pendente...' // Default address
+        address
       };
       
-      // If we have a searchBox, we can try to get the address
-      if (window.google && window.google.maps && window.google.maps.Geocoder) {
-        const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode(
-          { location: { lat, lng } },
-          (results, status) => {
-            if (status === "OK" && results && results[0]) {
-              newMarker.address = results[0].formatted_address;
-            }
-            onMapClick(newMarker);
-          }
-        );
-      } else {
-        onMapClick(newMarker);
-      }
-    }
-  }, [onMapClick]);
-  
-  // Handle map load
-  const onLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map;
-    console.log("Map loaded successfully");
-  }, []);
-  
-  // Handle map unmount
-  const onUnmount = useCallback(() => {
-    mapRef.current = null;
-  }, []);
-  
-  // Define marker icons based on type
-  const getMarkerIcon = (type?: string) => {
-    const iconType = type || markerType;
-    
-    switch (iconType) {
-      case 'police':
-        return {
-          url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-          scaledSize: new window.google.maps.Size(40, 40)
-        };
-      case 'incident':
-        return {
-          url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          scaledSize: new window.google.maps.Size(40, 40)
-        };
-      default:
-        return {
-          url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-          scaledSize: new window.google.maps.Size(40, 40)
-        };
+      onClick(newMarker);
+    } catch (error) {
+      console.error('Error in geocoding:', error);
+      
+      const newMarker: MapMarker = {
+        id: `marker-${Date.now()}`,
+        position: [lat, lng],
+        title: 'Localização selecionada',
+        lat,
+        lng,
+        address: `Coordenadas: ${lat}, ${lng}`
+      };
+      
+      onClick(newMarker);
     }
   };
-  
-  // Add user location circle to show accuracy radius
-  const renderUserLocationMarker = () => {
-    if (!userLocation || !window.google) return null;
-    
-    return (
-      <>
-        <Marker
-          position={userLocation}
-          icon={{
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeColor: "white",
-            strokeWeight: 2,
-          }}
-          zIndex={1000}
-          title="Sua localização"
-        />
-        {locationAccuracy && (
-          <Circle
-            center={userLocation}
-            radius={locationAccuracy}
-            options={{
-              strokeColor: "#4285F4",
-              strokeOpacity: 0.5,
-              strokeWeight: 1,
-              fillColor: "#4285F4",
-              fillOpacity: 0.15,
-            }}
-          />
-        )}
-      </>
-    );
-  };
-  
+
+  if (!isLoaded) {
+    return <Skeleton className={`w-full h-full min-h-[200px] rounded-md ${className}`} />;
+  }
+
   return (
-    <div className={`${height} w-full ${className}`}>
+    <div className={`relative w-full h-full min-h-[200px] ${className}`}>
       <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={mapCenter}
-        zoom={mapZoom}
-        options={{
-          streetViewControl: false,
-          mapTypeControl: true,
-          fullscreenControl: true,
-          zoomControl: true,
-          disableDefaultUI: false,
-          clickableIcons: false,
-          draggableCursor: draggable ? 'crosshair' : 'default'
-        }}
-        onClick={handleMapClick}
+        mapContainerStyle={mapContainerStyle}
+        center={{ lat: center[0], lng: center[1] }}
+        zoom={zoom}
         onLoad={onLoad}
         onUnmount={onUnmount}
+        onClick={handleMapClick}
+        options={{
+          fullscreenControl: false,
+          mapTypeControl: false,
+          streetViewControl: false,
+          zoomControl: true,
+        }}
       >
         {markers.map((marker) => (
           <Marker
             key={marker.id}
-            position={{
-              lat: marker.position[0],
-              lng: marker.position[1]
-            }}
-            icon={window.google && getMarkerIcon(marker.icon)}
-            onClick={() => setSelectedMarker(marker)}
+            position={{ lat: marker.lat, lng: marker.lng }}
+            title={marker.title}
+            draggable={draggable}
           />
         ))}
         
-        {showUserLocation && userLocation && renderUserLocationMarker()}
-        
-        {selectedMarker && (
-          <InfoWindow
-            position={{
-              lat: selectedMarker.position[0],
-              lng: selectedMarker.position[1]
+        {userPosition && (
+          <Marker
+            position={{ lat: userPosition[0], lng: userPosition[1] }}
+            title="Sua localização"
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#4285F4',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
             }}
-            onCloseClick={() => setSelectedMarker(null)}
-          >
-            <div className="p-2">
-              <h3 className="font-semibold text-gray-800">{selectedMarker.title}</h3>
-              {selectedMarker.content && (
-                <div className="text-sm text-gray-600 mt-1" 
-                  dangerouslySetInnerHTML={{ __html: selectedMarker.content }} 
-                />
-              )}
-            </div>
-          </InfoWindow>
+          />
         )}
       </GoogleMap>
     </div>
   );
 };
 
-export default MapWrapper;
+export default GoogleMapComponent;

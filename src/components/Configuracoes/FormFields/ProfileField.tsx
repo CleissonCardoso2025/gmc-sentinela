@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface ProfileFieldProps {
   value: string;
-  onChange: (value: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente') => void;
+  onChange: (value: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente' | 'Motorista' | 'Monitor') => void;
   readOnly?: boolean;
 }
 
@@ -31,6 +31,8 @@ const ProfileField: React.FC<ProfileFieldProps> = ({
           <SelectItem value="Supervisor">Supervisor</SelectItem>
           <SelectItem value="Corregedor">Corregedor</SelectItem>
           <SelectItem value="Agente">Agente</SelectItem>
+          <SelectItem value="Motorista">Motorista</SelectItem>
+          <SelectItem value="Monitor">Monitor</SelectItem>
         </SelectContent>
       </Select>
     </div>

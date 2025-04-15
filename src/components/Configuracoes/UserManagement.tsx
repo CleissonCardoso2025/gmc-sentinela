@@ -1,4 +1,3 @@
-
 import React from 'react';
 import UserTable from './UserTable';
 import { Dialog } from '@/components/ui/dialog';
@@ -49,7 +48,6 @@ const UserManagement = () => {
     refetchUsers
   } = useUserManagement();
 
-  // Get the user profile from localStorage - this would normally come from an auth context
   const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
   const userEmail = localStorage.getItem('userEmail');
   const hasAccess = userProfile === 'Inspetor' || userEmail === 'gcmribeiradopombal@hotmail.com';
@@ -105,6 +103,8 @@ const UserManagement = () => {
                       <SelectItem value="Supervisor">Supervisor</SelectItem>
                       <SelectItem value="Corregedor">Corregedor</SelectItem>
                       <SelectItem value="Agente">Agente</SelectItem>
+                      <SelectItem value="Motorista">Motorista</SelectItem>
+                      <SelectItem value="Monitor">Monitor</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -141,7 +141,6 @@ const UserManagement = () => {
         isLoading={isLoading}
       />
 
-      {/* User Form Dialog */}
       <UserFormDialog
         isOpen={showUserDialog}
         onOpenChange={setShowUserDialog}
@@ -150,7 +149,6 @@ const UserManagement = () => {
         onCancel={handleCloseUserDialog}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

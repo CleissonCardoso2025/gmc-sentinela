@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, MapPin, Locate, Wand2 } from 'lucide-react';
+import { FileText, MapPin, Locate, Wand2, AlertTriangle } from 'lucide-react';
 import { useOcorrenciaForm } from '../OcorrenciaFormContext';
 
 const InformacoesGerais = () => {
@@ -77,7 +76,7 @@ const InformacoesGerais = () => {
             </Select>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="data">Data</Label>
@@ -98,7 +97,7 @@ const InformacoesGerais = () => {
             />
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label htmlFor="local">Local</Label>
@@ -134,11 +133,12 @@ const InformacoesGerais = () => {
           />
           {locationError && (
             <p className="text-sm text-red-500 mt-1 flex items-center">
-              {locationError}
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              {typeof locationError === 'string' ? locationError : locationError.message}
             </p>
           )}
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="descricao">Descrição</Label>
           <Textarea

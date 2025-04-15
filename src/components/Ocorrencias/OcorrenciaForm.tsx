@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -156,12 +155,11 @@ export const OcorrenciaForm = () => {
             const fileName = `photo-${Date.now()}.png`;
             const fileType = 'image/png';
             
-            // Fix: Create File object properly
             const file = new File([blob], fileName, { type: fileType });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
-              file: file,
+              file,
               preview: imageDataUrl,
               type: 'image',
               description: 'Foto capturada pela câmera',
@@ -235,13 +233,11 @@ export const OcorrenciaForm = () => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
-      // The mediaRecorder.onstop handler is triggered when recording stops
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const fileName = `video-${Date.now()}.webm`;
         const fileType = 'video/webm';
         
-        // Fix: Create File object properly
         const file = new File([blob], fileName, { type: fileType });
         
         const videoUrl = URL.createObjectURL(blob);
@@ -523,7 +519,7 @@ export const OcorrenciaForm = () => {
                       <SelectItem value="Crime">Crime</SelectItem>
                       <SelectItem value="Dano ao patrimônio público">Dano ao patrimônio público</SelectItem>
                       <SelectItem value="Maria da Penha">Maria da Penha</SelectItem>
-                      <SelectItem value="Apoio a outra instituição">Apoio a outra instituição</SelectItem>
+                      <SelectItem value="Apoio a outra instituição">Apoio a outra instituiç��o</SelectItem>
                       <SelectItem value="Outros">Outros</SelectItem>
                     </SelectContent>
                   </Select>
@@ -906,7 +902,6 @@ export const OcorrenciaForm = () => {
         </div>
       </div>
 
-      {/* Camera Dialog */}
       <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -954,7 +949,6 @@ export const OcorrenciaForm = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Map Dialog */}
       {showMap && (
         <Dialog open={showMap} onOpenChange={setShowMap}>
           <DialogContent className="sm:max-w-[600px]">

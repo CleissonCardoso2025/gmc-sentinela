@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -155,7 +154,6 @@ export const OcorrenciaForm = () => {
           .then(blob => {
             const fileName = `photo-${Date.now()}.png`;
             
-            // Fix: Create File object with the correct constructor syntax
             const file = new File([blob], fileName, { type: 'image/png' });
             
             const newAttachment: MediaAttachment = {
@@ -238,7 +236,6 @@ export const OcorrenciaForm = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const fileName = `video-${Date.now()}.webm`;
         
-        // Fix: Create File object with the correct constructor syntax
         const file = new File([blob], fileName, { type: 'video/webm' });
         
         const videoUrl = URL.createObjectURL(blob);

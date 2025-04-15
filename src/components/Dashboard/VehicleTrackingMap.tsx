@@ -48,6 +48,7 @@ const VehicleTrackingMap = () => {
         <LeafletMap 
           markers={[vehicleLocation]} 
           center={vehicleLocation.position}
+          zoom={13}
         />
       </div>
     </Card>

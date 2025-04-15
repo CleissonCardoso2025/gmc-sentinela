@@ -139,26 +139,6 @@ export const OcorrenciaForm = () => {
     }
   };
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true,
-        audio: false
-      });
-      
-      setVideoStream(stream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      
-      setShowCameraDialog(true);
-    } catch (err) {
-      console.error('Erro ao acessar câmera:', err);
-      toast.error('Não foi possível acessar a câmera. Verifique as permissões.');
-    }
-  };
-
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext('2d');
@@ -174,11 +154,14 @@ export const OcorrenciaForm = () => {
           .then(blob => {
             const fileName = `photo-${Date.now()}.png`;
             const fileType = 'image/png';
-            const file = new File([blob], fileName, { type: fileType });
+            
+            // Create file with a Blob and use a proper constructor
+            const file = new Blob([blob], { type: fileType });
+            const fileObj = new File([file], fileName, { type: fileType });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
-              file,
+              file: fileObj,
               preview: imageDataUrl,
               type: 'image',
               description: 'Foto capturada pela câmera',
@@ -206,13 +189,12 @@ export const OcorrenciaForm = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const fileName = `video-${Date.now()}.webm`;
         const fileType = 'video/webm';
-        const file = new File([blob], fileName, { type: fileType });
         
         const videoUrl = URL.createObjectURL(blob);
         
         const newAttachment: MediaAttachment = {
           id: `attachment-${Date.now()}`,
-          file,
+          file: null,
           preview: videoUrl,
           type: 'video',
           description: 'Vídeo capturado pela câmera',
@@ -232,6 +214,30 @@ export const OcorrenciaForm = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
+      // The mediaRecorder.onstop handler is triggered when recording stops
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const fileName = `video-${Date.now()}.webm`;
+        const fileType = 'video/webm';
+        
+        // Create file with a Blob and use a proper constructor
+        const fileObj = new File([blob], fileName, { type: fileType });
+        
+        const videoUrl = URL.createObjectURL(blob);
+        
+        const newAttachment: MediaAttachment = {
+          id: `attachment-${Date.now()}`,
+          file: fileObj,
+          preview: videoUrl,
+          type: 'video',
+          description: 'Vídeo capturado pela câmera',
+        };
+        
+        setAttachments(prev => [...prev, newAttachment]);
+        setRecordedChunks([]);
+        toast.success('Vídeo gravado com sucesso');
+      };
     }
   };
 
@@ -870,87 +876,3 @@ export const OcorrenciaForm = () => {
                 setDescricao('');
                 setPosition(null);
                 setEnvolvidos([]);
-                setProvidencias(providencias.map(p => ({ ...p, checked: false })));
-                setSelectedAgents([]);
-                setAttachments([]);
-              }}
-            >
-              <X className="mr-2 h-4 w-4" />
-              Limpar Formulário
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <Dialog open={showCameraDialog} onOpenChange={(open) => {
-        if (!open) closeCamera();
-        else setShowCameraDialog(true);
-      }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {isRecording ? "Gravando vídeo..." : "Capturar foto/vídeo"}
-            </DialogTitle>
-            <DialogDescription>
-              {isRecording 
-                ? "Clique em Parar quando terminar a gravação"
-                : "Use os botões abaixo para capturar uma foto ou gravar um vídeo"}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="relative bg-black rounded-md overflow-hidden">
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              muted 
-              className="w-full h-64 object-cover"
-            />
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-          
-          <div className="flex justify-center space-x-4 mt-4">
-            {isRecording ? (
-              <Button 
-                type="button" 
-                onClick={stopRecording}
-                variant="destructive"
-              >
-                <Square className="mr-2 h-4 w-4" />
-                Parar Gravação
-              </Button>
-            ) : (
-              <>
-                <Button 
-                  type="button" 
-                  onClick={capturePhoto}
-                >
-                  <Camera className="mr-2 h-4 w-4" />
-                  Tirar Foto
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={startRecording}
-                  variant="secondary"
-                >
-                  <Video className="mr-2 h-4 w-4" />
-                  Iniciar Gravação
-                </Button>
-              </>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={closeCamera}
-            >
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </form>
-  );
-};

@@ -73,7 +73,7 @@ export interface OcorrenciaContextType {
   setShowMap: (value: boolean) => void;
   handleMapClick: (marker: MapMarker) => void;
   locationLoading: boolean;
-  locationError: GeolocationPositionError | null;
+  locationError: GeolocationPositionError | null;  // Updated to GeolocationPositionError | null
   handleGetCurrentLocation: () => Promise<void>;
   resetLocation: () => void;
   

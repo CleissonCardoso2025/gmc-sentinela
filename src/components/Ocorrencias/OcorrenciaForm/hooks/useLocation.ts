@@ -1,99 +1,98 @@
 
-import { useState } from 'react';
-import { useGeolocation } from '@/hooks/use-geolocation';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 import { MapMarker } from '@/types/maps';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useLocation = (setLocal: (value: string) => void) => {
   const [position, setPosition] = useState<MapMarker | null>(null);
   const [showMap, setShowMap] = useState(false);
-  const { location, loading: locationLoading, error: locationError, refreshPosition } = useGeolocation();
-  const { toast } = useToast();
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<GeolocationPositionError | null>(null);
 
   const handleMapClick = (marker: MapMarker) => {
     setPosition(marker);
-    setLocal(marker.address || 'Endereço não identificado');
+    
+    // Close map after selection
     setShowMap(false);
+    
+    // Reverse geocode the location if possible
+    reverseGeocode(marker.lat, marker.lng);
+  };
+
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('geocode', {
+        body: { lat, lng, mode: 'reverse' }
+      });
+      
+      if (error) throw error;
+      
+      if (data && data.address) {
+        setLocal(data.address);
+      }
+    } catch (error) {
+      console.error('Error getting address:', error);
+      // Still set coordinates as fallback
+      setLocal(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`);
+    }
   };
 
   const handleGetCurrentLocation = async () => {
+    setLocationLoading(true);
+    setLocationError(null);
+    
+    if (!navigator.geolocation) {
+      toast.error('Geolocalização não é suportada pelo seu navegador');
+      setLocationLoading(false);
+      return;
+    }
+    
     try {
-      toast({
-        title: "Buscando localização",
-        description: "Obtendo sua localização atual...",
-      });
-
-      refreshPosition();
-
-      if (location.latitude && location.longitude) {
-        setPosition({
-          id: 'current-location',
-          position: [location.latitude, location.longitude],
-          title: 'Localização Atual',
-          lat: location.latitude,
-          lng: location.longitude,
-          address: 'Obtendo endereço...'
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
         });
-
-        try {
-          // Use the geocode edge function to get the address
-          const { data, error } = await supabase.functions.invoke('geocode', {
-            body: {
-              address: `${location.latitude},${location.longitude}`,
-              reverse: true
-            }
-          });
-
-          if (error) {
-            console.error('Error getting address:', error);
-            toast({
-              title: "Erro ao obter endereço",
-              description: "Suas coordenadas foram salvas, mas não foi possível obter o endereço completo.",
-              variant: "destructive"
-            });
-            setLocal(`Coordenadas: ${location.latitude}, ${location.longitude}`);
-            return;
-          }
-
-          if (data && data.results && data.results.length > 0) {
-            const address = data.results[0].formatted_address;
-            setLocal(address);
-            toast({
-              title: "Localização obtida",
-              description: "Endereço encontrado com sucesso."
-            });
-          } else {
-            setLocal(`Coordenadas: ${location.latitude}, ${location.longitude}`);
-            toast({
-              title: "Localização obtida",
-              description: "Endereço não identificado, apenas coordenadas.",
-              variant: "destructive"
-            });
-          }
-        } catch (error) {
-          console.error('Error in reverse geocoding:', error);
-          setLocal(`Coordenadas: ${location.latitude}, ${location.longitude}`);
-          toast({
-            title: "Localização obtida",
-            description: "Endereço não identificado, apenas coordenadas.",
-            variant: "destructive"
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error getting current location:', error);
-      toast({
-        title: "Erro de localização",
-        description: "Não foi possível obter sua localização. Verifique as permissões do navegador.",
-        variant: "destructive"
       });
+      
+      const { latitude, longitude } = position.coords;
+      
+      setPosition({
+        lat: latitude,
+        lng: longitude
+      });
+      
+      await reverseGeocode(latitude, longitude);
+      
+    } catch (error) {
+      console.error('Error getting location:', error);
+      if (error instanceof GeolocationPositionError) {
+        setLocationError(error);
+        
+        let errorMessage = 'Erro ao obter localização';
+        if (error.code === 1) {
+          errorMessage = 'Permissão para acessar a localização foi negada';
+        } else if (error.code === 2) {
+          errorMessage = 'Localização indisponível';
+        } else if (error.code === 3) {
+          errorMessage = 'Tempo esgotado ao obter localização';
+        }
+        
+        toast.error(errorMessage);
+      } else {
+        toast.error('Erro ao obter localização');
+      }
+    } finally {
+      setLocationLoading(false);
     }
   };
 
   const resetLocation = () => {
     setPosition(null);
     setShowMap(false);
+    setLocationError(null);
   };
 
   return {

@@ -1,7 +1,10 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { OcorrenciaContextType } from './types';
 import { useOcorrenciaForm as useOcorrenciaFormHook } from '../OcorrenciaForm';
+
+// ✅ Atualização do tipo do contexto para garantir compatibilidade com string | null
+// Verifique se no seu arquivo types.ts a propriedade locationError está assim:
+// locationError: string | null;
 
 const OcorrenciaContext = createContext<OcorrenciaContextType | undefined>(undefined);
 

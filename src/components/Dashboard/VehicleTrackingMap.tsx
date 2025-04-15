@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import LeafletMap from '@/components/Map/LeafletMap';
+import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { MapMarker } from '@/types/maps';
 
@@ -45,7 +45,7 @@ const VehicleTrackingMap = () => {
         </Button>
       </div>
       <div className="h-[400px]">
-        <LeafletMap 
+        <GoogleMapComponent 
           markers={[vehicleLocation]} 
           center={vehicleLocation.position}
           zoom={13}

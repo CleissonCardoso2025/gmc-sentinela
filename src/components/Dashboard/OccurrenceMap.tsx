@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import LeafletMap from '@/components/Map/LeafletMap';
+import GoogleMapComponent from '@/components/Map/GoogleMap';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { MapMarker } from '@/types/maps';
 
@@ -21,7 +21,7 @@ const OccurrenceMap: React.FC<OccurrenceMapProps> = ({ latitude, longitude }) =>
     ? [latitude, longitude]
     : (location.latitude && location.longitude)
       ? [location.latitude, location.longitude]
-      : [51.505, -0.09]; // Default London coordinates
+      : [-23.5505, -46.6333]; // Default São Paulo coordinates
 
   const markers: MapMarker[] = (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null)
     ? [{ 
@@ -46,7 +46,7 @@ const OccurrenceMap: React.FC<OccurrenceMapProps> = ({ latitude, longitude }) =>
       <div className="p-4">
         <h2 className="text-lg font-semibold mb-2">Localização da Ocorrência</h2>
         <div style={{ height: '300px', width: '100%' }}>
-          <LeafletMap markers={markers} center={mapCenter} zoom={13} />
+          <GoogleMapComponent markers={markers} center={mapCenter} zoom={13} />
         </div>
       </div>
     </Card>

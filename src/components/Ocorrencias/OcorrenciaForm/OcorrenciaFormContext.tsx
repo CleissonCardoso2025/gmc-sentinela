@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { OcorrenciaContextType } from './types';
-import { useOcorrenciaForm as useOcorrenciaFormHook } from './hooks/useOcorrenciaForm';
+import { useOcorrenciaForm as useOcorrenciaFormHook } from '../OcorrenciaForm';
 
 const OcorrenciaContext = createContext<OcorrenciaContextType | undefined>(undefined);
 

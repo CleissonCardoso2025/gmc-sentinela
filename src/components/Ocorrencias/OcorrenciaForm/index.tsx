@@ -1,12 +1,5 @@
 
-import React from 'react';
-import { OcorrenciaFormProvider } from './OcorrenciaFormContext';
-import OcorrenciaFormContainer from './OcorrenciaFormContainer';
+import { OcorrenciaForm } from '../OcorrenciaForm';
 
-export const OcorrenciaForm = () => {
-  return (
-    <OcorrenciaFormProvider>
-      <OcorrenciaFormContainer />
-    </OcorrenciaFormProvider>
-  );
-};
+// Re-export the OcorrenciaForm component
+export { OcorrenciaForm };

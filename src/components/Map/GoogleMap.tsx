@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapMarker } from '@/types/maps';
@@ -42,10 +41,38 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  // Fetch the Google Maps API key from Supabase
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      try {
+        // Fetch API key from Supabase Edge Function
+        const { data, error } = await supabase.functions.invoke('get-maps-api-key');
+          
+        if (error) {
+          throw new Error(`Failed to fetch API key: ${error.message}`);
+        }
+        
+        if (!data || !data.apiKey) {
+          throw new Error('Google Maps API key not found');
+        }
+
+        setApiKey(data.apiKey);
+      } catch (error) {
+        console.error('Error fetching API key:', error);
+        setApiError('Failed to load Google Maps. Please try again later.');
+      }
+    };
+    
+    fetchApiKey();
+  }, []);
 
   // Load the Google Maps script with the API key
   useEffect(() => {
-    const loadGoogleMapsScript = async () => {
+    if (!apiKey) return; // Wait until we have the API key
+    
+    const loadGoogleMapsScript = () => {
       // If script is already loaded or loading, don't proceed
       if (scriptCache.loaded || scriptCache.loading) {
         if (scriptCache.loaded) {
@@ -59,19 +86,6 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
 
       try {
         scriptCache.loading = true;
-        
-        // Fetch API key from Supabase Edge Function
-        const { data, error } = await supabase.functions.invoke('get-maps-api-key');
-          
-        if (error) {
-          throw new Error(`Failed to fetch API key: ${error.message}`);
-        }
-        
-        if (!data || !data.apiKey) {
-          throw new Error('Google Maps API key not found');
-        }
-
-        const apiKey = data.apiKey;
         
         // Create and load the script with optimized parameters
         const script = document.createElement('script');
@@ -112,7 +126,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
       // Cleanup function - but don't remove the script
       // as other components might be using it
     };
-  }, []);
+  }, [apiKey]);
 
   // Handle user location
   useEffect(() => {
@@ -252,7 +266,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     );
   }
 
-  if (!isScriptLoaded || !isMapReady) {
+  if (!apiKey || !isScriptLoaded || !isMapReady) {
     return <Skeleton className={`w-full h-full min-h-[200px] rounded-md ${className}`} />;
   }
 

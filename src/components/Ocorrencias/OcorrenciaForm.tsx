@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -159,7 +160,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       numero,
       tipo,
       status,
-      data: new Date(`${data}T${hora}:00`).toISOString(), // ✅ Fixed date format
+      data: new Date(`${data}T${hora}:00`).toISOString(),
       local,
       descricao,
       latitude: locationHook.position?.lat,
@@ -184,9 +185,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     setLocal('');
     setDescricao('');
     locationHook.setPosition(null);
-    // setEnvolvidos([]); // removido pois não existe mais
-    providenciasHook.setProvidencias(providenciasHook.providencias.map(p => ({ ...p, checked: false })));
-    agentsHook.setSelectedAgents([]);
+    providenciasHook.resetProvidencias(); // Fixed: using resetProvidencias instead of setProvidencias
+    agentsHook.resetAgents(); // Fixed: using resetAgents instead of setSelectedAgents
     resetAttachments();
 
     const now = new Date();
@@ -302,3 +302,18 @@ const handleSubmit = async (e: React.FormEvent) => {
     resetForm
   };
 };
+
+// Create and export the OcorrenciaForm component for use in pages/Ocorrencias.tsx
+export const OcorrenciaForm = () => {
+  return (
+    <div className="ocorrencia-form-wrapper">
+      <OcorrenciaFormProvider>
+        <OcorrenciaFormContainer />
+      </OcorrenciaFormProvider>
+    </div>
+  );
+};
+
+// Import needed components for the OcorrenciaForm
+import { OcorrenciaFormProvider } from './OcorrenciaForm/OcorrenciaFormContext';
+import OcorrenciaFormContainer from './OcorrenciaForm/OcorrenciaFormContainer';

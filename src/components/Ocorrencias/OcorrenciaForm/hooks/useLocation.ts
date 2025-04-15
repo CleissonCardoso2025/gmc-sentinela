@@ -59,7 +59,11 @@ export const useLocation = (setLocal: (value: string) => void) => {
       
       const { latitude, longitude } = position.coords;
       
+      // Fix: Create a proper MapMarker object instead of just {lat, lng}
       setPosition({
+        id: `current-location-${Date.now()}`,
+        position: [latitude, longitude],
+        title: 'Localização atual',
         lat: latitude,
         lng: longitude
       });

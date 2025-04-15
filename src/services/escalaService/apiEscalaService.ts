@@ -25,7 +25,12 @@ export const getEscalaItems = async (): Promise<EscalaItem[]> => {
       periodo: item.periodo,
       agent: item.agent,
       role: item.role,
-      schedule: item.schedule as ScheduleDay[],
+      // Fix: Properly type cast the schedule data
+      schedule: (item.schedule as any[] || []).map(s => ({
+        day: s.day,
+        date: s.date,
+        active: s.active
+      })) as ScheduleDay[],
       created_at: item.created_at,
       updated_at: item.updated_at
     }));
@@ -134,7 +139,12 @@ export const getEscalaItemById = async (id: string): Promise<EscalaItem | null> 
       periodo: data.periodo,
       agent: data.agent,
       role: data.role,
-      schedule: data.schedule as ScheduleDay[],
+      // Fix: Properly type cast the schedule data
+      schedule: (data.schedule as any[] || []).map(s => ({
+        day: s.day,
+        date: s.date,
+        active: s.active
+      })) as ScheduleDay[],
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -158,7 +168,7 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
         periodo: escalaItem.periodo,
         agent: escalaItem.agent,
         role: escalaItem.role,
-        schedule: escalaItem.schedule as unknown as any
+        schedule: escalaItem.schedule
       }])
       .select()
       .single();
@@ -179,7 +189,12 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
       periodo: data.periodo,
       agent: data.agent,
       role: data.role,
-      schedule: data.schedule as ScheduleDay[],
+      // Fix: Properly type cast the schedule data
+      schedule: (data.schedule as any[] || []).map(s => ({
+        day: s.day,
+        date: s.date,
+        active: s.active
+      })) as ScheduleDay[],
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -203,7 +218,7 @@ export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaIt
         periodo: escalaItem.periodo,
         agent: escalaItem.agent,
         role: escalaItem.role,
-        schedule: escalaItem.schedule as unknown as any
+        schedule: escalaItem.schedule
       })
       .eq('id', escalaItem.id)
       .select()
@@ -225,7 +240,12 @@ export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaIt
       periodo: data.periodo,
       agent: data.agent,
       role: data.role,
-      schedule: data.schedule as ScheduleDay[],
+      // Fix: Properly type cast the schedule data
+      schedule: (data.schedule as any[] || []).map(s => ({
+        day: s.day,
+        date: s.date,
+        active: s.active
+      })) as ScheduleDay[],
       created_at: data.created_at,
       updated_at: data.updated_at
     };

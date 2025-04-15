@@ -54,6 +54,7 @@ export const OcorrenciaForm = () => {
   const [showMap, setShowMap] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
+  const [isCorrectingText, setIsCorrectingText] = useState(false);
   
   const { agents, isLoading: agentsLoading, error: agentsError } = useAgentsData();
   const { location, loading: locationLoading, error: locationError, refreshPosition } = useGeolocation();
@@ -159,6 +160,38 @@ export const OcorrenciaForm = () => {
     } catch (error) {
       console.error('Error getting current location:', error);
       toast.error('Erro ao obter localização atual');
+    }
+  };
+
+  const handleCorrectText = async () => {
+    if (!descricao.trim()) {
+      toast.error('Por favor, escreva uma descrição primeiro');
+      return;
+    }
+
+    try {
+      setIsCorrectingText(true);
+      toast.info('Corrigindo texto...');
+
+      const { data, error } = await supabase.functions.invoke('text-correction', {
+        body: { text: descricao }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.correctedText) {
+        setDescricao(data.correctedText);
+        toast.success('Texto corrigido com sucesso');
+      } else {
+        throw new Error('Resposta inválida da API');
+      }
+    } catch (error) {
+      console.error('Erro ao corrigir texto:', error);
+      toast.error('Não foi possível corrigir o texto. Tente novamente mais tarde.');
+    } finally {
+      setIsCorrectingText(false);
     }
   };
 
@@ -348,6 +381,17 @@ export const OcorrenciaForm = () => {
                   placeholder="Descreva detalhadamente a ocorrência"
                   className="h-32"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCorrectText}
+                  disabled={isCorrectingText || !descricao.trim()}
+                  className="text-gcm-500"
+                >
+                  <Wand2 className="mr-1 h-4 w-4" />
+                  {isCorrectingText ? 'Corrigindo...' : 'Corrigir Texto'}
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -1,184 +1,139 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from "sonner";
 
-export interface GeolocationOptions {
-  enableHighAccuracy?: boolean;
-  timeout?: number;
-  maximumAge?: number;
+interface GeolocationPosition {
+  latitude: number | null;
+  longitude: number | null;
+  accuracy?: number | null;
+  timestamp?: number | null;
 }
 
-export interface GeolocationState {
+interface UseGeolocationReturn {
+  location: GeolocationPosition;
   loading: boolean;
   error: string | null;
-  location: {
-    latitude: number | null;
-    longitude: number | null;
-    accuracy?: number;
-    timestamp?: number;
-  };
+  refreshPosition: () => void;
 }
 
-export const useGeolocation = (options: GeolocationOptions = {}) => {
-  const [state, setState] = useState<GeolocationState>({
-    loading: true,
-    error: null,
-    location: {
-      latitude: null,
-      longitude: null,
-    }
+export const useGeolocation = (): UseGeolocationReturn => {
+  const [location, setLocation] = useState<GeolocationPosition>({
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    timestamp: null,
   });
-  
-  const getPosition = useCallback(async (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Geolocalização não é suportada pelo seu navegador."));
-        return;
-      }
-      
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: options.enableHighAccuracy !== false, // Default to true
-        timeout: options.timeout || 10000, // Increase timeout to 10s
-        maximumAge: options.maximumAge || 0 // Don't use cached positions
-      });
-    });
-  }, [options.enableHighAccuracy, options.timeout, options.maximumAge]);
-  
-  const updatePosition = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const position = await getPosition();
-      
-      setState({
-        loading: false,
-        error: null,
-        location: {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: position.timestamp
-        }
-      });
-      
-      console.log("Geolocation updated:", {
-        lat: position.coords.latitude, 
-        lng: position.coords.longitude,
-        accuracy: `${position.coords.accuracy} meters`
-      });
-    } catch (error) {
-      console.error("Geolocation error:", error);
-      
-      // Convert error to string to ensure we're not trying to stringify an empty object
-      let errorMessage = "Erro desconhecido ao obter localização";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (error && typeof error === 'object') {
-        // GeolocationPositionError handling
-        if ('code' in error && 'message' in error) {
-          switch ((error as GeolocationPositionError).code) {
-            case 1:
-              errorMessage = "Acesso à localização negado. Verifique as permissões do navegador.";
-              break;
-            case 2:
-              errorMessage = "Localização indisponível no momento. Tente novamente.";
-              break;
-            case 3:
-              errorMessage = "Tempo limite excedido ao obter localização.";
-              break;
-          }
-        }
-      }
-      
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
-      
-      toast.error("Não foi possível obter sua localização atual. Verifique as permissões do navegador.", {
-        description: errorMessage
-      });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [watchId, setWatchId] = useState<number | null>(null);
+
+  const clearWatch = useCallback(() => {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      setWatchId(null);
     }
-  }, [getPosition]);
-  
-  useEffect(() => {
-    // Initial position update
-    updatePosition();
+  }, [watchId]);
+
+  const handleSuccess = useCallback((position: GeolocationPosition) => {
+    setLocation({
+      latitude: position.latitude,
+      longitude: position.longitude,
+      accuracy: position.accuracy || null,
+      timestamp: position.timestamp || Date.now(),
+    });
+    setLoading(false);
+    setError(null);
+  }, []);
+
+  const handleError = useCallback((error: any) => {
+    setLoading(false);
     
-    // Setup watchPosition for continuous updates
-    let watchId: number | null = null;
+    let errorMessage = 'Erro desconhecido ao obter localização';
     
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (error && typeof error === 'object' && 'code' in error) {
+      switch (error.code) {
+        case 1:
+          errorMessage = 'Permissão de localização negada';
+          break;
+        case 2:
+          errorMessage = 'Localização indisponível';
+          break;
+        case 3:
+          errorMessage = 'Tempo de espera esgotado';
+          break;
+        default:
+          errorMessage = `Erro de localização: ${error.message || 'Desconhecido'}`;
+      }
+    }
+    
+    setError(errorMessage);
+  }, []);
+
+  const refreshPosition = useCallback(() => {
+    if (!navigator.geolocation) {
+      setError('Geolocalização não é suportada por este navegador');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Clear any existing watch
+      clearWatch();
+
+      // Get current position first
+      navigator.geolocation.getCurrentPosition(
         (position) => {
-          setState({
-            loading: false,
-            error: null,
-            location: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              timestamp: position.timestamp
-            }
+          handleSuccess({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: position.timestamp,
           });
-          
-          console.log("Geolocation watch update:", {
-            lat: position.coords.latitude, 
-            lng: position.coords.longitude,
-            accuracy: `${position.coords.accuracy} meters`
-          });
-        },
-        (error) => {
-          console.error("Geolocation watch error:", error);
-          
-          // Same error handling as in updatePosition
-          let errorMessage = "Erro ao monitorar localização";
-          
-          // Type-safe error handling
-          if ('code' in error) {
-            // This is a GeolocationPositionError
-            const geoError = error as GeolocationPositionError;
-            switch (geoError.code) {
-              case 1:
-                errorMessage = "Acesso à localização negado. Verifique as permissões do navegador.";
-                break;
-              case 2:
-                errorMessage = "Localização indisponível no momento. Tente novamente.";
-                break;
-              case 3:
-                errorMessage = "Tempo limite excedido ao obter localização.";
-                break;
+
+          // Then start watching position
+          const id = navigator.geolocation.watchPosition(
+            (watchPosition) => {
+              handleSuccess({
+                latitude: watchPosition.coords.latitude,
+                longitude: watchPosition.coords.longitude,
+                accuracy: watchPosition.coords.accuracy,
+                timestamp: watchPosition.timestamp,
+              });
+            },
+            (err) => handleError(err),
+            {
+              enableHighAccuracy: true,
+              maximumAge: 30000,
+              timeout: 27000,
             }
-          } else if (typeof error === 'object' && error !== null && 'message' in error) {
-            errorMessage = (error as { message: string }).message;
-          }
-          
-          setState(prev => ({
-            ...prev,
-            loading: false,
-            error: errorMessage
-          }));
+          );
+
+          setWatchId(id);
         },
+        (err) => handleError(err),
         {
-          enableHighAccuracy: options.enableHighAccuracy !== false,
-          timeout: options.timeout || 10000,
-          maximumAge: options.maximumAge || 0
+          enableHighAccuracy: true,
+          maximumAge: 30000,
+          timeout: 27000,
         }
       );
+    } catch (err) {
+      handleError(err);
     }
-    
-    return () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [updatePosition, options.enableHighAccuracy, options.timeout, options.maximumAge]);
-  
-  // Provide a method to manually refresh the position
+  }, [clearWatch, handleSuccess, handleError]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => clearWatch();
+  }, [clearWatch]);
+
   return {
-    ...state,
-    refreshPosition: updatePosition
+    location,
+    loading,
+    error,
+    refreshPosition,
   };
 };

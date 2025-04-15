@@ -136,9 +136,11 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
           // Same error handling as in updatePosition
           let errorMessage = "Erro ao monitorar localização";
           
-          // Properly type-check the error
-          if (error instanceof GeolocationPositionError) {
-            switch (error.code) {
+          // Type-safe error handling
+          if ('code' in error) {
+            // This is a GeolocationPositionError
+            const geoError = error as GeolocationPositionError;
+            switch (geoError.code) {
               case 1:
                 errorMessage = "Acesso à localização negado. Verifique as permissões do navegador.";
                 break;

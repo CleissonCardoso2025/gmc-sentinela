@@ -77,14 +77,15 @@ const Sidebar: React.FC<SidebarProps> = ({
     navigate(path);
   };
 
-  // Filter menu items based on user profile
+  // Filter menu items based on user profile and access permissions
   const filteredMenuItems = menuItems.filter(item => {
-    // If the item has roles specified, check if user has the required role
-    if (item.roles) {
-      return item.roles.includes(userProfile);
+    // First check if the item has specific roles
+    if (item.roles && !item.roles.includes(userProfile)) {
+      return false;
     }
-    // If no roles are specified, show the item to everyone
-    return true;
+    
+    // Then check if the user has access to the page according to the access control settings
+    return hasAccessToPage(item.path);
   });
 
   return (

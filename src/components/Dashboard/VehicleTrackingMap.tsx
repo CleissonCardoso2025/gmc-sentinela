@@ -1,27 +1,24 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import LeafletMap from '@/components/Map/LeafletMap';
 import { useGeolocation } from '@/hooks/use-geolocation';
-
-interface MapMarker {
-  id: string;
-  position: [number, number];
-  title: string;
-}
+import { MapMarker } from '@/types/maps';
 
 const VehicleTrackingMap = () => {
   const [vehicleLocation, setVehicleLocation] = useState<MapMarker>({
     id: 'vehicle-1',
     position: [-23.5505, -46.6333], // Initial vehicle location (São Paulo)
     title: 'Viatura XYZ-1234',
+    lat: -23.5505,
+    lng: -46.6333
   });
 
   const { location, refreshPosition } = useGeolocation();
 
   React.useEffect(() => {
-    // Call refreshPosition without arguments
     refreshPosition();
   }, [refreshPosition]);
 
@@ -33,6 +30,8 @@ const VehicleTrackingMap = () => {
     setVehicleLocation({
       ...vehicleLocation,
       position: [newLat, newLng],
+      lat: newLat,
+      lng: newLng
     });
   };
 

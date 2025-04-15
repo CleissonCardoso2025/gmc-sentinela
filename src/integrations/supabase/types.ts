@@ -151,6 +151,7 @@ export type Database = {
       }
       ocorrencias: {
         Row: {
+          attachments: Json | null
           created_at: string | null
           data: string
           descricao: string
@@ -162,6 +163,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          attachments?: Json | null
           created_at?: string | null
           data: string
           descricao: string
@@ -173,6 +175,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          attachments?: Json | null
           created_at?: string | null
           data?: string
           descricao?: string

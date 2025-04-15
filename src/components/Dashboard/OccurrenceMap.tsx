@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import LeafletMap from '@/components/Map/LeafletMap';
 import { useGeolocation } from '@/hooks/use-geolocation';
+import { MapMarker } from '@/types/maps';
 
 interface OccurrenceMapProps {
   latitude?: number | null;
@@ -12,20 +14,31 @@ const OccurrenceMap: React.FC<OccurrenceMapProps> = ({ latitude, longitude }) =>
   const { location, refreshPosition } = useGeolocation();
   
   React.useEffect(() => {
-    // Call refreshPosition without arguments
     refreshPosition();
   }, [refreshPosition]);
 
-  const mapCenter = (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null)
+  const mapCenter: [number, number] = (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null)
     ? [latitude, longitude]
     : (location.latitude && location.longitude)
       ? [location.latitude, location.longitude]
       : [51.505, -0.09]; // Default London coordinates
 
-  const markers = (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null)
-    ? [{ id: 'occurrence-location', position: [latitude, longitude], title: 'Occurrence Location', lat: latitude, lng: longitude }]
+  const markers: MapMarker[] = (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null)
+    ? [{ 
+        id: 'occurrence-location', 
+        position: [latitude, longitude], 
+        title: 'Occurrence Location', 
+        lat: latitude, 
+        lng: longitude 
+      }]
     : (location.latitude && location.longitude)
-      ? [{ id: 'user-location', position: [location.latitude, location.longitude], title: 'My Location', lat: location.latitude, lng: location.longitude }]
+      ? [{ 
+          id: 'user-location', 
+          position: [location.latitude, location.longitude], 
+          title: 'My Location', 
+          lat: location.latitude, 
+          lng: location.longitude 
+        }]
       : [];
 
   return (

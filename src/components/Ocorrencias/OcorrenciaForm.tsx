@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -156,8 +155,7 @@ export const OcorrenciaForm = () => {
             const fileName = `photo-${Date.now()}.png`;
             const fileType = 'image/png';
             
-            // Fix: Create a File object correctly
-            const file = new File([blob], fileName, { type: fileType });
+            const file = new File([blob], fileName);
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
@@ -240,8 +238,7 @@ export const OcorrenciaForm = () => {
         const fileName = `video-${Date.now()}.webm`;
         const fileType = 'video/webm';
         
-        // Fix: Create a File object correctly
-        const file = new File([blob], fileName, { type: fileType });
+        const file = new File([blob], fileName);
         
         const videoUrl = URL.createObjectURL(blob);
         
@@ -968,7 +965,7 @@ export const OcorrenciaForm = () => {
                 showUserLocation={true}
                 draggable={true}
                 className="w-full h-full"
-                onClick={handleMapClick} // Fix: Changed onMapClick to onClick
+                onClick={handleMapClick}
               />
             </div>
             <DialogFooter>

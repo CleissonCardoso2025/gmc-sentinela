@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -155,11 +156,12 @@ export const OcorrenciaForm = () => {
             const fileName = `photo-${Date.now()}.png`;
             const fileType = 'image/png';
             
-            const file = new File([blob], fileName, { type: fileType });
+            // Fix the File constructor usage
+            const fileObj = new Blob([blob], { type: fileType });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
-              file,
+              file: new File([fileObj], fileName),
               preview: imageDataUrl,
               type: 'image',
               description: 'Foto capturada pela câmera',
@@ -238,13 +240,14 @@ export const OcorrenciaForm = () => {
         const fileName = `video-${Date.now()}.webm`;
         const fileType = 'video/webm';
         
-        const file = new File([blob], fileName, { type: fileType });
+        // Fix the File constructor usage
+        const fileObj = new Blob([blob], { type: fileType });
         
         const videoUrl = URL.createObjectURL(blob);
         
         const newAttachment: MediaAttachment = {
           id: `attachment-${Date.now()}`,
-          file: file,
+          file: new File([fileObj], fileName),
           preview: videoUrl,
           type: 'video',
           description: 'Vídeo capturado pela câmera',

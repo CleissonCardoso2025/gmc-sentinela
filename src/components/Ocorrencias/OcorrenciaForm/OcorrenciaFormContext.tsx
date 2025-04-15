@@ -196,9 +196,7 @@ export const OcorrenciaFormProvider: React.FC<{ children: React.ReactNode }> = (
           .then(res => res.blob())
           .then(blob => {
             const fileName = `photo-${Date.now()}.png`;
-            
-            // Create a File from the Blob with correct constructor usage
-            const file = new File([blob], fileName);
+            const file = new File([blob], fileName, { type: 'image/png' });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
@@ -278,9 +276,7 @@ export const OcorrenciaFormProvider: React.FC<{ children: React.ReactNode }> = (
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const fileName = `video-${Date.now()}.webm`;
-        
-        // Create a File from the Blob with correct constructor usage
-        const file = new File([blob], fileName);
+        const file = new File([blob], fileName, { type: 'video/webm' });
         
         const videoUrl = URL.createObjectURL(blob);
         

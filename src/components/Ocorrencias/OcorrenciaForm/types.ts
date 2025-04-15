@@ -10,6 +10,15 @@ export interface ProvidenciaTomada {
 export interface AgentData {
   id: string;
   name: string;
+  nome?: string;
+  patente?: string;
+  role?: string;
+}
+
+export interface AgentParticipation extends AgentData {
+  nome: string;
+  patente?: string;
+  role?: string;
 }
 
 export interface AttachmentFile {
@@ -18,6 +27,14 @@ export interface AttachmentFile {
   type: string;
   description: string;
   preview?: string;
+}
+
+export interface MediaAttachment {
+  id: string;
+  file: File | null;
+  preview: string;
+  type: 'image' | 'document' | 'video';
+  description: string;
 }
 
 export interface OcorrenciaContextType {
@@ -39,11 +56,21 @@ export interface OcorrenciaContextType {
   isLoading: boolean;
   
   // Attachments
-  attachments: AttachmentFile[];
+  attachments: MediaAttachment[];
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  videoInputRef: React.RefObject<HTMLInputElement>;
+  showCameraDialog: boolean;
+  setShowCameraDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document' | 'video') => void;
+  removeAttachment: (id: string) => void;
+  updateAttachmentDescription: (id: string, description: string) => void;
+  addAttachment: (attachment: MediaAttachment) => void;
+  handleDocumentSelect: () => void;
+  startCamera: () => void;
+  resetAttachments: () => void;
   handleAddAttachment: (file: File, type: string, description: string) => void;
   handleRemoveAttachment: (id: string) => void;
   handleUpdateAttachment: (id: string, description: string) => void;
-  resetAttachments: () => void;
   
   // Location
   position: MapMarker | null;
@@ -52,7 +79,7 @@ export interface OcorrenciaContextType {
   setShowMap: React.Dispatch<React.SetStateAction<boolean>>;
   handleMapClick: (marker: MapMarker) => void;
   locationLoading: boolean;
-  locationError: GeolocationPositionError | null;
+  locationError: string | null;
   handleGetCurrentLocation: () => Promise<void>;
   resetLocation: () => void;
   
@@ -63,12 +90,17 @@ export interface OcorrenciaContextType {
   
   // Text correction
   isCorrecting: boolean;
+  isCorrectingText?: boolean;
   applyCorrection: () => void;
   toggleCorrection: () => void;
+  handleCorrectText: () => Promise<void>;
   
   // Agents
   agents: AgentData[];
+  agentsLoading?: boolean;
+  agentsError?: string | null;
   selectedAgents: string[];
+  handleAgentSelection: (agentId: string) => void;
   handleAgentSelect: (agentId: string) => void;
   resetAgents: () => void;
   

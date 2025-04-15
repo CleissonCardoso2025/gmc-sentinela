@@ -61,25 +61,18 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
         scriptCache.loading = true;
         
         // Fetch API key from Supabase Edge Function
-        const { data: configData, error: configError } = await supabase
-          .from('app_config')
-          .select('value')
-          .eq('key', 'google_maps_api_key')
-          .single();
+        const { data, error } = await supabase.functions.invoke('get-maps-api-key');
           
-        // Fallback to environment variable if DB lookup fails
-        let apiKey = '';
-        if (configError) {
-          console.warn('Failed to fetch API key from database, using environment variable', configError);
-          apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-        } else {
-          apiKey = configData?.value || '';
+        if (error) {
+          throw new Error(`Failed to fetch API key: ${error.message}`);
         }
         
-        if (!apiKey) {
+        if (!data || !data.apiKey) {
           throw new Error('Google Maps API key not found');
         }
 
+        const apiKey = data.apiKey;
+        
         // Create and load the script
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=googleMapsCallback`;

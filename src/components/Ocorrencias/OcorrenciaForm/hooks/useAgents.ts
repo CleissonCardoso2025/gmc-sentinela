@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAgentsData } from '@/hooks/use-agents-data';
-import { AgentParticipation } from '../types';
+import { AgentData, AgentParticipation } from '../types';
 
 export const useAgents = () => {
   const [agents, setAgents] = useState<AgentParticipation[]>([]);

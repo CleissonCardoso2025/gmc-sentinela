@@ -1,7 +1,7 @@
 
 import { useState, useRef } from 'react';
-import { MediaAttachment } from '../types';
 import { toast } from 'sonner';
+import { MediaAttachment } from '../types';
 
 export const useAttachments = () => {
   const [attachments, setAttachments] = useState<MediaAttachment[]>([]);

@@ -156,12 +156,12 @@ export const OcorrenciaForm = () => {
             const fileName = `photo-${Date.now()}.png`;
             const fileType = 'image/png';
             
-            // Fix the File constructor usage
-            const fileObj = new Blob([blob], { type: fileType });
+            // Fix: Create a File object correctly
+            const file = new File([blob], fileName, { type: fileType });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
-              file: new File([fileObj], fileName),
+              file: file,
               preview: imageDataUrl,
               type: 'image',
               description: 'Foto capturada pela câmera',
@@ -240,14 +240,14 @@ export const OcorrenciaForm = () => {
         const fileName = `video-${Date.now()}.webm`;
         const fileType = 'video/webm';
         
-        // Fix the File constructor usage
-        const fileObj = new Blob([blob], { type: fileType });
+        // Fix: Create a File object correctly
+        const file = new File([blob], fileName, { type: fileType });
         
         const videoUrl = URL.createObjectURL(blob);
         
         const newAttachment: MediaAttachment = {
           id: `attachment-${Date.now()}`,
-          file: new File([fileObj], fileName),
+          file: file,
           preview: videoUrl,
           type: 'video',
           description: 'Vídeo capturado pela câmera',
@@ -963,12 +963,12 @@ export const OcorrenciaForm = () => {
             </DialogHeader>
             <div className="h-[400px] w-full">
               <GoogleMapComponent
-                onMapClick={handleMapClick}
                 markers={position ? [position] : []}
                 zoom={13}
                 showUserLocation={true}
                 draggable={true}
                 className="w-full h-full"
+                onClick={handleMapClick} // Fix: Changed onMapClick to onClick
               />
             </div>
             <DialogFooter>

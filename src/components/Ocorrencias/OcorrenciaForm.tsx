@@ -172,7 +172,9 @@ export const OcorrenciaForm = () => {
         fetch(imageDataUrl)
           .then(res => res.blob())
           .then(blob => {
-            const file = new File([blob], `photo-${Date.now()}.png`, { type: 'image/png' });
+            const fileName = `photo-${Date.now()}.png`;
+            const fileType = 'image/png';
+            const file = new File([blob], fileName, { type: fileType });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
@@ -202,7 +204,10 @@ export const OcorrenciaForm = () => {
       
       mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const file = new File([blob], `video-${Date.now()}.webm`, { type: 'video/webm' });
+        const fileName = `video-${Date.now()}.webm`;
+        const fileType = 'video/webm';
+        const file = new File([blob], fileName, { type: fileType });
+        
         const videoUrl = URL.createObjectURL(blob);
         
         const newAttachment: MediaAttachment = {
@@ -452,8 +457,8 @@ export const OcorrenciaForm = () => {
     fileInput.type = 'file';
     fileInput.accept = '.pdf,.doc,.docx,.txt';
     fileInput.onchange = (e) => {
-      const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
-      handleFileSelect(event, 'document');
+      const inputEvent = e as unknown as React.ChangeEvent<HTMLInputElement>;
+      handleFileSelect(inputEvent, 'document');
     };
     fileInput.click();
   };
@@ -793,7 +798,7 @@ export const OcorrenciaForm = () => {
               <CardTitle className="text-xl flex items-center text-gcm-600">
                 <Shield className="mr-2 h-5 w-5" />
                 Agentes Envolvidos
-              CardTitle>
+              </CardTitle>
               <p className="text-sm text-muted-foreground">Guarnição Atual</p>
             </CardHeader>
             <CardContent>

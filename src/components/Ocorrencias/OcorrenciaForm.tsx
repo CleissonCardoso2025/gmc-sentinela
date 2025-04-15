@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -153,9 +154,9 @@ export const OcorrenciaForm = () => {
           .then(res => res.blob())
           .then(blob => {
             const fileName = `photo-${Date.now()}.png`;
-            const fileType = 'image/png';
             
-            const file = new File([blob], fileName);
+            // Fix: Create File object correctly
+            const file = new File([blob], fileName, { type: 'image/png' });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
@@ -236,9 +237,9 @@ export const OcorrenciaForm = () => {
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const fileName = `video-${Date.now()}.webm`;
-        const fileType = 'video/webm';
         
-        const file = new File([blob], fileName);
+        // Fix: Create File object correctly
+        const file = new File([blob], fileName, { type: 'video/webm' });
         
         const videoUrl = URL.createObjectURL(blob);
         

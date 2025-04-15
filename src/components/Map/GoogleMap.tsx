@@ -73,9 +73,9 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
 
         const apiKey = data.apiKey;
         
-        // Create and load the script
+        // Create and load the script with optimized parameters
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=googleMapsCallback`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=googleMapsCallback&loading=async`;
         script.async = true;
         script.defer = true;
         

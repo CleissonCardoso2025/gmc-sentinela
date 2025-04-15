@@ -447,6 +447,17 @@ export const OcorrenciaForm = () => {
     }
   };
 
+  const handleDocumentSelect = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.pdf,.doc,.docx,.txt';
+    fileInput.onchange = (e) => {
+      const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
+      handleFileSelect(event, 'document');
+    };
+    fileInput.click();
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -663,13 +674,7 @@ export const OcorrenciaForm = () => {
                     variant="outline" 
                     size="sm"
                     className="text-gcm-500"
-                    onClick={() => {
-                      const fileInput = document.createElement('input');
-                      fileInput.type = 'file';
-                      fileInput.accept = '.pdf,.doc,.docx,.txt';
-                      fileInput.onchange = (e) => handleFileSelect(e as React.ChangeEvent<HTMLInputElement>, 'document');
-                      fileInput.click();
-                    }}
+                    onClick={handleDocumentSelect}
                   >
                     <File className="mr-1 h-4 w-4" />
                     Anexar Documento
@@ -788,7 +793,7 @@ export const OcorrenciaForm = () => {
               <CardTitle className="text-xl flex items-center text-gcm-600">
                 <Shield className="mr-2 h-5 w-5" />
                 Agentes Envolvidos
-              </CardTitle>
+              CardTitle>
               <p className="text-sm text-muted-foreground">Guarnição Atual</p>
             </CardHeader>
             <CardContent>

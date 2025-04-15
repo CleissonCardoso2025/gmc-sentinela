@@ -6,4 +6,6 @@ export interface MapMarker {
   lat: number;
   lng: number;
   address?: string;
+  content?: string;
+  icon?: string;
 }

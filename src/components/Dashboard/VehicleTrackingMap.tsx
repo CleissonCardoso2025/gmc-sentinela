@@ -10,7 +10,7 @@ import { MapMarker } from '@/types/maps';
 const VehicleTrackingMap = () => {
   const [vehicleLocation, setVehicleLocation] = useState<MapMarker>({
     id: 'vehicle-1',
-    position: [-23.5505, -46.6333], // Initial vehicle location (São Paulo)
+    position: [-23.5505, -46.6333] as [number, number], // Initial vehicle location (São Paulo)
     title: 'Viatura XYZ-1234',
     lat: -23.5505,
     lng: -46.6333
@@ -29,7 +29,7 @@ const VehicleTrackingMap = () => {
 
     setVehicleLocation({
       ...vehicleLocation,
-      position: [newLat, newLng],
+      position: [newLat, newLng] as [number, number],
       lat: newLat,
       lng: newLng
     });
@@ -45,7 +45,10 @@ const VehicleTrackingMap = () => {
         </Button>
       </div>
       <div className="h-[400px]">
-        <LeafletMap markers={[vehicleLocation]} />
+        <LeafletMap 
+          markers={[vehicleLocation]} 
+          center={vehicleLocation.position}
+        />
       </div>
     </Card>
   );

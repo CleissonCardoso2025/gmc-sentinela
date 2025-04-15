@@ -26,7 +26,7 @@ const OccurrenceMap: React.FC<OccurrenceMapProps> = ({ latitude, longitude }) =>
   const markers: MapMarker[] = (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null)
     ? [{ 
         id: 'occurrence-location', 
-        position: [latitude, longitude], 
+        position: [latitude, longitude] as [number, number], 
         title: 'Occurrence Location', 
         lat: latitude, 
         lng: longitude 
@@ -34,7 +34,7 @@ const OccurrenceMap: React.FC<OccurrenceMapProps> = ({ latitude, longitude }) =>
     : (location.latitude && location.longitude)
       ? [{ 
           id: 'user-location', 
-          position: [location.latitude, location.longitude], 
+          position: [location.latitude, location.longitude] as [number, number], 
           title: 'My Location', 
           lat: location.latitude, 
           lng: location.longitude 

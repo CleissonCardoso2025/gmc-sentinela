@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EscalaItem, GuarnicaoOption, RotaOption, ViaturaOption, ScheduleDay } from "@/types/database";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
 
 // Get all escala items
 export const getEscalaItems = async (): Promise<EscalaItem[]> => {
@@ -158,6 +159,9 @@ export const getEscalaItemById = async (id: string): Promise<EscalaItem | null> 
 // Create new escala item
 export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Promise<EscalaItem | null> => {
   try {
+    // Convert ScheduleDay[] to Json compatible format
+    const scheduleForDB = escalaItem.schedule as unknown as Json;
+    
     const { data, error } = await supabase
       .from('escala_items')
       .insert([{
@@ -168,7 +172,7 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
         periodo: escalaItem.periodo,
         agent: escalaItem.agent,
         role: escalaItem.role,
-        schedule: escalaItem.schedule
+        schedule: scheduleForDB
       }])
       .select()
       .single();
@@ -208,6 +212,9 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
 // Update escala item
 export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaItem | null> => {
   try {
+    // Convert ScheduleDay[] to Json compatible format
+    const scheduleForDB = escalaItem.schedule as unknown as Json;
+    
     const { data, error } = await supabase
       .from('escala_items')
       .update({
@@ -218,7 +225,7 @@ export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaIt
         periodo: escalaItem.periodo,
         agent: escalaItem.agent,
         role: escalaItem.role,
-        schedule: escalaItem.schedule
+        schedule: scheduleForDB
       })
       .eq('id', escalaItem.id)
       .select()

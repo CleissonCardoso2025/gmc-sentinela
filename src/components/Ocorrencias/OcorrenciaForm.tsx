@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -155,8 +156,9 @@ export const OcorrenciaForm = () => {
             const fileName = `photo-${Date.now()}.png`;
             const fileType = 'image/png';
             
-            // Create file with a Blob and use a proper constructor
+            // Create file with a Blob
             const file = new Blob([blob], { type: fileType });
+            // Create File object separately from Blob
             const fileObj = new File([file], fileName, { type: fileType });
             
             const newAttachment: MediaAttachment = {
@@ -171,6 +173,27 @@ export const OcorrenciaForm = () => {
             toast.success('Foto capturada com sucesso');
           });
       }
+    }
+  };
+
+  const startCamera = () => {
+    // Implementation of starting the camera
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
+          }
+          setVideoStream(stream);
+          setShowCameraDialog(true);
+        })
+        .catch(error => {
+          console.error('Error accessing camera:', error);
+          toast.error('Não foi possível acessar a câmera');
+        });
+    } else {
+      toast.error('Seu navegador não suporta acesso à câmera');
     }
   };
 
@@ -221,7 +244,7 @@ export const OcorrenciaForm = () => {
         const fileName = `video-${Date.now()}.webm`;
         const fileType = 'video/webm';
         
-        // Create file with a Blob and use a proper constructor
+        // Create File object properly
         const fileObj = new File([blob], fileName, { type: fileType });
         
         const videoUrl = URL.createObjectURL(blob);
@@ -876,3 +899,91 @@ export const OcorrenciaForm = () => {
                 setDescricao('');
                 setPosition(null);
                 setEnvolvidos([]);
+                setProvidencias(providencias.map(p => ({ ...p, checked: false })));
+                setSelectedAgents([]);
+                setAttachments([]);
+              }}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Limpar Formulário
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Camera Dialog */}
+      <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Capturar Mídia</DialogTitle>
+            <DialogDescription>
+              Capture uma foto ou vídeo usando sua câmera
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4">
+            <div className="relative bg-black rounded-md overflow-hidden h-[300px]">
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                autoPlay
+                playsInline
+                muted
+              />
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+            <div className="flex justify-center space-x-4">
+              {!isRecording ? (
+                <>
+                  <Button type="button" onClick={capturePhoto}>
+                    <Camera className="mr-2 h-4 w-4" />
+                    Tirar Foto
+                  </Button>
+                  <Button type="button" onClick={startRecording} variant="outline">
+                    <Video className="mr-2 h-4 w-4" />
+                    Iniciar Gravação
+                  </Button>
+                </>
+              ) : (
+                <Button type="button" onClick={stopRecording} variant="destructive">
+                  <Square className="mr-2 h-4 w-4" />
+                  Parar Gravação
+                </Button>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={closeCamera}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Map Dialog */}
+      {showMap && (
+        <Dialog open={showMap} onOpenChange={setShowMap}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Selecionar Localização</DialogTitle>
+              <DialogDescription>
+                Clique no mapa para definir a localização da ocorrência
+              </DialogDescription>
+            </DialogHeader>
+            <div className="h-[400px] w-full">
+              <GoogleMapComponent
+                onMarkerSelect={handleMapClick}
+                fullWidth
+                showSearch
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowMap(false)}>
+                Cancelar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </form>
+  );
+};

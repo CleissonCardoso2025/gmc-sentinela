@@ -223,7 +223,7 @@ export const OcorrenciaFormProvider: React.FC<{ children: ReactNode }> = ({ chil
             toast({
               title: "Localização obtida",
               description: "Endereço não identificado, apenas coordenadas.",
-              // Fix: Change "warning" to a valid variant
+              // Fix: Use a valid variant instead of "warning"
               variant: "destructive"
             });
           }
@@ -233,7 +233,7 @@ export const OcorrenciaFormProvider: React.FC<{ children: ReactNode }> = ({ chil
           toast({
             title: "Localização obtida",
             description: "Endereço não identificado, apenas coordenadas.",
-            // Fix: Change "warning" to a valid variant
+            // Fix: Use a valid variant instead of "warning"
             variant: "destructive"
           });
         }

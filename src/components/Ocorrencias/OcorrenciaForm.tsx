@@ -156,14 +156,12 @@ export const OcorrenciaForm = () => {
             const fileName = `photo-${Date.now()}.png`;
             const fileType = 'image/png';
             
-            // Create file with a Blob
-            const file = new Blob([blob], { type: fileType });
-            // Create File object separately from Blob
-            const fileObj = new File([file], fileName, { type: fileType });
+            // Fix: Create File object properly
+            const file = new File([blob], fileName, { type: fileType });
             
             const newAttachment: MediaAttachment = {
               id: `attachment-${Date.now()}`,
-              file: fileObj,
+              file: file,
               preview: imageDataUrl,
               type: 'image',
               description: 'Foto capturada pela câmera',
@@ -177,7 +175,6 @@ export const OcorrenciaForm = () => {
   };
 
   const startCamera = () => {
-    // Implementation of starting the camera
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
@@ -244,14 +241,14 @@ export const OcorrenciaForm = () => {
         const fileName = `video-${Date.now()}.webm`;
         const fileType = 'video/webm';
         
-        // Create File object properly
-        const fileObj = new File([blob], fileName, { type: fileType });
+        // Fix: Create File object properly
+        const file = new File([blob], fileName, { type: fileType });
         
         const videoUrl = URL.createObjectURL(blob);
         
         const newAttachment: MediaAttachment = {
           id: `attachment-${Date.now()}`,
-          file: fileObj,
+          file: file,
           preview: videoUrl,
           type: 'video',
           description: 'Vídeo capturado pela câmera',
@@ -695,9 +692,7 @@ export const OcorrenciaForm = () => {
                     variant="outline" 
                     size="sm"
                     className="text-gcm-500"
-                    onClick={() => {
-                      startCamera();
-                    }}
+                    onClick={startCamera}
                   >
                     <Video className="mr-1 h-4 w-4" />
                     Gravar Vídeo
@@ -971,9 +966,12 @@ export const OcorrenciaForm = () => {
             </DialogHeader>
             <div className="h-[400px] w-full">
               <GoogleMapComponent
-                onMarkerSelect={handleMapClick}
-                fullWidth
-                showSearch
+                onMapClick={handleMapClick}
+                markers={position ? [position] : []}
+                zoom={13}
+                showUserLocation={true}
+                draggable={true}
+                className="w-full h-full"
               />
             </div>
             <DialogFooter>

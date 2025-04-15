@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { OcorrenciaContextType } from './types';
-import { useOcorrenciaForm } from './hooks/useOcorrenciaForm';
+import { useOcorrenciaForm as useOcorrenciaFormHook } from './hooks/useOcorrenciaForm';
 
 const OcorrenciaContext = createContext<OcorrenciaContextType | undefined>(undefined);
 
@@ -14,7 +13,7 @@ export const useOcorrenciaForm = () => {
 };
 
 export const OcorrenciaFormProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const ocorrenciaForm = useOcorrenciaForm();
+  const ocorrenciaForm = useOcorrenciaFormHook();
 
   return (
     <OcorrenciaContext.Provider value={ocorrenciaForm}>

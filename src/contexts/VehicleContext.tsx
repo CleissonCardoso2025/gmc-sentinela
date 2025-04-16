@@ -69,7 +69,14 @@ export const VehicleProvider: React.FC<VehicleProviderProps> = ({ children }) =>
   const [saveDisabled, setSaveDisabled] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: authLoading, userId, userRole } = useAdminAuth();
+  const { 
+    isAuthenticated, 
+    isLoading: authLoading, 
+    userId, 
+    userRole, 
+    session,
+    refreshSession 
+  } = useAdminAuth();
 
   useEffect(() => {
     if (!authLoading) {
@@ -82,6 +89,11 @@ export const VehicleProvider: React.FC<VehicleProviderProps> = ({ children }) =>
     
     try {
       console.log("Buscando veículos...");
+      
+      // Check if we have a session before making requests to protected endpoints
+      if (!isAuthenticated) {
+        console.log("User not authenticated. Will fetch public data only.");
+      }
       
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from('vehicles')
@@ -130,15 +142,21 @@ export const VehicleProvider: React.FC<VehicleProviderProps> = ({ children }) =>
       console.log("Iniciando processo de salvamento de veículo:", vehicle);
       setSaveDisabled(true);
       
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // First, refresh the session to ensure we have the latest auth state
+      // This is useful if the user has been idle for a while
+      let currentSession = session;
       
-      if (sessionError) {
-        console.error("Erro ao verificar sessão:", sessionError);
-        throw new Error("Falha ao verificar autenticação");
+      if (!currentSession) {
+        console.log("No active session, attempting to refresh...");
+        currentSession = await refreshSession();
+      } else if (currentSession.expires_at && currentSession.expires_at * 1000 < Date.now() + 60000) {
+        // If session expires in less than a minute, refresh it proactively
+        console.log("Session about to expire, refreshing...");
+        currentSession = await refreshSession();
       }
       
-      if (!session || !session.user) {
-        console.log("Usuário não autenticado. Não é possível salvar dados.");
+      if (!currentSession || !currentSession.user) {
+        console.log("No valid session after refresh attempt. Cannot save data.");
         toast({
           title: "Não autenticado",
           description: "Sua sessão expirou. Por favor, faça login novamente.",
@@ -148,11 +166,24 @@ export const VehicleProvider: React.FC<VehicleProviderProps> = ({ children }) =>
         return;
       }
       
-      console.log("Sessão válida, prosseguindo com o salvamento", {
-        userId: session.user.id,
-        userMetadata: session.user.user_metadata,
-        role: session.user.user_metadata?.role
+      console.log("Valid session confirmed, proceeding with save operation", {
+        userId: currentSession.user.id,
+        userMetadata: currentSession.user.user_metadata,
+        role: currentSession.user.user_metadata?.role,
+        expiresAt: currentSession.expires_at ? new Date(currentSession.expires_at * 1000).toISOString() : null
       });
+      
+      // Check if the user has the necessary permissions
+      const userRole = currentSession.user.user_metadata?.role;
+      if (userRole !== 'admin' && userRole !== 'Inspetor' && userRole !== 'Subinspetor') {
+        console.log("User doesn't have permission to save vehicles");
+        toast({
+          title: "Permissão negada",
+          description: "Você não tem permissão para salvar dados de viaturas.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       if (!vehicle.id) {
         const vehicleData = {
@@ -166,7 +197,7 @@ export const VehicleProvider: React.FC<VehicleProviderProps> = ({ children }) =>
           ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
           proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
           observacoes: vehicle.observacoes,
-          user_id: session.user.id
+          user_id: currentSession.user.id
         };
         
         const { data, error } = await supabase
@@ -215,7 +246,7 @@ export const VehicleProvider: React.FC<VehicleProviderProps> = ({ children }) =>
           ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
           proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
           observacoes: vehicle.observacoes,
-          user_id: session.user.id
+          user_id: currentSession.user.id
         };
         
         const { error } = await supabase

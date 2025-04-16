@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,13 +16,25 @@ import Corregedoria from "./pages/Corregedoria";
 import Configuracoes from "./pages/Configuracoes";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { VehicleProvider } from "./contexts/VehicleContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        if (error?.status === 401 || error?.code === 'PGRST301') {
+          return false;
+        }
+        return failureCount < 3;
+      },
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 const App = () => {
-  const [userProfile, setUserProfile] = useState<string>("Inspetor"); // Default profile
+  const [userProfile, setUserProfile] = useState<string>("Inspetor");
 
-  // Get user profile from localStorage on app load
   useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");
     if (storedProfile) {
@@ -38,13 +49,8 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Redirect root to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
-            {/* Login route is accessible by anyone */}
             <Route path="/login" element={<Login />} />
-            
-            {/* Protected Routes */}
             <Route path="/index" element={
               <ProtectedRoute userProfile={userProfile}>
                 <Index />
@@ -62,7 +68,9 @@ const App = () => {
             } />
             <Route path="/viaturas" element={
               <ProtectedRoute userProfile={userProfile}>
-                <Viaturas />
+                <VehicleProvider>
+                  <Viaturas />
+                </VehicleProvider>
               </ProtectedRoute>
             } />
             <Route path="/inspetoria" element={
@@ -90,8 +98,6 @@ const App = () => {
                 <Configuracoes />
               </ProtectedRoute>
             } />
-            
-            {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

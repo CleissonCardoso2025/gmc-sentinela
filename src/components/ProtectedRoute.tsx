@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthorization } from '@/hooks/use-authorization';
 import { toast } from 'sonner';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 interface ProtectedRouteProps {
   userProfile: string;
@@ -13,33 +14,49 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   const location = useLocation();
   const navigate = useNavigate();
   const { hasAccessToPage } = useAuthorization(userProfile);
+  const { isAuthenticated, isLoading, user, userRole } = useAdminAuth();
   
   // Login page should always be accessible
   if (location.pathname === '/login') {
     return <>{children}</>;
   }
   
-  // Check if user is authenticated
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  // Show loading state while auth is being checked
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
   
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   
-  // Store user email and ID for auth checks
+  // Store auth data for pages that still use localStorage-based auth
   useEffect(() => {
-    // This is the ID of the Inspetor, which has access to all pages in the system
-    const userId = localStorage.getItem('userId') || 'e632890d-208e-489b-93a3-eae0dd0a9a08';
-    localStorage.setItem('currentUserId', userId);
-    
-    // Make sure email is also stored for email-based access checks
-    const userEmail = localStorage.getItem('userEmail');
-    if (!userEmail && userProfile === 'Inspetor') {
-      // For testing, if no email is set but user is an Inspetor, use the default email
-      localStorage.setItem('userEmail', 'gcmribeiradopombal@hotmail.com');
+    if (isAuthenticated && user) {
+      localStorage.setItem('isAuthenticated', 'true');
+      
+      // Get user profile from user_metadata or fall back to the role passed to this component
+      const effectiveUserProfile = userRole || userProfile;
+      localStorage.setItem('userProfile', effectiveUserProfile);
+      
+      // Set user ID for auth checks
+      localStorage.setItem('userId', user.id);
+      localStorage.setItem('currentUserId', user.id);
+      
+      // Set user email
+      if (user.email) {
+        localStorage.setItem('userEmail', user.email);
+      } else if (effectiveUserProfile === 'Inspetor') {
+        // For testing, if no email is set but user is an Inspetor, use the default email
+        localStorage.setItem('userEmail', 'gcmribeiradopombal@hotmail.com');
+      }
     }
-  }, [userProfile]);
+  }, [isAuthenticated, user, userProfile, userRole]);
   
   // Check if the stored profile should be redirected
   useEffect(() => {
@@ -53,7 +70,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   
   // Special check for /index path - only Inspetor or Subinspetor can access
   if (location.pathname === '/index') {
-    const canAccess = userProfile === 'Inspetor' || userProfile === 'Subinspetor';
+    const effectiveProfile = userRole || userProfile;
+    const canAccess = effectiveProfile === 'Inspetor' || effectiveProfile === 'Subinspetor';
+    
     if (!canAccess) {
       toast.error("Você não tem permissão para acessar o Centro de Comando");
       return <Navigate to="/dashboard" replace />;

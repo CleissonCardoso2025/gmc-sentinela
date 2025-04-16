@@ -1,217 +1,51 @@
+import { supabase } from '@/lib/supabase';
+import { User, UserFormData } from '@/types/database';
 
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@/types/database";
-import { toast } from "sonner";
-
-// Get all users
-export const getUsers = async (): Promise<User[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*');
-
-    if (error) {
-      console.error("Error fetching users:", error);
-      toast.error("Erro ao buscar usuários");
-      return [];
+export const createUser = async (data: UserFormData) => {
+  const { data: newUser, error } = await supabase.auth.admin.createUser({
+    email: data.email,
+    password: data.password,
+    user_metadata: {
+      role: data.perfil,
+      nome: data.nome,
+      matricula: data.matricula,
+      data_nascimento: data.data_nascimento,
+      status: data.status,
     }
+  });
 
-    return data as User[];
-  } catch (error) {
-    console.error("Exception fetching users:", error);
-    toast.error("Erro ao buscar usuários");
-    return [];
-  }
+  if (error) throw error;
+  return newUser;
 };
 
-// Get user by ID
-export const getUserById = async (id: string): Promise<User | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching user by ID:", error);
-      toast.error("Erro ao buscar usuário");
-      return null;
+export const updateUser = async (data: User) => {
+  const { data: updatedUser, error } = await supabase.auth.admin.updateUserById(data.id, {
+    user_metadata: {
+      role: data.perfil,
+      nome: data.nome,
+      matricula: data.matricula,
+      data_nascimento: data.data_nascimento,
+      status: data.status,
     }
+  });
 
-    return data as User;
-  } catch (error) {
-    console.error("Exception fetching user by ID:", error);
-    toast.error("Erro ao buscar usuário");
-    return null;
-  }
+  if (error) throw error;
+  return updatedUser;
 };
 
-// Create new user
-export const createUser = async (user: Omit<User, 'id'> & { password?: string }): Promise<User | null> => {
-  try {
-    console.log("Creating user with data:", user);
-    
-    // Create an object without the password for the users table
-    const { password, ...userData } = user;
-    
-    // If password is provided, create auth user first
-    if (password && password.length > 0) {
-      console.log("Creating auth user with email:", user.email);
-      
-      // First attempt to create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: user.email,
-        password: password,
-        options: {
-          data: {
-            nome: user.nome,
-            perfil: user.perfil
-          }
-        }
-      });
-      
-      if (authError) {
-        console.error("Error creating auth user:", authError);
-        
-        let errorMessage = "Erro ao criar usuário";
-        if (authError.message.includes("already registered")) {
-          errorMessage = "Este email já está registrado";
-        }
-        
-        toast.error(errorMessage);
-        return null;
-      }
-      
-      console.log("Auth user created successfully");
-    }
-
-    // Create user record in users table
-    const { data, error } = await supabase
-      .from('users')
-      .insert([userData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error creating user:", error);
-      
-      let errorMessage = "Erro ao criar usuário";
-      
-      // Verificar se o erro é de campos únicos (email ou matrícula)
-      if (error.code === '23505') { // Violation of unique constraint
-        if (error.message.includes('email')) {
-          errorMessage = "Este email já está em uso";
-        } else if (error.message.includes('matricula')) {
-          errorMessage = "Esta matrícula já está em uso";
-        }
-      }
-      
-      toast.error(errorMessage);
-      return null;
-    }
-
-    console.log("User created successfully:", data);
-    toast.success("Usuário criado com sucesso");
-    return data as User;
-  } catch (error) {
-    console.error("Exception creating user:", error);
-    toast.error("Erro ao criar usuário");
-    return null;
-  }
+export const deleteUser = async (userId: string) => {
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+  if (error) throw error;
+  return true;
 };
 
-// Update user
-export const updateUser = async (user: User): Promise<User | null> => {
-  try {
-    console.log("Updating user with data:", user);
-    
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        nome: user.nome,
-        email: user.email,
-        matricula: user.matricula,
-        data_nascimento: user.data_nascimento,
-        perfil: user.perfil,
-        status: user.status
-      })
-      .eq('id', user.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating user:", error);
-      
-      let errorMessage = "Erro ao atualizar usuário";
-      
-      // Verificar se o erro é de campos únicos (email ou matrícula)
-      if (error.code === '23505') { // Violation of unique constraint
-        if (error.message.includes('email')) {
-          errorMessage = "Este email já está em uso";
-        } else if (error.message.includes('matricula')) {
-          errorMessage = "Esta matrícula já está em uso";
-        }
-      }
-      
-      toast.error(errorMessage);
-      return null;
+export const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
+  const { data: updatedUser, error } = await supabase.auth.admin.updateUserById(userId, {
+    user_metadata: {
+      status: !currentStatus
     }
+  });
 
-    console.log("User updated successfully:", data);
-    toast.success("Usuário atualizado com sucesso");
-    return data as User;
-  } catch (error) {
-    console.error("Exception updating user:", error);
-    toast.error("Erro ao atualizar usuário");
-    return null;
-  }
-};
-
-// Delete user
-export const deleteUser = async (id: string): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error("Error deleting user:", error);
-      toast.error(`Erro ao excluir usuário: ${error.message}`);
-      return false;
-    }
-
-    toast.success("Usuário excluído com sucesso");
-    return true;
-  } catch (error) {
-    console.error("Exception deleting user:", error);
-    toast.error("Erro ao excluir usuário");
-    return false;
-  }
-};
-
-// Toggle user status
-export const toggleUserStatus = async (id: string, currentStatus: boolean): Promise<User | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .update({ status: !currentStatus })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error toggling user status:", error);
-      toast.error(`Erro ao alterar status do usuário: ${error.message}`);
-      return null;
-    }
-
-    toast.success(`Usuário ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`);
-    return data as User;
-  } catch (error) {
-    console.error("Exception toggling user status:", error);
-    toast.error("Erro ao alterar status do usuário");
-    return null;
-  }
+  if (error) throw error;
+  return updatedUser;
 };

@@ -1,4 +1,3 @@
-
 // Modify the existing User interface
 export interface User {
   id: string;

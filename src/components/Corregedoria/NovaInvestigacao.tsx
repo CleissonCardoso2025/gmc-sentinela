@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Form, 
@@ -130,17 +129,16 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
             const fileId = fileName;
             setUploadProgress(prev => ({...prev, [fileId]: 0}));
             
-            // Set up upload with progress monitoring
+            // Upload file without progress tracking (Supabase JS client doesn't support progress)
             const { data, error } = await supabase.storage
               .from('investigacoes')
               .upload(filePath, file, {
                 cacheControl: '3600',
-                upsert: false,
-                onUploadProgress: (progress) => {
-                  const percent = Math.round((progress.loaded / progress.total) * 100);
-                  setUploadProgress(prev => ({...prev, [fileId]: percent}));
-                }
+                upsert: false
               });
+              
+            // Manually set progress to 100% when complete
+            setUploadProgress(prev => ({...prev, [fileId]: 100}));
               
             if (error) {
               console.error('Error uploading file:', error);

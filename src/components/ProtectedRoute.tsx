@@ -1,9 +1,10 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthorization } from '@/hooks/use-authorization';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   userProfile: string;
@@ -14,25 +15,46 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   const location = useLocation();
   const navigate = useNavigate();
   const { hasAccessToPage } = useAuthorization(userProfile);
-  const { isAuthenticated, isLoading, user, userRole } = useAdminAuth();
+  const { isAuthenticated, isLoading, user, userRole, refreshSession } = useAdminAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   // Login page should always be accessible
   if (location.pathname === '/login') {
     return <>{children}</>;
   }
   
+  // Make sure we refresh the session if needed
+  useEffect(() => {
+    const checkSessionValidity = async () => {
+      if (isAuthenticated && user) {
+        // Check if session is near expiration, and refresh if needed
+        const { session } = await refreshSession();
+        if (!session) {
+          // If session refresh failed, redirect to login
+          navigate('/login', { replace: true });
+        }
+      }
+    };
+    
+    checkSessionValidity();
+    // Only run this once when the component mounts or when isAuthenticated/user changes
+  }, [isAuthenticated, user, refreshSession, navigate]);
+  
   // Show loading state while auth is being checked
-  if (isLoading) {
+  if (isLoading || isRedirecting) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+          <p className="text-gray-500">Verificando autenticação...</p>
+        </div>
       </div>
     );
   }
   
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   // Store auth data for pages that still use localStorage-based auth
@@ -64,7 +86,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     
     // If there's a logged in user and they're at the root path
     if (storedUserProfile && location.pathname === '/') {
-      navigate('/dashboard');
+      setIsRedirecting(true);
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+        setIsRedirecting(false);
+      }, 100);
     }
   }, [location.pathname, navigate]);
   

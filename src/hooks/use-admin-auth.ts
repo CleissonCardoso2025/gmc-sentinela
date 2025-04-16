@@ -12,44 +12,52 @@ export function useAdminAuth() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [sessionInitialized, setSessionInitialized] = useState<boolean>(false);
   
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log("Auth state changed:", event, newSession?.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : null);
-      
-      // Update state with the new session
-      setSession(newSession);
-      setUser(newSession?.user || null);
-      setIsAuthenticated(!!newSession);
-      setUserId(newSession?.user?.id || null);
-      
-      if (newSession?.user) {
-        // Check if user has admin role in user_metadata
-        const role = newSession.user.user_metadata?.role;
-        setUserRole(role);
-        
-        // For now, all authenticated users get admin access
-        setIsAdmin(true);
-        
-        console.log("User authenticated:", { 
-          userId: newSession.user.id,
-          role: role,
-          isAdmin: true,
-          expiresAt: newSession.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : null
-        });
-      } else {
-        setIsAdmin(false);
-        setUserRole(null);
-        console.log("User not authenticated");
-      }
-      
-      setIsLoading(false);
-    });
+    let subscription: { unsubscribe: () => void } | null = null;
     
-    // THEN check for existing session
     const initializeAuth = async () => {
       try {
+        setIsLoading(true);
+        
+        // First set up the auth state listener to handle changes
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+          console.log("Auth state changed:", event, newSession?.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : null);
+          
+          // Update state with the new session
+          setSession(newSession);
+          setUser(newSession?.user || null);
+          setIsAuthenticated(!!newSession);
+          setUserId(newSession?.user?.id || null);
+          
+          if (newSession?.user) {
+            // Check if user has admin role in user_metadata
+            const role = newSession.user.user_metadata?.role;
+            setUserRole(role);
+            
+            // For now, all authenticated users get admin access
+            setIsAdmin(true);
+            
+            console.log("User authenticated:", { 
+              userId: newSession.user.id,
+              role: role,
+              isAdmin: true,
+              expiresAt: newSession.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : null
+            });
+          } else {
+            setIsAdmin(false);
+            setUserRole(null);
+            console.log("User not authenticated");
+          }
+          
+          setSessionInitialized(true);
+          setIsLoading(false);
+        });
+        
+        subscription = authListener.subscription;
+        
+        // Then check for an existing session
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -78,6 +86,8 @@ export function useAdminAuth() {
           setIsAdmin(false);
           setUserRole(null);
         }
+        
+        setSessionInitialized(true);
       } catch (error) {
         console.error("Authentication initialization failed:", error);
       } finally {
@@ -88,7 +98,9 @@ export function useAdminAuth() {
     initializeAuth();
     
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
   
@@ -109,11 +121,11 @@ export function useAdminAuth() {
           data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : "unknown");
       }
       
-      return data.session;
+      return { session: data.session, error: null };
     } catch (error) {
       console.error("Failed to refresh session:", error);
       toast.error("Sua sessão expirou. Por favor, faça login novamente.");
-      return null;
+      return { session: null, error };
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +134,8 @@ export function useAdminAuth() {
   return { 
     isAdmin, 
     isAuthenticated, 
-    isLoading, 
+    isLoading,
+    sessionInitialized,
     userId, 
     userRole,
     session,

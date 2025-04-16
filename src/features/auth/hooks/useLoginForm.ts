@@ -12,6 +12,7 @@ export function useLoginForm() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -24,26 +25,35 @@ export function useLoginForm() {
   // Check if user is already authenticated on component mount
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        console.log("User already has an active session");
+      setIsCheckingSession(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        // Get user profile from user_metadata
-        const userProfile = session.user.user_metadata?.role || "Agente";
-        
-        // Store the user profile in localStorage for compatibility with existing code
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userProfile", userProfile);
-        localStorage.setItem("userName", session.user.email || "");
-        localStorage.setItem("userId", session.user.id);
-        
-        // Redirect based on user profile
-        if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-          navigate("/index");
-        } else {
-          navigate("/dashboard");
+        if (session) {
+          console.log("User already has an active session");
+          
+          // Get user profile from user_metadata
+          const userProfile = session.user.user_metadata?.role || "Agente";
+          
+          // Store the user profile in localStorage for compatibility with existing code
+          localStorage.setItem("isAuthenticated", "true");
+          localStorage.setItem("userProfile", userProfile);
+          localStorage.setItem("userName", session.user.email || "");
+          localStorage.setItem("userId", session.user.id);
+          localStorage.setItem("userEmail", session.user.email || "");
+          
+          // Only redirect after we've confirmed there's a valid session
+          // Redirect based on user profile
+          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+            navigate("/index", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
         }
+      } catch (error) {
+        console.error("Error checking session:", error);
+      } finally {
+        setIsCheckingSession(false);
       }
     };
     
@@ -51,6 +61,8 @@ export function useLoginForm() {
   }, [navigate]);
 
   const onSubmit = async (data: LoginFormValues) => {
+    if (isCheckingSession) return; // Don't allow login attempts while checking session
+    
     setIsLoading(true);
     
     try {
@@ -70,6 +82,7 @@ export function useLoginForm() {
       localStorage.setItem("userProfile", mockUserProfile);
       localStorage.setItem("userName", data.username);
       localStorage.setItem("userId", "e632890d-208e-489b-93a3-eae0dd0a9a08"); // Mock ID
+      localStorage.setItem("userEmail", data.username);
       
       // Success notification
       toast({
@@ -80,9 +93,9 @@ export function useLoginForm() {
       // Redirect based on user profile
       setTimeout(() => {
         if (mockUserProfile === "Inspetor" || mockUserProfile === "Subinspetor") {
-          navigate("/index");
+          navigate("/index", { replace: true });
         } else {
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
         }
       }, 1000);
       
@@ -117,6 +130,7 @@ export function useLoginForm() {
   return {
     form,
     isLoading,
+    isCheckingSession,
     showPassword,
     togglePasswordVisibility,
     onSubmit: form.handleSubmit(onSubmit),

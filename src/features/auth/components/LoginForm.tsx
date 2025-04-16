@@ -6,10 +6,20 @@ import { useToast } from "@/hooks/use-toast";
 import { UsernameField } from "./UsernameField";
 import { PasswordField } from "./PasswordField";
 import { useLoginForm } from "../hooks/useLoginForm";
+import { Loader2 } from "lucide-react";
 
 export const LoginForm: React.FC = () => {
-  const { form, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
+  const { form, isLoading, isCheckingSession, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const { toast } = useToast();
+
+  if (isCheckingSession) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
+        <p className="text-gray-500">Verificando sessão...</p>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>

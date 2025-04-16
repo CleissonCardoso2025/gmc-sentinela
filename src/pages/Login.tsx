@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
@@ -12,6 +11,8 @@ const Login = () => {
   
   // Check for existing session and redirect if found
   useEffect(() => {
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    
     const checkAndRedirect = async () => {
       try {
         setIsCheckingSession(true);
@@ -39,6 +40,9 @@ const Login = () => {
             }
           }
         });
+        
+        // Store the subscription for cleanup
+        authSubscription = subscription;
         
         // Get existing session
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -77,13 +81,16 @@ const Login = () => {
       } finally {
         setIsCheckingSession(false);
       }
-      
-      return () => {
-        subscription.unsubscribe();
-      };
     };
     
     checkAndRedirect();
+    
+    return () => {
+      // Use the stored subscription for cleanup
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
   }, [navigate]);
   
   // Show loading indicator while checking session

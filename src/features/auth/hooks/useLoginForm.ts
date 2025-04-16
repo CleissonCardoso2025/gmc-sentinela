@@ -24,43 +24,55 @@ export function useLoginForm() {
 
   // Check if user is already authenticated on component mount
   useEffect(() => {
+    let mounted = true;
+    
     const checkSession = async () => {
+      if (!mounted) return;
+      
       setIsCheckingSession(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data } = await supabase.auth.getSession();
         
-        if (session) {
+        if (mounted && data.session) {
           console.log("User already has an active session, expires at:", 
-            session.expires_at ? new Date(session.expires_at * 1000).toISOString() : "unknown");
+            data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : "unknown");
           
           // Get user profile from user_metadata
-          const userProfile = session.user.user_metadata?.role || "Agente";
+          const userProfile = data.session.user.user_metadata?.role || "Agente";
           
           // Store the user profile in localStorage for compatibility with existing code
           localStorage.setItem("isAuthenticated", "true");
           localStorage.setItem("userProfile", userProfile);
-          localStorage.setItem("userName", session.user.email || "");
-          localStorage.setItem("userId", session.user.id);
-          localStorage.setItem("userEmail", session.user.email || "");
+          localStorage.setItem("userName", data.session.user.email || "");
+          localStorage.setItem("userId", data.session.user.id);
+          localStorage.setItem("userEmail", data.session.user.email || "");
           
           // Only redirect after we've confirmed there's a valid session
-          setTimeout(() => {
-            // Redirect based on user profile
-            if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-              navigate("/index", { replace: true });
-            } else {
-              navigate("/dashboard", { replace: true });
-            }
-          }, 100);
+          if (mounted) {
+            setTimeout(() => {
+              // Redirect based on user profile
+              if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+                navigate("/index", { replace: true });
+              } else {
+                navigate("/dashboard", { replace: true });
+              }
+            }, 100);
+          }
         }
       } catch (error) {
         console.error("Error checking session:", error);
       } finally {
-        setIsCheckingSession(false);
+        if (mounted) {
+          setIsCheckingSession(false);
+        }
       }
     };
     
     checkSession();
+    
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
   const onSubmit = async (data: LoginFormValues) => {

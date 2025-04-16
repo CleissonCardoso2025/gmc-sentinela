@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
@@ -18,7 +19,7 @@ const Login = () => {
         setIsCheckingSession(true);
         
         // First set up the auth state listener to handle changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const { data } = await supabase.auth.onAuthStateChange((event, session) => {
           console.log("Auth state changed on login page:", event);
           
           if (session) {
@@ -42,30 +43,30 @@ const Login = () => {
         });
         
         // Store the subscription for cleanup
-        authSubscription = subscription;
+        authSubscription = data.subscription;
         
         // Get existing session
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: sessionData, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error checking session:", error);
           throw error;
         }
         
-        if (session) {
+        if (sessionData.session) {
           console.log("Existing session found, redirecting...");
           console.log("Session expires at:", 
-            session.expires_at ? new Date(session.expires_at * 1000).toISOString() : "unknown");
+            sessionData.session.expires_at ? new Date(sessionData.session.expires_at * 1000).toISOString() : "unknown");
           
           // Get user profile from user_metadata
-          const userProfile = session.user.user_metadata?.role || "Agente";
+          const userProfile = sessionData.session.user.user_metadata?.role || "Agente";
           
           // Store the user profile in localStorage for compatibility with existing code
           localStorage.setItem("isAuthenticated", "true");
           localStorage.setItem("userProfile", userProfile);
-          localStorage.setItem("userName", session.user.email || "");
-          localStorage.setItem("userId", session.user.id);
-          localStorage.setItem("userEmail", session.user.email || "");
+          localStorage.setItem("userName", sessionData.session.user.email || "");
+          localStorage.setItem("userId", sessionData.session.user.id);
+          localStorage.setItem("userEmail", sessionData.session.user.email || "");
           
           // Redirect based on user profile
           setTimeout(() => {

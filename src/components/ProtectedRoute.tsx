@@ -32,11 +32,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   
   // Make sure we refresh the session if needed
   useEffect(() => {
+    let mounted = true;
+    
     const checkSessionValidity = async () => {
-      if (isAuthenticated && user) {
+      if (mounted && isAuthenticated && user) {
         // Check if session is near expiration, and refresh if needed
         const { session, error } = await refreshSession();
-        if (!session && error) {
+        if (mounted && !session && error) {
           console.error("Failed to refresh session:", error);
           // If session refresh failed, redirect to login
           toast.error("Sua sessão expirou. Por favor, faça login novamente.");
@@ -48,6 +50,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     if (sessionInitialized) {
       checkSessionValidity();
     }
+    
+    return () => {
+      mounted = false;
+    };
   }, [isAuthenticated, user, sessionInitialized, refreshSession, navigate]);
   
   // Show loading state while auth is being checked
@@ -70,7 +76,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   
   // Store auth data for pages that still use localStorage-based auth
   useEffect(() => {
-    if (isAuthenticated && user && sessionInitialized) {
+    let mounted = true;
+
+    const setupLocalStorage = () => {
+      if (!mounted || !isAuthenticated || !user || !sessionInitialized) return;
+      
       localStorage.setItem('isAuthenticated', 'true');
       
       // Get user profile from user_metadata or fall back to the role passed to this component
@@ -88,18 +98,36 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
         // For testing, if no email is set but user is an Inspetor, use the default email
         localStorage.setItem('userEmail', 'gcmribeiradopombal@hotmail.com');
       }
-    }
+    };
+    
+    setupLocalStorage();
+    
+    return () => {
+      mounted = false;
+    };
   }, [isAuthenticated, user, userProfile, userRole, sessionInitialized]);
   
   // Check if the stored profile should be redirected
   useEffect(() => {
-    if (sessionInitialized && isAuthenticated && location.pathname === '/') {
+    let mounted = true;
+    
+    const handleRedirect = () => {
+      if (!mounted || !sessionInitialized || !isAuthenticated || location.pathname !== '/') return;
+      
       setIsRedirecting(true);
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-        setIsRedirecting(false);
+        if (mounted) {
+          navigate('/dashboard', { replace: true });
+          setIsRedirecting(false);
+        }
       }, 100);
-    }
+    };
+    
+    handleRedirect();
+    
+    return () => {
+      mounted = false;
+    };
   }, [location.pathname, navigate, isAuthenticated, sessionInitialized]);
   
   // Special check for /index path - only Inspetor or Subinspetor can access

@@ -1,131 +1,73 @@
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { UserFormData } from '../pages/UserManagement/types';
 
-import React from 'react';
-import { UserFormData } from './UserManagement/types';
-import { useUserForm } from '@/hooks/use-user-form';
-import { Form } from '@/components/ui/form';
-
-// Import form field components
-import NameField from './FormFields/NameField';
-import EmailField from './FormFields/EmailField';
-import MatriculaField from './FormFields/MatriculaField';
-import DateField from './FormFields/DateField';
-import ProfileField from './FormFields/ProfileField';
-import StatusField from './FormFields/StatusField';
-import PasswordField from './FormFields/PasswordField';
-import FormActions from './FormFields/FormActions';
-
-interface UserFormProps {
+interface UseUserFormProps {
   initialData?: UserFormData;
   onSubmit: (data: UserFormData) => void;
   onCancel: () => void;
-  readOnly?: boolean;
 }
 
-const UserForm: React.FC<UserFormProps> = ({ 
-  initialData, 
-  onSubmit,
-  onCancel,
-  readOnly = false
-}) => {
-  const {
-    form,
-    isSubmitting,
-    handleSubmit,
-    handleCancel,
-    isEditing
-  } = useUserForm({ initialData, onSubmit, onCancel });
+export const useUserForm = ({ initialData, onSubmit, onCancel }: UseUserFormProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditing = Boolean(initialData?.id);
 
-  // Handle form submission with validation
-  const onFormSubmit = handleSubmit;
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
 
-  const handleProfileChange = (value: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente') => {
-    form.setValue('perfil', value);
+    try {
+      const formData = new FormData(event.currentTarget);
+      const data: UserFormData = {
+        nome: formData.get('nome') as string,
+        email: formData.get('email') as string,
+        matricula: formData.get('matricula') as string,
+        data_nascimento: formData.get('data_nascimento') as string,
+        perfil: formData.get('perfil') as string,
+        status: formData.get('status') === 'on',
+        password: formData.get('password') as string,
+        confirmPassword: formData.get('confirmPassword') as string,
+      };
+
+      // Create new user
+      if (!isEditing) {
+        const { error } = await supabase.auth.admin.createUser({
+          email: data.email,
+          password: data.password,
+          user_metadata: {
+            role: data.perfil, // <-- isso garante que vai pro raw_user_meta_data.role
+            nome: data.nome,
+            matricula: data.matricula,
+            data_nascimento: data.data_nascimento,
+            status: data.status
+          }
+        });
+
+        if (error) throw error;
+      }
+
+      // Continue with your app logic (saving user to public.users, etc.)
+      onSubmit(data);
+    } catch (err) {
+      console.error('Erro ao criar usuário:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  return (
-    <Form {...form}>
-      <form onSubmit={onFormSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <NameField 
-            value={form.watch('nome')}
-            onChange={(value) => form.setValue('nome', value)}
-            error={form.formState.errors.nome?.message}
-            readOnly={readOnly}
-          />
+  const handleCancel = () => {
+    onCancel();
+  };
 
-          <EmailField 
-            value={form.watch('email')}
-            onChange={(value) => form.setValue('email', value)}
-            error={form.formState.errors.email?.message}
-            isChecking={false}
-            readOnly={readOnly}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MatriculaField 
-            value={form.watch('matricula')}
-            onChange={(value) => form.setValue('matricula', value)}
-            error={form.formState.errors.matricula?.message}
-            isChecking={false}
-            readOnly={readOnly}
-          />
-
-          <DateField 
-            value={form.watch('data_nascimento')}
-            onChange={(value) => form.setValue('data_nascimento', value)}
-            error={form.formState.errors.data_nascimento?.message}
-            readOnly={readOnly}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ProfileField 
-            value={form.watch('perfil')}
-            onChange={handleProfileChange}
-            readOnly={readOnly}
-          />
-
-          <div className="flex items-center h-full">
-            <StatusField 
-              checked={form.watch('status')}
-              onChange={(checked) => form.setValue('status', checked)}
-              readOnly={readOnly}
-            />
-          </div>
-        </div>
-
-        {/* Password fields */}
-        {!isEditing && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <PasswordField 
-              label="Senha"
-              value={form.watch('password') || ''}
-              onChange={(value) => form.setValue('password', value)}
-              error={form.formState.errors.password?.message}
-              readOnly={readOnly}
-            />
-
-            <PasswordField 
-              label="Confirmar Senha"
-              value={form.watch('confirmPassword') || ''}
-              onChange={(value) => form.setValue('confirmPassword', value)}
-              error={form.formState.errors.confirmPassword?.message}
-              placeholder="Confirme sua senha"
-              readOnly={readOnly}
-            />
-          </div>
-        )}
-
-        <FormActions 
-          onCancel={handleCancel}
-          isEditing={isEditing}
-          isSubmitting={isSubmitting}
-          readOnly={readOnly}
-        />
-      </form>
-    </Form>
-  );
+  return {
+    form: {
+      watch: (key: keyof UserFormData) => initialData?.[key] ?? '',
+      setValue: () => {}, // Ajuste conforme o seu form library
+      formState: { errors: {} },
+    },
+    isSubmitting,
+    isEditing,
+    handleSubmit,
+    handleCancel,
+  };
 };
-
-export default UserForm;

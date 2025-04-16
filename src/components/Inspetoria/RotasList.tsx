@@ -16,11 +16,11 @@ interface Rota {
   nome: string;
   descricao?: string;
   bairros?: string;
-  pontoinicial?: string; // Updated to match database column name
-  pontofinal?: string; // Updated to match database column name
-  tempoprevisto?: string; // Updated to match database column name
+  pontoinicial?: string;
+  pontofinal?: string;
+  tempoprevisto?: string;
   prioridade?: string;
-  ultimopatrulhamento?: string; // Updated to match database column name
+  ultimopatrulhamento?: string;
   created_at: string;
 }
 
@@ -44,7 +44,6 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
     setError(null);
     
     try {
-      console.log("Buscando rotas...");
       const { data, error } = await supabase
         .from('rotas')
         .select('*')
@@ -52,17 +51,29 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
 
       if (error) {
         console.error("Erro ao buscar rotas:", error);
-        throw error;
+        
+        // Specific handling for permission errors
+        if (error.code === 'PGRST116') {
+          setError("Você não tem permissão para visualizar as rotas. Entre em contato com um administrador.");
+        } else {
+          setError(error.message || "Não foi possível carregar as rotas cadastradas.");
+        }
+        
+        toast({
+          title: "Erro ao carregar rotas",
+          description: error.message || "Não foi possível carregar as rotas.",
+          variant: "destructive"
+        });
+      } else {
+        console.log("Rotas recuperadas:", data);
+        setRotas(data || []);
       }
-      
-      console.log("Rotas recuperadas:", data);
-      setRotas(data || []);
     } catch (error: any) {
       console.error("Erro ao carregar rotas:", error);
-      setError(error.message || "Não foi possível carregar as rotas cadastradas.");
+      setError(error.message || "Ocorreu um erro ao buscar as rotas.");
       toast({
         title: "Erro ao carregar rotas",
-        description: "Não foi possível carregar as rotas cadastradas.",
+        description: error.message || "Não foi possível carregar as rotas.",
         variant: "destructive"
       });
     } finally {
@@ -138,10 +149,10 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Erro de conexão</AlertTitle>
+        <AlertTitle>Erro de Acesso</AlertTitle>
         <AlertDescription className="space-y-2">
-          <p>Não foi possível conectar ao banco de dados: {error}</p>
-          <Button onClick={retryFetch} variant="outline" size="sm">
+          <p>{error}</p>
+          <Button onClick={fetchRotas} variant="outline" size="sm">
             Tentar novamente
           </Button>
         </AlertDescription>

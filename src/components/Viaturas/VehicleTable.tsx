@@ -31,7 +31,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, onEdit, onAddMain
       case "Reserva":
         return <Badge className="bg-blue-500">Reserva</Badge>;
       default:
-        return <Badge>{status}</Badge>;
+        return <Badge>{status || "Desconhecido"}</Badge>;
     }
   };
   
@@ -59,7 +59,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, onEdit, onAddMain
           </TableRow>
         </TableHeader>
         <TableBody>
-          {vehicles.length > 0 ? (
+          {vehicles && vehicles.length > 0 ? (
             vehicles.map((vehicle) => (
               <TableRow key={vehicle.id}>
                 <TableCell className="font-medium">{vehicle.placa}</TableCell>

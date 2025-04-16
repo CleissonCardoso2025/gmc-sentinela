@@ -320,6 +320,7 @@ export type Database = {
           status: string | null
           tipo: string | null
           ultimamanutencao: string | null
+          user_id: string | null
         }
         Insert: {
           ano?: string | null
@@ -333,6 +334,7 @@ export type Database = {
           status?: string | null
           tipo?: string | null
           ultimamanutencao?: string | null
+          user_id?: string | null
         }
         Update: {
           ano?: string | null
@@ -346,6 +348,7 @@ export type Database = {
           status?: string | null
           tipo?: string | null
           ultimamanutencao?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

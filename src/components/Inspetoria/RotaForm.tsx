@@ -58,16 +58,19 @@ const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota }) =>
       console.log('Rota form submitted:', values);
       
       // Preparar dados para o Supabase
+      // Importante: use o nome dos campos exatamente como estão no banco de dados
       const rotaData = {
         nome: values.nome,
         descricao: values.descricao,
         bairros: values.bairros,
-        pontoInicial: values.pontoInicial,
-        pontoFinal: values.pontoFinal,
-        tempoPrevisto: values.tempoPrevisto,
+        pontoinicial: values.pontoInicial, // camelCase para snake_case
+        pontofinal: values.pontoFinal, // camelCase para snake_case
+        tempoprevisto: values.tempoPrevisto, // camelCase para snake_case
         prioridade: values.prioridade,
-        ultimoPatrulhamento: null
+        ultimopatrulhamento: null // camelCase para snake_case
       };
+      
+      console.log('Dados preparados para salvar:', rotaData);
       
       // Salvar no banco de dados
       const { data, error } = await supabase

@@ -190,21 +190,42 @@ export type Database = {
       }
       rotas: {
         Row: {
+          bairros: string | null
           created_at: string | null
+          descricao: string | null
           id: string
           nome: string
+          pontofinal: string | null
+          pontoinicial: string | null
+          prioridade: string | null
+          tempoprevisto: string | null
+          ultimopatrulhamento: string | null
           updated_at: string | null
         }
         Insert: {
+          bairros?: string | null
           created_at?: string | null
+          descricao?: string | null
           id?: string
           nome: string
+          pontofinal?: string | null
+          pontoinicial?: string | null
+          prioridade?: string | null
+          tempoprevisto?: string | null
+          ultimopatrulhamento?: string | null
           updated_at?: string | null
         }
         Update: {
+          bairros?: string | null
           created_at?: string | null
+          descricao?: string | null
           id?: string
           nome?: string
+          pontofinal?: string | null
+          pontoinicial?: string | null
+          prioridade?: string | null
+          tempoprevisto?: string | null
+          ultimopatrulhamento?: string | null
           updated_at?: string | null
         }
         Relationships: []

@@ -16,11 +16,11 @@ interface Rota {
   nome: string;
   descricao?: string;
   bairros?: string;
-  pontoInicial?: string;
-  pontoFinal?: string;
-  tempoPrevisto?: string;
+  pontoinicial?: string; // Updated to match database column name
+  pontofinal?: string; // Updated to match database column name
+  tempoprevisto?: string; // Updated to match database column name
   prioridade?: string;
-  ultimoPatrulhamento?: string;
+  ultimopatrulhamento?: string; // Updated to match database column name
   created_at: string;
 }
 
@@ -198,9 +198,9 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
                   <TableRow key={rota.id}>
                     <TableCell className="font-medium">{rota.nome}</TableCell>
                     <TableCell>{rota.bairros || "-"}</TableCell>
-                    <TableCell>{rota.tempoPrevisto || "-"}</TableCell>
+                    <TableCell>{rota.tempoprevisto || "-"}</TableCell>
                     <TableCell>{getPriorityBadge(rota.prioridade || "Normal")}</TableCell>
-                    <TableCell>{rota.ultimoPatrulhamento || "-"}</TableCell>
+                    <TableCell>{rota.ultimopatrulhamento || "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button variant="ghost" size="icon" title="Visualizar">

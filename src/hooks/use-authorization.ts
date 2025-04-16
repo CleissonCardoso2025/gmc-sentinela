@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,7 +67,10 @@ export const useAuthorization = (userProfile: string) => {
           const roles = await getAllRoles();
           setAvailableRoles(roles);
         } else {
-          setAvailableRoles(rolesData || []);
+          // Extract just the role names from the returned objects
+          const roleNames = rolesData ? rolesData.map(item => item.role) : [];
+          // Filter out undefined or null values and remove duplicates
+          setAvailableRoles([...new Set(roleNames.filter(Boolean))]);
         }
         
         // Fetch page access settings

@@ -151,8 +151,9 @@ export const getAllRoles = async (): Promise<string[]> => {
       .rpc('get_all_user_roles');
       
     if (!authRolesError && authRoles && authRoles.length > 0) {
-      // If we got roles from the RPC, return them
-      return [...new Set(authRoles)].sort();
+      // If we got roles from the RPC, extract just the role names and return them
+      const roleNames = authRoles.map(item => item.role).filter(Boolean);
+      return [...new Set(roleNames)].sort();
     }
     
     if (authRolesError) {
@@ -194,9 +195,16 @@ export const getAllRoles = async (): Promise<string[]> => {
     // Combine all roles and remove duplicates
     const allRoles = [
       ...(uniquePageAccessRoles || []),
-      ...(uniqueUserRoles || []),
-      ...(authRoles || [])
+      ...(uniqueUserRoles || [])
     ];
+    
+    // If authRoles exists but has a different structure, extract just the role names
+    if (authRoles) {
+      const extractedRoles = authRoles
+        .map(item => typeof item === 'string' ? item : item.role)
+        .filter(Boolean);
+      allRoles.push(...extractedRoles);
+    }
     
     // Remove duplicates and return
     return [...new Set(allRoles)].sort();

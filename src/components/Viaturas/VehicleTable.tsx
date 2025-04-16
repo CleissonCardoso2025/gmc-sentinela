@@ -24,7 +24,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
   vehicles, 
   onEdit, 
   onAddMaintenance,
-  isAdmin = false  // Default to false for safety
+  isAdmin = false  // This prop is still received but will be ignored
 }) => {
   const getStatusBadge = (status: string) => {
     switch(status) {
@@ -74,36 +74,28 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                 <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
                 <TableCell>{vehicle.quilometragem.toLocaleString()} km</TableCell>
                 <TableCell className="text-right">
-                  {isAdmin ? (
-                    <div className="flex justify-end space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => onEdit(vehicle)}
-                        title="Editar"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => onAddMaintenance(vehicle)}
-                        className={isMaintenanceNeeded(vehicle) ? "text-yellow-600" : ""}
-                        title="Adicionar manutenção"
-                      >
-                        {isMaintenanceNeeded(vehicle) ? 
-                          <AlertTriangle className="h-4 w-4" /> : 
-                          <Wrench className="h-4 w-4" />
-                        }
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex justify-end space-x-2">
-                      <Badge variant="outline" className="text-gray-500">
-                        Visualização
-                      </Badge>
-                    </div>
-                  )}
+                  <div className="flex justify-end space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => onEdit(vehicle)}
+                      title="Editar"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onAddMaintenance(vehicle)}
+                      className={isMaintenanceNeeded(vehicle) ? "text-yellow-600" : ""}
+                      title="Adicionar manutenção"
+                    >
+                      {isMaintenanceNeeded(vehicle) ? 
+                        <AlertTriangle className="h-4 w-4" /> : 
+                        <Wrench className="h-4 w-4" />
+                      }
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))

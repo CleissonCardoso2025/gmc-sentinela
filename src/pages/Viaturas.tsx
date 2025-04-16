@@ -74,18 +74,6 @@ const ViaturasPage: React.FC = () => {
     try {
       console.log("Buscando veículos...");
       
-      if (!isAuthenticated) {
-        console.log("Usuário não autenticado. Usando dados de exemplo.");
-        setVehicles([]);
-        toast({
-          title: "Não autenticado",
-          description: "Você precisa estar autenticado para visualizar viaturas.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from('vehicles')
         .select('*');
@@ -131,42 +119,18 @@ const ViaturasPage: React.FC = () => {
   };
 
   const handleAddVehicle = () => {
-    if (!isAdmin) {
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para adicionar veículos.",
-        variant: "destructive"
-      });
-      return;
-    }
     setFormMode("add");
     setSelectedVehicle(null);
     setActiveTab("cadastrar");
   };
 
   const handleEditVehicle = (vehicle: Vehicle) => {
-    if (!isAdmin) {
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para editar veículos.",
-        variant: "destructive"
-      });
-      return;
-    }
     setFormMode("edit");
     setSelectedVehicle(vehicle);
     setActiveTab("cadastrar");
   };
 
   const handleAddMaintenance = (vehicle: Vehicle) => {
-    if (!isAdmin) {
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para gerenciar manutenções.",
-        variant: "destructive"
-      });
-      return;
-    }
     setSelectedVehicle(vehicle);
     setMaintenanceMode(true);
     setActiveTab("manutencao");
@@ -184,15 +148,6 @@ const ViaturasPage: React.FC = () => {
         toast({
           title: "Não autenticado",
           description: "Você precisa estar autenticado para salvar viaturas.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (!isAdmin) {
-        toast({
-          title: "Permissão negada",
-          description: "Você não tem permissão para salvar alterações em viaturas.",
           variant: "destructive"
         });
         return;
@@ -304,8 +259,8 @@ const ViaturasPage: React.FC = () => {
 
   const handleSaveMaintenance = async (maintenance: Maintenance) => {
     try {
-      // Check if user is authenticated and is admin
-      if (!isAuthenticated || !isAdmin) {
+      // Check if user is authenticated
+      if (!isAuthenticated) {
         toast({
           title: "Permissão negada",
           description: "Você não tem permissão para gerenciar manutenções.",
@@ -374,31 +329,6 @@ const ViaturasPage: React.FC = () => {
       </Dashboard>
     );
   }
-  
-  // Render unauthorized state if authentication is complete but user is not authenticated
-  if (!isAuthenticated) {
-    return (
-      <Dashboard>
-        <div className="container mx-auto p-6">
-          <div className="p-8 max-w-md mx-auto my-12 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
-            <ShieldAlert className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-4 text-center">Acesso Não Autorizado</h2>
-            <p className="mb-6 text-center">
-              Você precisa estar autenticado para acessar esta página.
-            </p>
-            <div className="flex justify-center">
-              <Button
-                onClick={() => navigate('/login')}
-                className="bg-yellow-600 text-white hover:bg-yellow-700"
-              >
-                Fazer Login
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Dashboard>
-    );
-  }
 
   return (
     <Dashboard>
@@ -406,24 +336,18 @@ const ViaturasPage: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Gestão de Viaturas</h1>
           <div className="flex space-x-2">
-            {isAdmin && (
-              <Button onClick={handleAddVehicle}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Viatura
-              </Button>
-            )}
+            <Button onClick={handleAddVehicle}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Viatura
+            </Button>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="listar">Listagem de Viaturas</TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="cadastrar">Cadastro de Viatura</TabsTrigger>
-            )}
-            {isAdmin && (
-              <TabsTrigger value="manutencao">Manutenção</TabsTrigger>
-            )}
+            <TabsTrigger value="cadastrar">Cadastro de Viatura</TabsTrigger>
+            <TabsTrigger value="manutencao">Manutenção</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
           </TabsList>
 
@@ -485,55 +409,51 @@ const ViaturasPage: React.FC = () => {
             </div>
           </TabsContent>
 
-          {isAdmin && (
-            <TabsContent value="cadastrar">
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">
-                  {formMode === "add" ? "Adicionar Nova Viatura" : "Editar Viatura"}
-                </h2>
-                <VehicleForm 
-                  vehicle={selectedVehicle} 
-                  onSave={handleSaveVehicle} 
-                  onCancel={() => setActiveTab("listar")} 
-                />
-              </Card>
-            </TabsContent>
-          )}
+          <TabsContent value="cadastrar">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {formMode === "add" ? "Adicionar Nova Viatura" : "Editar Viatura"}
+              </h2>
+              <VehicleForm 
+                vehicle={selectedVehicle} 
+                onSave={handleSaveVehicle} 
+                onCancel={() => setActiveTab("listar")} 
+              />
+            </Card>
+          </TabsContent>
 
-          {isAdmin && (
-            <TabsContent value="manutencao">
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">
-                  {maintenanceMode ? "Adicionar Manutenção" : "Histórico de Manutenções"}
-                </h2>
-                {maintenanceMode ? (
-                  <MaintenanceForm 
-                    vehicle={selectedVehicle}
-                    onSave={handleSaveMaintenance}
-                    onCancel={() => {
-                      setMaintenanceMode(false);
-                      setActiveTab("listar");
-                    }}
-                  />
+          <TabsContent value="manutencao">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {maintenanceMode ? "Adicionar Manutenção" : "Histórico de Manutenções"}
+              </h2>
+              {maintenanceMode ? (
+                <MaintenanceForm 
+                  vehicle={selectedVehicle}
+                  onSave={handleSaveMaintenance}
+                  onCancel={() => {
+                    setMaintenanceMode(false);
+                    setActiveTab("listar");
+                  }}
+                />
+              ) : (
+                isLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
                 ) : (
-                  isLoading ? (
-                    <div className="space-y-4">
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-16 w-full" />
-                      <Skeleton className="h-16 w-full" />
-                      <Skeleton className="h-16 w-full" />
-                    </div>
-                  ) : (
-                    <MaintenanceHistory 
-                      maintenances={maintenances} 
-                      vehicles={vehicles} 
-                      fullHistory 
-                    />
-                  )
-                )}
-              </Card>
-            </TabsContent>
-          )}
+                  <MaintenanceHistory 
+                    maintenances={maintenances} 
+                    vehicles={vehicles} 
+                    fullHistory 
+                  />
+                )
+              )}
+            </Card>
+          </TabsContent>
 
           <TabsContent value="relatorios">
             <Card className="p-6">

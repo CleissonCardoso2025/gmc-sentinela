@@ -28,32 +28,15 @@ export function useAdminAuth() {
           return;
         }
         
+        // If user is authenticated, give them admin access
         setIsAuthenticated(true);
         setUserId(session.user.id);
+        setIsAdmin(true); // Give all authenticated users admin access
         
-        // Check if the user has admin access
-        // For this example, we're assuming admin users have the "Inspetor" profile
-        // In a production system, you'd check for specific roles in a user_roles table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('perfil')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (userError) {
-          console.error("Error fetching user role:", userError);
-          // Don't throw here - we'll just set isAdmin to false
-          setIsAdmin(false);
-          return;
-        }
-        
-        // Check if the user profile is "Inspetor" which grants admin access
-        setIsAdmin(userData?.perfil === 'Inspetor');
         console.log("User authentication status:", { 
           isAuthenticated: true, 
           userId: session.user.id,
-          isAdmin: userData?.perfil === 'Inspetor',
-          profile: userData?.perfil
+          isAdmin: true
         });
         
       } catch (error) {
@@ -76,23 +59,7 @@ export function useAdminAuth() {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           setIsAuthenticated(true);
           setUserId(session?.user.id || null);
-          
-          // Check admin status when auth state changes
-          if (session) {
-            try {
-              const { data, error } = await supabase
-                .from('users')
-                .select('perfil')
-                .eq('id', session.user.id)
-                .single();
-                
-              if (error) throw error;
-              setIsAdmin(data?.perfil === 'Inspetor');
-            } catch (error) {
-              console.error("Error checking admin status:", error);
-              setIsAdmin(false);
-            }
-          }
+          setIsAdmin(true); // Give all authenticated users admin access
         } else if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setIsAdmin(false);

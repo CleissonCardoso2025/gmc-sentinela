@@ -188,6 +188,24 @@ export type Database = {
         }
         Relationships: []
       }
+      page_access: {
+        Row: {
+          can_access: boolean
+          page_name: string
+          role: string
+        }
+        Insert: {
+          can_access?: boolean
+          page_name: string
+          role: string
+        }
+        Update: {
+          can_access?: boolean
+          page_name?: string
+          role?: string
+        }
+        Relationships: []
+      }
       rotas: {
         Row: {
           bairros: string | null

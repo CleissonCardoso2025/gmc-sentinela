@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAllUserRoles } from '@/services/userService/apiUserService';
+import { getAllRoles, togglePageAccess } from '@/services/pageAccessService';
+import { toast } from 'sonner';
 
 // Define page access structure
 export type PageAccess = {
@@ -35,12 +36,12 @@ const PageAccessControl: React.FC<PageAccessControlProps> = ({
   const [availableProfiles, setAvailableProfiles] = useState<string[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(true);
   
-  // Fetch all available roles from the database
+  // Fetch roles from the database
   useEffect(() => {
     const fetchRoles = async () => {
       try {
         setLoadingProfiles(true);
-        const roles = await getAllUserRoles();
+        const roles = await getAllRoles();
         
         // If no roles returned, use default roles
         if (roles.length === 0) {
@@ -59,28 +60,62 @@ const PageAccessControl: React.FC<PageAccessControlProps> = ({
 
     fetchRoles();
   }, []);
+
+  // Update local state when initialPages changes
+  useEffect(() => {
+    setPages(initialPages);
+    setHasChanges(false);
+  }, [initialPages]);
   
-  const toggleAccess = (pageId: string, profile: string) => {
-    setPages(prevPages => 
-      prevPages.map(page => {
-        if (page.id === pageId) {
-          let updatedAllowedProfiles: string[];
-          
-          if (page.allowedProfiles.includes(profile)) {
-            updatedAllowedProfiles = page.allowedProfiles.filter(p => p !== profile);
-          } else {
-            updatedAllowedProfiles = [...page.allowedProfiles, profile];
-          }
-          
-          return {
-            ...page,
-            allowedProfiles: updatedAllowedProfiles
-          };
+  const toggleAccess = async (pageId: string, profile: string) => {
+    // Find the page
+    const pageToUpdate = pages.find(page => page.id === pageId);
+    if (!pageToUpdate) return;
+    
+    // Determine the new access state
+    const currentlyHasAccess = pageToUpdate.allowedProfiles.includes(profile);
+    const newHasAccess = !currentlyHasAccess;
+    
+    // Clone the pages array to avoid direct state mutation
+    const updatedPages = pages.map(page => {
+      if (page.id === pageId) {
+        let updatedAllowedProfiles: string[];
+        
+        if (currentlyHasAccess) {
+          // Remove profile from allowed profiles
+          updatedAllowedProfiles = page.allowedProfiles.filter(p => p !== profile);
+        } else {
+          // Add profile to allowed profiles
+          updatedAllowedProfiles = [...page.allowedProfiles, profile];
         }
-        return page;
-      })
-    );
+        
+        return {
+          ...page,
+          allowedProfiles: updatedAllowedProfiles
+        };
+      }
+      return page;
+    });
+    
+    // Update local state immediately (optimistic update)
+    setPages(updatedPages);
     setHasChanges(true);
+    
+    try {
+      // Update the database in the background
+      const success = await togglePageAccess(pageId, pageToUpdate.name, profile, newHasAccess);
+      
+      if (!success) {
+        // If update fails, revert to the previous state
+        toast.error(`Erro ao atualizar permissão para ${profile} em ${pageToUpdate.name}`);
+        setPages(pages); // Revert to previous state
+      }
+    } catch (error) {
+      console.error('Error toggling access:', error);
+      toast.error('Erro ao atualizar permissão');
+      // Revert to previous state on error
+      setPages(pages);
+    }
   };
 
   const handleSave = () => {

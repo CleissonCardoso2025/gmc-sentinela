@@ -3,20 +3,10 @@ import { useEffect, useState } from 'react';
 import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getAllUserRoles } from '@/services/userService/apiUserService';
+import { fetchPageAccess, savePageAccessSettings, getAllRoles } from '@/services/pageAccessService';
 
 // Função que retorna configurações de acesso padrão
-const getPageAccessSettings = (): PageAccess[] => {
-  const storedSettings = localStorage.getItem('pageAccessSettings');
-  
-  if (storedSettings) {
-    try {
-      return JSON.parse(storedSettings) as PageAccess[];
-    } catch (error) {
-      console.error('Error parsing stored page access settings:', error);
-    }
-  }
-  
+const getDefaultPageAccessSettings = (): PageAccess[] => {
   // Default settings if nothing is stored - starting with empty allowedProfiles
   return [
     { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: [] },
@@ -64,18 +54,54 @@ export const useAuthorization = (userProfile: string) => {
   const [effectiveProfile, setEffectiveProfile] = useState<string>(userProfile);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   
-  // Load roles from the database
+  // Load roles and page access settings from the database
   useEffect(() => {
-    const fetchRoles = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const roles = await getAllUserRoles();
+        // Fetch roles
+        const roles = await getAllRoles();
         setAvailableRoles(roles);
+        
+        // Fetch page access settings
+        const accessSettings = await fetchPageAccess();
+        
+        if (accessSettings.length > 0) {
+          setPageAccessSettings(accessSettings);
+        } else {
+          // If no settings found, use defaults
+          setPageAccessSettings(getDefaultPageAccessSettings());
+        }
       } catch (error) {
-        console.error('Error fetching roles:', error);
+        console.error('Error fetching access data:', error);
+        toast.error('Erro ao carregar configurações de acesso');
+        // Use default settings in case of error
+        setPageAccessSettings(getDefaultPageAccessSettings());
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    fetchRoles();
+    fetchData();
+    
+    // Set up real-time subscription for page_access table changes
+    const channel = supabase
+      .channel('table-db-changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'page_access' 
+        }, 
+        () => {
+          // Refetch access settings when changes occur
+          fetchData();
+        })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   // Carrega o ID do usuário atual e email
@@ -112,12 +138,6 @@ export const useAuthorization = (userProfile: string) => {
       setEffectiveProfile(userProfile);
     }
   }, [userProfile]);
-  
-  // Load page access settings on component mount
-  useEffect(() => {
-    setPageAccessSettings(getPageAccessSettings());
-    setIsLoading(false);
-  }, []);
   
   // Check if user has access to a specific page based on path
   const hasAccessToPage = (path: string): boolean => {
@@ -183,20 +203,32 @@ export const useAuthorization = (userProfile: string) => {
   };
   
   // Save updated page access settings
-  const updatePageAccess = (pages: PageAccess[]) => {
+  const updatePageAccess = async (pages: PageAccess[]): Promise<boolean> => {
     try {
-      // Update state
+      setIsLoading(true);
+      
+      // Update state optimistically 
       setPageAccessSettings(pages);
       
-      // Persist to local storage
-      localStorage.setItem('pageAccessSettings', JSON.stringify(pages));
+      // Save to Supabase
+      const success = await savePageAccessSettings(pages);
       
-      toast.success("As permissões de acesso foram atualizadas com sucesso");
-      return true;
+      if (success) {
+        toast.success("As permissões de acesso foram atualizadas com sucesso");
+        return true;
+      } else {
+        // If save fails, revert optimistic update
+        const currentSettings = await fetchPageAccess();
+        setPageAccessSettings(currentSettings);
+        toast.error("Erro ao salvar as permissões de acesso no banco de dados");
+        return false;
+      }
     } catch (error) {
       console.error('Error updating page access settings:', error);
       toast.error("Erro ao salvar as permissões de acesso");
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
   

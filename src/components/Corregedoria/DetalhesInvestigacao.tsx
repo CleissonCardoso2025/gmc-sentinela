@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { EtapaInvestigacao } from './EtapaInvestigacao';
-import { Calendar, Check, FileText, FileUp, Printer, Plus, Loader2 } from 'lucide-react';
+import { Calendar, Check, FileText, FileUp, Printer, Plus, Loader2, File, Trash2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Dialog, 
@@ -30,12 +30,13 @@ import {
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Investigacao } from '@/types/database';
+import { Investigacao, InvestigacaoAnexo, InvestigacaoRelatorio } from '@/types/database';
 import { Etapa, getEtapasByInvestigacaoId, updateEtapaStatus, addEtapa } from '@/services/investigacaoService/etapaService';
-import { updateInvestigacaoStatus } from '@/services/investigacaoService/apiInvestigacaoService';
+import { updateInvestigacaoStatus, uploadAnexo, deleteAnexo, generateReport } from '@/services/investigacaoService/apiInvestigacaoService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import EmptyState from '../Dashboard/EmptyState';
 
 interface DetalhesInvestigacaoProps {
   sindicancia: Investigacao;
@@ -50,15 +51,31 @@ const novaEtapaSchema = z.object({
 
 type NovaEtapaForm = z.infer<typeof novaEtapaSchema>;
 
+// Schema for upload anexo form
+const anexoSchema = z.object({
+  file: z.any().refine((file) => file instanceof File, {
+    message: "Arquivo é obrigatório",
+  }),
+  description: z.string().optional(),
+});
+
+type AnexoForm = z.infer<typeof anexoSchema>;
+
 export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState(sindicancia.status);
   const [etapas, setEtapas] = useState<Etapa[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoadingEtapas, setIsLoadingEtapas] = useState(true);
+  const [etapasError, setEtapasError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [anexoDialogOpen, setAnexoDialogOpen] = useState(false);
+  const [isUploadingAnexo, setIsUploadingAnexo] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState<'detailed' | 'summary'>('detailed');
+  const [selectedReportFormat, setSelectedReportFormat] = useState('pdf');
   
-  const form = useForm<NovaEtapaForm>({
+  // Forms
+  const etapaForm = useForm<NovaEtapaForm>({
     resolver: zodResolver(novaEtapaSchema),
     defaultValues: {
       nome: "",
@@ -67,23 +84,31 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
       data: new Date().toISOString().split('T')[0]
     }
   });
+  
+  const anexoForm = useForm<AnexoForm>({
+    resolver: zodResolver(anexoSchema),
+    defaultValues: {
+      file: undefined,
+      description: ""
+    }
+  });
 
   // Fetch etapas data
   useEffect(() => {
     const fetchEtapas = async () => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoadingEtapas(true);
+      setEtapasError(null);
       try {
         const data = await getEtapasByInvestigacaoId(sindicancia.id);
         if (data.length === 0) {
-          setError("Nenhuma etapa encontrada para esta sindicância.");
+          setEtapasError("Nenhuma etapa encontrada para esta sindicância.");
         }
         setEtapas(data);
       } catch (err) {
         console.error("Error fetching etapas:", err);
-        setError("Erro ao carregar as etapas da sindicância. Tente novamente mais tarde.");
+        setEtapasError("Erro ao carregar as etapas da sindicância. Tente novamente mais tarde.");
       } finally {
-        setIsLoading(false);
+        setIsLoadingEtapas(false);
       }
     };
     
@@ -146,7 +171,59 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
       });
       
       setDialogOpen(false);
-      form.reset();
+      etapaForm.reset();
+    }
+  };
+
+  const handleUploadAnexo = async (data: AnexoForm) => {
+    setIsUploadingAnexo(true);
+    try {
+      const success = await uploadAnexo(sindicancia.id, data.file, data.description);
+      
+      if (success) {
+        setAnexoDialogOpen(false);
+        anexoForm.reset();
+        // Refresh the page to get updated anexos
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Error uploading anexo:", error);
+      toast.error("Erro ao fazer upload do anexo");
+    } finally {
+      setIsUploadingAnexo(false);
+    }
+  };
+
+  const handleDeleteAnexo = async (anexoId: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este anexo?")) {
+      const success = await deleteAnexo(sindicancia.id, anexoId);
+      if (success) {
+        // Refresh the page to get updated anexos
+        window.location.reload();
+      }
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      const report = await generateReport(
+        sindicancia.id, 
+        selectedReportType, 
+        selectedReportFormat
+      );
+      
+      if (report) {
+        // In a real scenario, we might redirect to the report or download it
+        console.log("Report generated:", report);
+        // Refresh the page to get updated reports
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
@@ -162,6 +239,17 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
         return <Badge>{status}</Badge>;
     }
   };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) return <FileText className="h-4 w-4 text-red-500" />;
+    if (fileType.includes('image')) return <File className="h-4 w-4 text-blue-500" />;
+    if (fileType.includes('doc')) return <File className="h-4 w-4 text-blue-700" />;
+    return <File className="h-4 w-4" />;
+  };
+  
+  const getReportTypeLabel = (type: string): string => {
+    return type === 'detailed' ? 'Detalhado' : 'Resumido';
+  };
   
   return (
     <div className="space-y-6">
@@ -175,7 +263,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
             <Calendar className="mr-2 h-4 w-4" />
             Agendar
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => handleGenerateReport()}>
             <Printer className="mr-2 h-4 w-4" />
             Relatório
           </Button>
@@ -223,31 +311,107 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
           
           <div>
             <h3 className="font-semibold mb-2">Documentos Anexados</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {sindicancia.anexos && sindicancia.anexos.length > 0 ? (
-                sindicancia.anexos.map((anexo, index) => (
-                  <div key={index} className="bg-slate-50 p-2 rounded text-sm">
-                    {anexo.name}
+            {sindicancia.anexos && sindicancia.anexos.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {sindicancia.anexos.map((anexo) => (
+                  <div key={anexo.id} className="bg-slate-50 p-2 rounded text-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getFileIcon(anexo.type)}
+                      <span className="truncate max-w-[150px]">{anexo.name}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <Download className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 text-red-500 hover:text-red-700"
+                        onClick={() => handleDeleteAnexo(anexo.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                ))
-              ) : (
-                <>
-                  <div className="bg-slate-50 p-2 rounded text-sm">
-                    relatorio_inicial.pdf
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded text-sm">
-                    foto_evidencia1.jpg
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded text-sm">
-                    depoimento_testemunha.pdf
-                  </div>
-                </>
-              )}
-            </div>
-            <Button variant="outline" size="sm" className="mt-2">
-              <FileUp className="mr-2 h-4 w-4" />
-              Anexar Documentos
-            </Button>
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                icon="file"
+                title="Nenhum documento anexado"
+                description="Adicione documentos relevantes para esta sindicância."
+              />
+            )}
+            <Dialog open={anexoDialogOpen} onOpenChange={setAnexoDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <FileUp className="mr-2 h-4 w-4" />
+                  Anexar Documentos
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Anexar Documento</DialogTitle>
+                  <DialogDescription>
+                    Selecione um arquivo para anexar à sindicância.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <Form {...anexoForm}>
+                  <form onSubmit={anexoForm.handleSubmit(handleUploadAnexo)} className="space-y-4">
+                    <FormField
+                      control={anexoForm.control}
+                      name="file"
+                      render={({ field: { onChange, value, ...fieldProps } }) => (
+                        <FormItem>
+                          <FormLabel>Arquivo</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="file" 
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files.length > 0) {
+                                  onChange(e.target.files[0]);
+                                }
+                              }}
+                              {...fieldProps}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={anexoForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descrição (opcional)</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Descreva o conteúdo deste arquivo" 
+                              className="min-h-[80px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setAnexoDialogOpen(false)} disabled={isUploadingAnexo}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit" disabled={isUploadingAnexo}>
+                        {isUploadingAnexo && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Anexar
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -261,7 +425,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
         <TabsContent value="etapas" className="space-y-4">
           <h3 className="text-lg font-semibold mb-2">Etapas da Sindicância</h3>
           
-          {isLoading ? (
+          {isLoadingEtapas ? (
             // Loading state
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
@@ -276,12 +440,12 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                 </div>
               ))}
             </div>
-          ) : error ? (
+          ) : etapasError ? (
             // Error state
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {error}
+                {etapasError}
               </AlertDescription>
             </Alert>
           ) : (
@@ -317,10 +481,10 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                 </DialogDescription>
               </DialogHeader>
               
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(adicionarNovaEtapa)} className="space-y-4">
+              <Form {...etapaForm}>
+                <form onSubmit={etapaForm.handleSubmit(adicionarNovaEtapa)} className="space-y-4">
                   <FormField
-                    control={form.control}
+                    control={etapaForm.control}
                     name="nome"
                     render={({ field }) => (
                       <FormItem>
@@ -334,7 +498,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                   />
                   
                   <FormField
-                    control={form.control}
+                    control={etapaForm.control}
                     name="data"
                     render={({ field }) => (
                       <FormItem>
@@ -348,7 +512,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                   />
                   
                   <FormField
-                    control={form.control}
+                    control={etapaForm.control}
                     name="responsavel"
                     render={({ field }) => (
                       <FormItem>
@@ -362,7 +526,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                   />
                   
                   <FormField
-                    control={form.control}
+                    control={etapaForm.control}
                     name="descricao"
                     render={({ field }) => (
                       <FormItem>
@@ -399,7 +563,11 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" className="h-auto py-6 flex flex-col items-center justify-center">
+                <Button 
+                  variant={selectedReportType === 'detailed' ? 'default' : 'outline'} 
+                  className="h-auto py-6 flex flex-col items-center justify-center"
+                  onClick={() => setSelectedReportType('detailed')}
+                >
                   <Printer className="h-6 w-6 mb-2" />
                   <span className="font-medium">Relatório Detalhado</span>
                   <span className="text-xs text-muted-foreground mt-1">
@@ -407,13 +575,55 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                   </span>
                 </Button>
                 
-                <Button variant="outline" className="h-auto py-6 flex flex-col items-center justify-center">
+                <Button 
+                  variant={selectedReportType === 'summary' ? 'default' : 'outline'} 
+                  className="h-auto py-6 flex flex-col items-center justify-center"
+                  onClick={() => setSelectedReportType('summary')}
+                >
                   <FileText className="h-6 w-6 mb-2" />
                   <span className="font-medium">Relatório Resumido</span>
                   <span className="text-xs text-muted-foreground mt-1">
                     Resumo com principais pontos e conclusão
                   </span>
                 </Button>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="font-medium mb-2">Relatórios Disponíveis</h3>
+                
+                {sindicancia.relatorios && sindicancia.relatorios.length > 0 ? (
+                  <div className="space-y-2">
+                    {sindicancia.relatorios.map((relatorio) => (
+                      <div key={relatorio.id} className="bg-slate-50 p-3 rounded flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {relatorio.format === 'pdf' ? (
+                            <FileText className="h-5 w-5 text-red-500" />
+                          ) : (
+                            <File className="h-5 w-5 text-blue-500" />
+                          )}
+                          <div>
+                            <p className="font-medium">{relatorio.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {getReportTypeLabel(relatorio.type)} • {new Date(relatorio.created_at).toLocaleDateString()} • {relatorio.author}
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    icon="file-text"
+                    title="Nenhum relatório disponível"
+                    description="Gere um relatório da sindicância para começar."
+                  />
+                )}
               </div>
               
               <Separator />
@@ -432,12 +642,39 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                   <div>
                     <label className="text-sm font-medium">Formato de Saída</label>
                     <div className="flex mt-1 gap-2">
-                      <Button variant="outline" size="sm">PDF</Button>
-                      <Button variant="outline" size="sm">DOC</Button>
-                      <Button variant="outline" size="sm">CSV</Button>
+                      <Button 
+                        variant={selectedReportFormat === 'pdf' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setSelectedReportFormat('pdf')}
+                      >
+                        PDF
+                      </Button>
+                      <Button 
+                        variant={selectedReportFormat === 'doc' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setSelectedReportFormat('doc')}
+                      >
+                        DOC
+                      </Button>
+                      <Button 
+                        variant={selectedReportFormat === 'csv' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setSelectedReportFormat('csv')}
+                      >
+                        CSV
+                      </Button>
                     </div>
                   </div>
                 </div>
+
+                <Button 
+                  className="mt-4 w-full" 
+                  onClick={handleGenerateReport}
+                  disabled={isGeneratingReport}
+                >
+                  {isGeneratingReport && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Gerar Relatório {selectedReportType === 'detailed' ? 'Detalhado' : 'Resumido'}
+                </Button>
               </div>
             </CardContent>
           </Card>

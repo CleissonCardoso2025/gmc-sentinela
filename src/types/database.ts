@@ -1,4 +1,3 @@
-
 // Modify the existing User interface
 export interface User {
   id: string;
@@ -42,6 +41,7 @@ export interface Investigacao {
   etapaAtual: string;
   relatoInicial?: string;
   anexos?: InvestigacaoAnexo[];
+  relatorios?: InvestigacaoRelatorio[];
   created_at?: string;
   updated_at?: string;
 }
@@ -53,6 +53,16 @@ export interface InvestigacaoAnexo {
   type: string;
   description?: string;
   uploaded_at?: string;
+}
+
+export interface InvestigacaoRelatorio {
+  id: string;
+  title: string;
+  type: string; // 'detailed' or 'summary'
+  format: string; // 'pdf', 'doc', etc.
+  created_at: string;
+  author: string;
+  path: string;
 }
 
 export interface EtapaInvestigacao {

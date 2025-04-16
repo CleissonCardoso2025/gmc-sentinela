@@ -24,7 +24,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
   vehicles, 
   onEdit, 
   onAddMaintenance,
-  isAdmin = false  // This prop is still received but will be ignored
+  isAdmin = true  // Default to true to give all authenticated users admin access
 }) => {
   const getStatusBadge = (status: string) => {
     switch(status) {

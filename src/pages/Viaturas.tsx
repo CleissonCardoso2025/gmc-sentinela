@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,13 +54,12 @@ const ViaturasPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAdmin, isAuthenticated, isLoading: authLoading, userId } = useAdminAuth();
+  const { isAdmin, isAuthenticated, isLoading: authLoading, userId, userRole } = useAdminAuth();
 
-  // State for data
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
+  const [saveDisabled, setSaveDisabled] = useState(false);
 
-  // Fetch vehicles and maintenance data
   useEffect(() => {
     if (!authLoading) {
       fetchVehicles();
@@ -85,7 +83,6 @@ const ViaturasPage: React.FC = () => {
       
       console.log("Veículos recuperados:", vehiclesData);
       
-      // Transform vehicle data if needed
       const transformedVehicles = vehiclesData?.map(vehicle => ({
         id: vehicle.id,
         placa: vehicle.placa,
@@ -110,7 +107,6 @@ const ViaturasPage: React.FC = () => {
         variant: "destructive"
       });
       
-      // Set empty arrays on error
       setVehicles([]);
       setMaintenances([]);
     } finally {
@@ -138,23 +134,34 @@ const ViaturasPage: React.FC = () => {
 
   const handleSaveVehicle = async (vehicle: Vehicle) => {
     try {
-      console.log("Salvando veículo:", vehicle);
+      console.log("Iniciando processo de salvamento de veículo:", vehicle);
+      setSaveDisabled(true);
       
-      // First check if user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
+      if (sessionError) {
+        console.error("Erro ao verificar sessão:", sessionError);
+        throw new Error("Falha ao verificar autenticação");
+      }
+      
+      if (!session || !session.user) {
         console.log("Usuário não autenticado. Não é possível salvar dados.");
         toast({
           title: "Não autenticado",
-          description: "Você precisa estar autenticado para salvar viaturas.",
+          description: "Sua sessão expirou. Por favor, faça login novamente.",
           variant: "destructive"
         });
+        navigate('/login');
         return;
       }
       
+      console.log("Sessão válida, prosseguindo com o salvamento", {
+        userId: session.user.id,
+        userMetadata: session.user.user_metadata,
+        role: session.user.user_metadata?.role
+      });
+      
       if (formMode === "add") {
-        // Prepare vehicle data for insert
         const vehicleData = {
           placa: vehicle.placa,
           modelo: vehicle.modelo,
@@ -166,10 +173,8 @@ const ViaturasPage: React.FC = () => {
           ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
           proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
           observacoes: vehicle.observacoes,
-          user_id: session.user.id // Add user_id for RLS policy
+          user_id: session.user.id
         };
-        
-        console.log("Dados preparados para inserção:", vehicleData);
         
         const { data, error } = await supabase
           .from('vehicles')
@@ -184,7 +189,6 @@ const ViaturasPage: React.FC = () => {
         console.log("Veículo inserido com sucesso:", data);
         
         if (data && data.length > 0) {
-          // Transform returned data to match Vehicle interface
           const newVehicle: Vehicle = {
             id: data[0].id,
             placa: data[0].placa,
@@ -207,7 +211,6 @@ const ViaturasPage: React.FC = () => {
           description: "Viatura cadastrada com sucesso.",
         });
       } else if (formMode === "edit" && vehicle.id) {
-        // Prepare vehicle data for update
         const vehicleData = {
           placa: vehicle.placa,
           modelo: vehicle.modelo,
@@ -219,10 +222,8 @@ const ViaturasPage: React.FC = () => {
           ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
           proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
           observacoes: vehicle.observacoes,
-          user_id: session.user.id // Add user_id for RLS policy
+          user_id: session.user.id
         };
-        
-        console.log("Dados preparados para atualização:", vehicleData);
         
         const { error } = await supabase
           .from('vehicles')
@@ -236,7 +237,6 @@ const ViaturasPage: React.FC = () => {
         
         console.log("Veículo atualizado com sucesso");
         
-        // Update local state
         setVehicles(vehicles.map(v => v.id === vehicle.id ? vehicle : v));
         
         toast({
@@ -254,12 +254,13 @@ const ViaturasPage: React.FC = () => {
         description: `Não foi possível salvar os dados da viatura: ${error.message}`,
         variant: "destructive"
       });
+    } finally {
+      setSaveDisabled(false);
     }
   };
 
   const handleSaveMaintenance = async (maintenance: Maintenance) => {
     try {
-      // Check if user is authenticated
       if (!isAuthenticated) {
         toast({
           title: "Permissão negada",
@@ -269,8 +270,6 @@ const ViaturasPage: React.FC = () => {
         return;
       }
       
-      // In a real system, you would save maintenance data to your database
-      // For now, we just update the local state for demonstration
       if (!maintenance.id) {
         const newMaintenance = { ...maintenance, id: maintenances.length + 1 };
         setMaintenances([...maintenances, newMaintenance]);
@@ -310,8 +309,7 @@ const ViaturasPage: React.FC = () => {
     
     return matchesSearch && matchesStatus;
   });
-  
-  // Render loading state while checking authentication
+
   if (authLoading) {
     return (
       <Dashboard>
@@ -395,7 +393,7 @@ const ViaturasPage: React.FC = () => {
                   vehicles={filteredVehicles} 
                   onEdit={handleEditVehicle} 
                   onAddMaintenance={handleAddMaintenance}
-                  isAdmin={isAdmin}
+                  isAdmin={true}
                 />
               )}
             </Card>
@@ -418,6 +416,7 @@ const ViaturasPage: React.FC = () => {
                 vehicle={selectedVehicle} 
                 onSave={handleSaveVehicle} 
                 onCancel={() => setActiveTab("listar")} 
+                disabled={saveDisabled}
               />
             </Card>
           </TabsContent>

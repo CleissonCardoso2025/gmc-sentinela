@@ -8,6 +8,7 @@ export function useAdminAuth() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -25,25 +26,34 @@ export function useAdminAuth() {
           console.log("No active session found");
           setIsAuthenticated(false);
           setIsAdmin(false);
+          setUserRole(null);
           return;
         }
         
-        // If user is authenticated, give them admin access
+        // User is authenticated
         setIsAuthenticated(true);
         setUserId(session.user.id);
-        setIsAdmin(true); // Give all authenticated users admin access
+        
+        // Check if user has admin role in user_metadata
+        const role = session.user.user_metadata?.role;
+        setUserRole(role);
+        
+        // For now, all authenticated users get admin access
+        // But we store the actual role for future permission checking
+        setIsAdmin(true);
         
         console.log("User authentication status:", { 
           isAuthenticated: true, 
           userId: session.user.id,
+          role: role,
           isAdmin: true
         });
         
       } catch (error) {
         console.error("Authentication check failed:", error);
-        toast.error("Falha ao verificar autenticação");
         setIsAuthenticated(false);
         setIsAdmin(false);
+        setUserRole(null);
       } finally {
         setIsLoading(false);
       }
@@ -59,11 +69,18 @@ export function useAdminAuth() {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           setIsAuthenticated(true);
           setUserId(session?.user.id || null);
-          setIsAdmin(true); // Give all authenticated users admin access
+          
+          // Check if user has admin role in user_metadata
+          const role = session?.user.user_metadata?.role;
+          setUserRole(role);
+          
+          // For now, all authenticated users get admin access
+          setIsAdmin(true);
         } else if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setIsAdmin(false);
           setUserId(null);
+          setUserRole(null);
         }
       }
     );
@@ -73,5 +90,5 @@ export function useAdminAuth() {
     };
   }, []);
   
-  return { isAdmin, isAuthenticated, isLoading, userId };
+  return { isAdmin, isAuthenticated, isLoading, userId, userRole };
 }

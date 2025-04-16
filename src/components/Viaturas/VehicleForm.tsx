@@ -17,9 +17,15 @@ interface VehicleFormProps {
   vehicle: Vehicle | null;
   onSave: (vehicle: Vehicle) => void;
   onCancel: () => void;
+  disabled?: boolean;
 }
 
-const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) => {
+const VehicleForm: React.FC<VehicleFormProps> = ({ 
+  vehicle, 
+  onSave, 
+  onCancel, 
+  disabled = false 
+}) => {
   const initialState: Vehicle = {
     id: 0,
     placa: "",
@@ -125,6 +131,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
             value={formData.placa}
             onChange={handleChange}
             className={errors.placa ? "border-red-500" : ""}
+            disabled={disabled}
           />
           {errors.placa && <p className="text-red-500 text-sm">{errors.placa}</p>}
         </div>
@@ -137,6 +144,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
             value={formData.modelo}
             onChange={handleChange}
             className={errors.modelo ? "border-red-500" : ""}
+            disabled={disabled}
           />
           {errors.modelo && <p className="text-red-500 text-sm">{errors.modelo}</p>}
         </div>
@@ -149,6 +157,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
             value={formData.marca}
             onChange={handleChange}
             className={errors.marca ? "border-red-500" : ""}
+            disabled={disabled}
           />
           {errors.marca && <p className="text-red-500 text-sm">{errors.marca}</p>}
         </div>
@@ -161,6 +170,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
             value={formData.ano}
             onChange={handleChange}
             className={errors.ano ? "border-red-500" : ""}
+            disabled={disabled}
           />
           {errors.ano && <p className="text-red-500 text-sm">{errors.ano}</p>}
         </div>
@@ -170,6 +180,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
           <Select
             value={formData.tipo}
             onValueChange={(value) => handleSelectChange("tipo", value)}
+            disabled={disabled}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o tipo" />
@@ -188,6 +199,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
           <Select
             value={formData.status}
             onValueChange={(value) => handleSelectChange("status", value)}
+            disabled={disabled}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o status" />
@@ -209,6 +221,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
             type="number"
             value={formData.quilometragem}
             onChange={handleChange}
+            disabled={disabled}
           />
         </div>
         
@@ -220,6 +233,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
             type="date"
             value={formData.proximaManutencao}
             onChange={handleChange}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -232,15 +246,16 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
           rows={4}
           value={formData.observacoes}
           onChange={handleChange}
+          disabled={disabled}
         />
       </div>
       
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={disabled}>
           Cancelar
         </Button>
-        <Button type="submit">
-          Salvar
+        <Button type="submit" disabled={disabled}>
+          {disabled ? "Salvando..." : "Salvar"}
         </Button>
       </div>
     </form>

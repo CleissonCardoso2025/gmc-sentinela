@@ -131,7 +131,7 @@ export const uploadAnexo = async (
     };
     
     // Add to existing anexos array or create a new one
-    const currentAnexos = Array.isArray(investigacao.anexos) ? investigacao.anexos : [];
+    const currentAnexos: Record<string, any>[] = Array.isArray(investigacao.anexos) ? investigacao.anexos : [];
     const updatedAnexos = [...currentAnexos, newAnexo];
     
     // Update the investigation record with the new anexos array
@@ -175,7 +175,7 @@ export const deleteAnexo = async (investigacaoId: string, anexoId: string): Prom
     }
     
     // Filter out the anexo to delete
-    const currentAnexos = Array.isArray(investigacao.anexos) ? investigacao.anexos : [];
+    const currentAnexos: Record<string, any>[] = Array.isArray(investigacao.anexos) ? investigacao.anexos : [];
     const updatedAnexos = currentAnexos.filter(anexo => anexo.id !== anexoId);
     
     // Update the investigation record with the filtered anexos array

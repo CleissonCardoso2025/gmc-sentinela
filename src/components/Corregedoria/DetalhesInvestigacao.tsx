@@ -118,7 +118,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     if (success) {
       setStatus(newStatus);
       toast({
-        title: "Status atualizado",
         description: `A sindicância ${sindicancia.numero} foi atualizada para: ${newStatus}`
       });
     }
@@ -136,7 +135,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
       );
       
       toast({
-        title: "Etapa concluída",
         description: `A etapa ${etapas.find(e => e.id === id)?.nome} foi marcada como concluída.`
       });
     }
@@ -162,7 +160,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
       setEtapas([...etapas, addedEtapa]);
       
       toast({
-        title: "Nova etapa adicionada",
         description: `A etapa "${data.nome}" foi adicionada com sucesso.`
       });
       
@@ -185,7 +182,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     } catch (error) {
       console.error("Error uploading anexo:", error);
       toast({
-        title: "Erro ao fazer upload do anexo",
+        description: "Erro ao fazer upload do anexo",
         variant: "destructive"
       });
     } finally {

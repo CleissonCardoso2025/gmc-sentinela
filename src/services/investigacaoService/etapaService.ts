@@ -63,12 +63,45 @@ export const updateEtapaStatus = async (id: string, concluida: boolean): Promise
   }
 };
 
+// Helper to validate and format date strings
+const formatDateForDb = (dateString: string): string => {
+  // If already in DD/MM/YYYY format, return as is
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // If in YYYY-MM-DD format, convert to DD/MM/YYYY
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  }
+  
+  // Try to parse and format
+  try {
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+    }
+  } catch (e) {
+    console.warn("Invalid date format:", dateString);
+  }
+  
+  // Return original if can't be formatted
+  return dateString;
+};
+
 // Add new etapa
 export const addEtapa = async (etapa: Omit<Etapa, 'id' | 'created_at' | 'updated_at'>): Promise<Etapa | null> => {
   try {
+    // Format the date if needed before sending to database
+    const formattedEtapa = {
+      ...etapa,
+      data: formatDateForDb(etapa.data)
+    };
+    
     const { data, error } = await supabase
       .from('etapas_investigacao')
-      .insert([etapa])
+      .insert([formattedEtapa])
       .select()
       .single();
 

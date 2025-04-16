@@ -43,6 +43,29 @@ export function EtapaInvestigacao({ etapa, onComplete }: EtapaProps) {
     }
   };
 
+  // Helper function to safely parse a date string to a valid ISO date format
+  const safelyFormatDate = (dateString: string): string => {
+    // Check if the date string is in the format DD/MM/YYYY
+    const dateParts = dateString.split('/');
+    if (dateParts.length === 3) {
+      // Recreate date in YYYY-MM-DD format for input
+      return `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+    }
+    
+    // Try to parse as a ISO date string
+    try {
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    } catch (error) {
+      console.warn('Invalid date format:', dateString);
+    }
+    
+    // Return current date as fallback
+    return new Date().toISOString().split('T')[0];
+  };
+
   return (
     <Accordion type="single" collapsible className="border rounded-lg">
       <AccordionItem value={`etapa-${etapa.id}`} className="border-b-0">
@@ -65,7 +88,11 @@ export function EtapaInvestigacao({ etapa, onComplete }: EtapaProps) {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Data</label>
-                  <Input type="date" defaultValue={new Date(etapa.data).toISOString().split('T')[0]} className="mt-1" />
+                  <Input 
+                    type="date" 
+                    defaultValue={safelyFormatDate(etapa.data)} 
+                    className="mt-1" 
+                  />
                 </div>
                 
                 <div>

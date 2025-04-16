@@ -401,7 +401,11 @@ export type Database = {
     Functions: {
       get_all_user_roles: {
         Args: Record<PropertyKey, never>
-        Returns: string[]
+        Returns: {
+          id: string
+          email: string
+          role: string
+        }[]
       }
       get_latest_vehicle_locations: {
         Args: Record<PropertyKey, never>

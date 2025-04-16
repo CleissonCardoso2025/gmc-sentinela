@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { fetchPageAccess, savePageAccessSettings, getAllRoles } from '@/services/pageAccessService';
 
-// Função que retorna configurações de acesso padrão
+// Function to return default page access settings
 const getDefaultPageAccessSettings = (): PageAccess[] => {
   // Default settings if nothing is stored - starting with empty allowedProfiles
   return [
@@ -20,7 +20,7 @@ const getDefaultPageAccessSettings = (): PageAccess[] => {
   ];
 };
 
-// Usuários especiais com perfis específicos
+// Special users with specific profiles
 interface SpecialUser {
   userId: string;
   specificProfile: string;
@@ -33,7 +33,7 @@ const SPECIAL_USERS: SpecialUser[] = [
   }
 ];
 
-// Usuários identificados por email
+// Users identified by email
 interface EmailUser {
   email: string;
   specificProfile: string;
@@ -59,9 +59,17 @@ export const useAuthorization = (userProfile: string) => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch roles
-        const roles = await getAllRoles();
-        setAvailableRoles(roles);
+        // Fetch roles directly using the RPC function
+        const { data: rolesData, error: rolesError } = await supabase.rpc('get_all_user_roles');
+        
+        if (rolesError) {
+          console.error('Error fetching roles with RPC:', rolesError);
+          // Fallback to service function if RPC fails
+          const roles = await getAllRoles();
+          setAvailableRoles(roles);
+        } else {
+          setAvailableRoles(rolesData || []);
+        }
         
         // Fetch page access settings
         const accessSettings = await fetchPageAccess();
@@ -104,7 +112,7 @@ export const useAuthorization = (userProfile: string) => {
     };
   }, []);
   
-  // Carrega o ID do usuário atual e email
+  // Load the current user ID and email
   useEffect(() => {
     const userId = localStorage.getItem('currentUserId');
     const userEmail = localStorage.getItem('userEmail');
@@ -117,19 +125,19 @@ export const useAuthorization = (userProfile: string) => {
       setCurrentUserEmail(userEmail);
     }
     
-    // Verifica se o usuário tem um perfil específico designado por ID
+    // Check if the user has a specific profile designated by ID
     const specialUser = SPECIAL_USERS.find(u => u.userId === userId);
     if (specialUser) {
       setEffectiveProfile(specialUser.specificProfile);
-      // Também atualiza o localStorage para que outras partes do app saibam
+      // Also update localStorage so other parts of the app know
       localStorage.setItem('userProfile', specialUser.specificProfile);
     } 
-    // Ou verifica se o usuário tem um perfil específico designado por email
+    // Or check if the user has a specific profile designated by email
     else if (userEmail) {
       const emailUser = EMAIL_USERS.find(u => u.email === userEmail);
       if (emailUser) {
         setEffectiveProfile(emailUser.specificProfile);
-        // Também atualiza o localStorage para que outras partes do app saibam
+        // Also update localStorage so other parts of the app know
         localStorage.setItem('userProfile', emailUser.specificProfile);
       } else {
         setEffectiveProfile(userProfile);
@@ -167,12 +175,12 @@ export const useAuthorization = (userProfile: string) => {
     const page = pageAccessSettings.find(p => p.path === basePath);
     
     if (!page) {
-      // Se não encontrar a página nas configurações e as configurações estão vazias, permitir acesso
-      // para não bloquear todos os usuários enquanto as configurações estão sendo reconfiguradas
+      // If the page isn't found in settings and settings are empty, allow access
+      // to avoid blocking all users while settings are being reconfigured
       return pageAccessSettings.length === 0;
     }
     
-    // If no profiles are allowed yet (empty configuration), allow access for configuration
+    // If no profiles are allowed yet (empty configuration), only allow Inspetor access for configuration
     if (page.allowedProfiles.length === 0) {
       return effectiveProfile === 'Inspetor';
     }

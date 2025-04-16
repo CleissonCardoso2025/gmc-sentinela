@@ -15,7 +15,7 @@ const Configuracoes = () => {
   const userEmail = localStorage.getItem('userEmail') || '';
   const { pageAccessSettings, updatePageAccess, isLoading: isLoadingAccess, hasAccessToPage } = useAuthorization(userProfile);
 
-  // Atualiza o perfil do usuário especial na montagem do componente
+  // Update the special user profile when the component mounts
   useEffect(() => {
     if (userEmail === 'gcmribeiradopombal@hotmail.com') {
       updateGcmRibeiraProfile();

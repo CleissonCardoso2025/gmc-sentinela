@@ -146,6 +146,21 @@ export const savePageAccessSettings = async (pages: PageAccess[]): Promise<boole
 // Get all unique roles from the database
 export const getAllRoles = async (): Promise<string[]> => {
   try {
+    // First try to get roles using the RPC function
+    const { data: authRoles, error: authRolesError } = await supabase
+      .rpc('get_all_user_roles');
+      
+    if (!authRolesError && authRoles && authRoles.length > 0) {
+      // If we got roles from the RPC, return them
+      return [...new Set(authRoles)].sort();
+    }
+    
+    if (authRolesError) {
+      console.error('Error fetching roles from RPC:', authRolesError);
+    }
+    
+    // If RPC fails or returns no data, fall back to querying tables
+    
     // First try to get from the page_access table
     const { data: pageAccessRoles, error: pageAccessError } = await supabase
       .from('page_access')
@@ -174,14 +189,6 @@ export const getAllRoles = async (): Promise<string[]> => {
       
     if (userRolesError) {
       console.error('Error fetching roles from users:', userRolesError);
-    }
-    
-    // Also try to get roles from the auth.users metadata (need to use a function for this)
-    const { data: authRoles, error: authRolesError } = await supabase
-      .rpc('get_all_user_roles');
-      
-    if (authRolesError) {
-      console.error('Error fetching roles from auth.users:', authRolesError);
     }
     
     // Combine all roles and remove duplicates

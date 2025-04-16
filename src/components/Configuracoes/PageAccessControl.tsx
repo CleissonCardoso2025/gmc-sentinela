@@ -43,8 +43,10 @@ const PageAccessControl: React.FC<PageAccessControlProps> = ({
         setLoadingProfiles(true);
         const roles = await getAllRoles();
         
+        console.log("PageAccessControl - Fetched roles:", roles);
+        
         // If no roles returned, use default roles
-        if (roles.length === 0) {
+        if (!roles || roles.length === 0) {
           setAvailableProfiles(['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente', 'Motorista', 'Monitor']);
         } else {
           setAvailableProfiles(roles);

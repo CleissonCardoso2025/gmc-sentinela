@@ -25,7 +25,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
-  const { hasAccessToPage } = useAuthorization(userProfile);
+  const { hasAccessToPage, pageAccessSettings } = useAuthorization(userProfile);
+  
+  // Log to see what page access settings are available
+  console.log("Sidebar pageAccessSettings:", pageAccessSettings);
   
   const menuItems: MenuItem[] = [
     {

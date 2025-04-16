@@ -77,6 +77,7 @@ export type Database = {
       }
       investigacoes: {
         Row: {
+          anexos: Json | null
           created_at: string | null
           dataabertura: string
           etapaatual: string
@@ -89,6 +90,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          anexos?: Json | null
           created_at?: string | null
           dataabertura: string
           etapaatual: string
@@ -101,6 +103,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          anexos?: Json | null
           created_at?: string | null
           dataabertura?: string
           etapaatual?: string

@@ -8,7 +8,8 @@ export const getInvestigacoes = async (): Promise<Investigacao[]> => {
   try {
     const { data, error } = await supabase
       .from('investigacoes')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: false }); // Order by newest first
 
     if (error) {
       console.error("Error fetching investigations:", error);
@@ -71,8 +72,10 @@ export const getInvestigacaoById = async (id: string): Promise<Investigacao | nu
 };
 
 // Create new investigation
-export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id'>): Promise<Investigacao | null> => {
+export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' | 'created_at' | 'updated_at'>): Promise<Investigacao | null> => {
   try {
+    console.log("Creating investigation:", investigacao);
+    
     const { data, error } = await supabase
       .from('investigacoes')
       .insert([{
@@ -93,7 +96,9 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id'>)
       return null;
     }
 
+    console.log("Investigation created successfully:", data);
     toast.success("Sindicância criada com sucesso");
+    
     return {
       id: data.id,
       numero: data.numero,

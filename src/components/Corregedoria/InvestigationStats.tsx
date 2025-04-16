@@ -1,77 +1,109 @@
 
-import React from 'react';
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import React, { useEffect } from 'react';
 import { useInvestigationStats } from '@/hooks/use-investigation-stats';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ClipboardList, CheckCircle, Archive, AlertTriangle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronUp, ChevronDown, Clock, CheckCircle, Archive } from 'lucide-react';
 
-export const InvestigationStats: React.FC = () => {
-  const { stats, isLoading } = useInvestigationStats();
+interface InvestigationStatsProps {
+  refreshTrigger?: number;
+}
 
-  const statItems = [
-    {
-      title: "Total de Sindicâncias",
-      value: isLoading ? null : stats.totalCount,
-      icon: <ClipboardList className="h-5 w-5 text-blue-600" />,
-      bgColor: "bg-blue-100",
-      textColor: "text-blue-600"
-    },
-    {
-      title: "Em Andamento",
-      value: isLoading ? null : stats.openCount,
-      icon: <AlertTriangle className="h-5 w-5 text-amber-600" />,
-      bgColor: "bg-amber-100",
-      textColor: "text-amber-600"
-    },
-    {
-      title: "Concluídas",
-      value: isLoading ? null : stats.closedCount,
-      icon: <CheckCircle className="h-5 w-5 text-green-600" />,
-      bgColor: "bg-green-100",
-      textColor: "text-green-600"
-    },
-    {
-      title: "Arquivadas",
-      value: isLoading ? null : stats.archivedCount,
-      icon: <Archive className="h-5 w-5 text-gray-600" />,
-      bgColor: "bg-gray-100",
-      textColor: "text-gray-600"
-    }
-  ];
+export function InvestigationStats({ refreshTrigger = 0 }: InvestigationStatsProps) {
+  const { stats, isLoading, refetch } = useInvestigationStats();
+  
+  // Refetch stats when refreshTrigger changes
+  useEffect(() => {
+    refetch();
+  }, [refreshTrigger, refetch]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {statItems.map((item, index) => (
-        <Card 
-          key={index}
-          className={cn(
-            "p-4 overflow-hidden relative group transition-all duration-300 hover:shadow-md",
-            "animate-fade-up"
-          )}
-          style={{ animationDelay: `${index * 100}ms` }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm text-gray-500">{item.title}</p>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <p className={cn("text-2xl font-bold", item.textColor)}>
-                  {item.value}
-                </p>
-              )}
-            </div>
-            <div className={cn("rounded-full p-3", item.bgColor)}>
-              {item.icon}
-            </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Em andamento
+          </CardTitle>
+          <Clock className="h-4 w-4 text-amber-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {isLoading ? "..." : stats.emAndamento}
           </div>
-          <div className={cn(
-            "absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500 ease-out",
-            item.textColor.replace('text', 'bg')
-          )}></div>
-        </Card>
-      ))}
+          <p className="text-xs text-muted-foreground">
+            {stats.emAndamentoVariacao > 0 ? (
+              <span className="text-green-500 flex items-center">
+                <ChevronUp className="h-3 w-3 mr-1" />
+                +{stats.emAndamentoVariacao} desde o mês passado
+              </span>
+            ) : stats.emAndamentoVariacao < 0 ? (
+              <span className="text-red-500 flex items-center">
+                <ChevronDown className="h-3 w-3 mr-1" />
+                {stats.emAndamentoVariacao} desde o mês passado
+              </span>
+            ) : (
+              <span>Sem alteração desde o mês passado</span>
+            )}
+          </p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Concluídas
+          </CardTitle>
+          <CheckCircle className="h-4 w-4 text-green-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {isLoading ? "..." : stats.concluidas}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {stats.concluidasVariacao > 0 ? (
+              <span className="text-green-500 flex items-center">
+                <ChevronUp className="h-3 w-3 mr-1" />
+                +{stats.concluidasVariacao} desde o mês passado
+              </span>
+            ) : stats.concluidasVariacao < 0 ? (
+              <span className="text-red-500 flex items-center">
+                <ChevronDown className="h-3 w-3 mr-1" />
+                {stats.concluidasVariacao} desde o mês passado
+              </span>
+            ) : (
+              <span>Sem alteração desde o mês passado</span>
+            )}
+          </p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Arquivadas
+          </CardTitle>
+          <Archive className="h-4 w-4 text-gray-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {isLoading ? "..." : stats.arquivadas}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {stats.arquivadasVariacao > 0 ? (
+              <span className="text-green-500 flex items-center">
+                <ChevronUp className="h-3 w-3 mr-1" />
+                +{stats.arquivadasVariacao} desde o mês passado
+              </span>
+            ) : stats.arquivadasVariacao < 0 ? (
+              <span className="text-red-500 flex items-center">
+                <ChevronDown className="h-3 w-3 mr-1" />
+                {stats.arquivadasVariacao} desde o mês passado
+              </span>
+            ) : (
+              <span>Sem alteração desde o mês passado</span>
+            )}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
-};
+}

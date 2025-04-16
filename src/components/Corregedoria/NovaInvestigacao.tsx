@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Form, 
@@ -18,6 +17,7 @@ import * as z from 'zod';
 import { FileUp, Save, X, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { createInvestigacao } from '@/services/investigacaoService/apiInvestigacaoService';
 import { 
   Select,
   SelectContent,
@@ -43,6 +43,7 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
   const [isCorrigindoRelato, setIsCorrigindoRelato] = useState<boolean>(false);
   const [usuarios, setUsuarios] = useState<{id: string, nome: string}[]>([]);
   const [isLoadingUsuarios, setIsLoadingUsuarios] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -83,8 +84,10 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
   }, [toast]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     try {
-      // Find the selected user name
       const selectedUser = usuarios.find(user => user.id === values.investigadoId);
       
       if (!selectedUser) {
@@ -93,23 +96,18 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
       
       const numero = `SIN-${Math.floor(Math.random() * 10000)}`;
       
-      // Save to database
-      const { data, error } = await supabase
-        .from('investigacoes')
-        .insert([
-          {
-            numero,
-            dataabertura: new Date().toLocaleDateString('pt-BR'),
-            investigado: selectedUser.nome,
-            motivo: values.motivoInvestigacao,
-            status: 'Em andamento',
-            etapaatual: 'Abertura',
-            relatoinicial: values.relatoInicial
-          }
-        ]);
-        
-      if (error) {
-        throw error;
+      const result = await createInvestigacao({
+        numero,
+        dataAbertura: new Date().toLocaleDateString('pt-BR'),
+        investigado: selectedUser.nome,
+        motivo: values.motivoInvestigacao,
+        status: 'Em andamento',
+        etapaAtual: 'Abertura',
+        relatoInicial: values.relatoInicial
+      });
+      
+      if (!result) {
+        throw new Error('Falha ao criar sindicância');
       }
       
       toast({
@@ -120,7 +118,6 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
       form.reset();
       setFiles([]);
       
-      // Call onComplete callback if provided
       if (onComplete) {
         onComplete();
       }
@@ -132,6 +129,8 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
         description: 'Não foi possível registrar a sindicância. Tente novamente.',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -356,9 +355,18 @@ export function NovaInvestigacao({ onComplete }: NovaInvestigacaoProps) {
           
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={onComplete}>Cancelar</Button>
-            <Button type="submit">
-              <Save className="mr-2 h-4 w-4" />
-              Abrir Sindicância
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin mr-2">⟳</span>
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Abrir Sindicância
+                </>
+              )}
             </Button>
           </div>
         </form>

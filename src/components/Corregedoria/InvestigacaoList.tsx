@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -33,7 +32,11 @@ import { toast } from 'sonner';
 import { getInvestigacoes } from '@/services/investigacaoService/apiInvestigacaoService';
 import EmptyState from '@/components/Dashboard/EmptyState';
 
-export function InvestigacaoList() {
+interface InvestigacaoListProps {
+  refreshTrigger?: number;
+}
+
+export function InvestigacaoList({ refreshTrigger = 0 }: InvestigacaoListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInvestigacao, setSelectedInvestigacao] = useState<Investigacao | null>(null);
   const [investigacoes, setInvestigacoes] = useState<Investigacao[]>([]);
@@ -41,7 +44,7 @@ export function InvestigacaoList() {
   
   useEffect(() => {
     fetchInvestigacoes();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchInvestigacoes = async () => {
     setIsLoading(true);
@@ -88,6 +91,10 @@ export function InvestigacaoList() {
           />
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={fetchInvestigacoes}>
+            <Search className="mr-2 h-4 w-4" />
+            Atualizar
+          </Button>
           <Button variant="outline" size="sm">
             <Filter className="mr-2 h-4 w-4" />
             Filtrar

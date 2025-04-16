@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dashboard from '@/layouts/Dashboard';
 import { NovaInvestigacao } from '@/components/Corregedoria/NovaInvestigacao';
 import { InvestigacaoList } from '@/components/Corregedoria/InvestigacaoList';
@@ -15,6 +15,13 @@ import { Plus } from 'lucide-react';
 
 const Corregedoria = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleInvestigacaoComplete = () => {
+    // Close the dialog and trigger a refresh
+    setIsDialogOpen(false);
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <Dashboard>
@@ -27,16 +34,16 @@ const Corregedoria = () => {
           </Button>
         </div>
         
-        <InvestigationStats />
+        <InvestigationStats refreshTrigger={refreshTrigger} />
         
-        <InvestigacaoList />
+        <InvestigacaoList refreshTrigger={refreshTrigger} />
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold">Nova Sindicância</DialogTitle>
             </DialogHeader>
-            <NovaInvestigacao onComplete={() => setIsDialogOpen(false)} />
+            <NovaInvestigacao onComplete={handleInvestigacaoComplete} />
           </DialogContent>
         </Dialog>
       </div>

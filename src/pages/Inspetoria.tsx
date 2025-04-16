@@ -15,10 +15,40 @@ import RotaForm from "@/components/Inspetoria/RotaForm";
 import InspetoriaOccurrences from "@/components/Inspetoria/InspetoriaOccurrences";
 import AlertManager from "@/components/Inspetoria/AlertManager";
 
+interface Guarnicao {
+  id: string;
+  nome: string;
+  supervisor: string;
+  updated_at: string;
+  membros?: {
+    id: string;
+    nome: string;
+    funcao: string;
+    guarnicao_id?: string;
+  }[];
+  observations?: string;
+}
+
 const InspetoriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isCreatingGuarnicao, setIsCreatingGuarnicao] = useState(false);
   const [isCreatingRota, setIsCreatingRota] = useState(false);
+  const [guarnicaoToEdit, setGuarnicaoToEdit] = useState<Guarnicao | null>(null);
+
+  const handleEditGuarnicao = (guarnicao: Guarnicao) => {
+    setGuarnicaoToEdit(guarnicao);
+    setIsCreatingGuarnicao(true);
+  };
+
+  const handleCancelGuarnicao = () => {
+    setIsCreatingGuarnicao(false);
+    setGuarnicaoToEdit(null);
+  };
+
+  const handleSaveGuarnicao = () => {
+    setIsCreatingGuarnicao(false);
+    setGuarnicaoToEdit(null);
+  };
 
   return (
     <Dashboard>
@@ -30,14 +60,14 @@ const InspetoriaPage: React.FC = () => {
           </div>
           
           <div className="flex space-x-2">
-            {activeTab === "guarnicoes" && (
+            {activeTab === "guarnicoes" && !isCreatingGuarnicao && (
               <Button onClick={() => setIsCreatingGuarnicao(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Guarnição</span>
                 <span className="sm:hidden">Guarnição</span>
               </Button>
             )}
-            {activeTab === "rotas" && (
+            {activeTab === "rotas" && !isCreatingRota && (
               <Button onClick={() => setIsCreatingRota(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Rota</span>
@@ -92,16 +122,22 @@ const InspetoriaPage: React.FC = () => {
             <Card className="p-4 sm:p-6 animate-fade-in">
               {isCreatingGuarnicao ? (
                 <>
-                  <h2 className="text-lg sm:text-xl font-semibold mb-4">Nova Guarnição</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-4">
+                    {guarnicaoToEdit ? 'Editar Guarnição' : 'Nova Guarnição'}
+                  </h2>
                   <GuarnicaoForm 
-                    onSave={() => setIsCreatingGuarnicao(false)}
-                    onCancel={() => setIsCreatingGuarnicao(false)}
+                    onSave={handleSaveGuarnicao}
+                    onCancel={handleCancelGuarnicao}
+                    guarnicao={guarnicaoToEdit || undefined}
                   />
                 </>
               ) : (
                 <>
                   <h2 className="text-lg sm:text-xl font-semibold mb-4">Guarnições</h2>
-                  <GuarnicoesList onCreateNew={() => setIsCreatingGuarnicao(true)} />
+                  <GuarnicoesList 
+                    onCreateNew={() => setIsCreatingGuarnicao(true)}
+                    onEdit={handleEditGuarnicao}
+                  />
                 </>
               )}
             </Card>

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "../Dashboard/EmptyState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Membro {
   id: string;
@@ -28,15 +29,18 @@ interface Guarnicao {
 
 interface GuarnicoesListProps {
   onCreateNew: () => void;
+  onEdit: (guarnicao: Guarnicao) => void;
 }
 
-const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
+const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew, onEdit }) => {
   const { toast } = useToast();
   const [guarnicoes, setGuarnicoes] = useState<Guarnicao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGuarnicao, setSelectedGuarnicao] = useState<Guarnicao | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [guarnicaoToDelete, setGuarnicaoToDelete] = useState<string | null>(null);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     fetchGuarnicoes();
@@ -105,13 +109,30 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteGuarnicao = async (id: string) => {
+  const handleEditGuarnicao = (guarnicao: Guarnicao) => {
+    console.log("Editing guarnicao:", guarnicao);
+    onEdit(guarnicao);
+    if (isDialogOpen) {
+      closeDialog();
+    }
+  };
+
+  const confirmDelete = (id: string) => {
+    setGuarnicaoToDelete(id);
+    setIsConfirmDeleteOpen(true);
+  };
+
+  const handleDeleteGuarnicao = async () => {
+    if (!guarnicaoToDelete) return;
+    
     try {
+      setIsConfirmDeleteOpen(false);
+      
       // First delete all members associated with this guarnicao
       const { error: membrosError } = await supabase
         .from('membros_guarnicao')
         .delete()
-        .eq('guarnicao_id', id);
+        .eq('guarnicao_id', guarnicaoToDelete);
       
       if (membrosError) throw membrosError;
       
@@ -119,11 +140,11 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
       const { error: guarnicaoError } = await supabase
         .from('guarnicoes')
         .delete()
-        .eq('id', id);
+        .eq('id', guarnicaoToDelete);
       
       if (guarnicaoError) throw guarnicaoError;
       
-      setGuarnicoes(guarnicoes.filter(g => g.id !== id));
+      setGuarnicoes(guarnicoes.filter(g => g.id !== guarnicaoToDelete));
       
       toast({
         title: "Guarnição excluída",
@@ -136,6 +157,8 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
         description: error.message || "Não foi possível excluir a guarnição.",
         variant: "destructive"
       });
+    } finally {
+      setGuarnicaoToDelete(null);
     }
   };
 
@@ -203,13 +226,13 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
                   <Button variant="ghost" size="sm" onClick={() => handleViewDetails(guarnicao)}>
                     <Users className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditGuarnicao(guarnicao)}>
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => handleDeleteGuarnicao(guarnicao.id)}
+                    onClick={() => confirmDelete(guarnicao.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -278,12 +301,29 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
               
               <div className="mt-4 flex justify-end space-x-2">
                 <Button variant="outline" onClick={closeDialog}>Fechar</Button>
-                <Button>Editar Guarnição</Button>
+                <Button onClick={() => handleEditGuarnicao(selectedGuarnicao)}>Editar Guarnição</Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta guarnição? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGuarnicao} className="bg-red-600 hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -13,14 +13,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { CheckCircle, X, Save, Loader2 } from "lucide-react";
+import { CheckCircle, X, Save, Loader2, ArrowLeft } from "lucide-react";
 import { useAgentsData } from "@/hooks/use-agents-data";
 import { supabase } from "@/integrations/supabase/client";
+
+interface Membro {
+  id: string;
+  nome: string;
+  funcao: string;
+  guarnicao_id?: string;
+}
+
+interface Guarnicao {
+  id: string;
+  nome: string;
+  supervisor: string;
+  updated_at: string;
+  membros?: Membro[];
+  observations?: string;
+}
 
 interface GuarnicaoFormProps {
   onSave: () => void;
   onCancel: () => void;
-  guarnicao?: any;
+  guarnicao?: Guarnicao;
 }
 
 const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({ 
@@ -31,6 +47,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
   const { toast } = useToast();
   const { agents, isLoading, error } = useAgentsData();
   const [isSaving, setIsSaving] = useState(false);
+  const isEditing = !!guarnicao?.id;
 
   // Separate agents by role (supervisors and regular agents)
   const availableSupervisors = agents
@@ -42,14 +59,30 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
     .map(agent => agent.nome);
 
   const [formData, setFormData] = useState({
-    name: guarnicao?.nome || "",
-    supervisor: guarnicao?.supervisor || "",
-    observations: guarnicao?.observations || ""
+    name: "",
+    supervisor: "",
+    observations: ""
   });
 
-  const [selectedAgents, setSelectedAgents] = useState<string[]>(
-    guarnicao?.membros?.map((m: any) => m.nome) || []
-  );
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
+  const [originalMembers, setOriginalMembers] = useState<string[]>([]);
+
+  // Load existing data if editing
+  useEffect(() => {
+    if (guarnicao) {
+      setFormData({
+        name: guarnicao.nome || "",
+        supervisor: guarnicao.supervisor || "",
+        observations: guarnicao.observations || ""
+      });
+
+      if (guarnicao.membros) {
+        const memberNames = guarnicao.membros.map(m => m.nome);
+        setSelectedAgents(memberNames);
+        setOriginalMembers(memberNames);
+      }
+    }
+  }, [guarnicao]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,47 +102,106 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
     try {
       console.log("Saving guarnicao:", formData);
       
-      // Insert guarnicao
-      const { data: guarnicaoData, error: guarnicaoError } = await supabase
-        .from('guarnicoes')
-        .insert([{
-          nome: formData.name,
-          supervisor: formData.supervisor
-        }])
-        .select()
-        .single();
-      
-      if (guarnicaoError) throw guarnicaoError;
-      
-      console.log("Guarnicao saved:", guarnicaoData);
-      
-      // Insert members
-      if (selectedAgents.length > 0) {
-        const membrosToInsert = selectedAgents.map(agentName => ({
-          nome: agentName,
-          guarnicao_id: guarnicaoData.id,
-          funcao: 'Agente' // Default role
-        }));
+      if (isEditing && guarnicao) {
+        // Update existing guarnicao
+        const { data: updatedGuarnicao, error: updateError } = await supabase
+          .from('guarnicoes')
+          .update({
+            nome: formData.name,
+            supervisor: formData.supervisor,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', guarnicao.id)
+          .select()
+          .single();
         
-        console.log("Inserting members:", membrosToInsert);
+        if (updateError) throw updateError;
         
-        const { error: membrosError } = await supabase
-          .from('membros_guarnicao')
-          .insert(membrosToInsert);
+        console.log("Guarnicao updated:", updatedGuarnicao);
         
-        if (membrosError) throw membrosError;
+        // Find members to remove (members in original but not in selected)
+        const membersToRemove = originalMembers.filter(m => !selectedAgents.includes(m));
+        
+        // Find members to add (members in selected but not in original)
+        const membersToAdd = selectedAgents.filter(m => !originalMembers.includes(m));
+        
+        console.log("Members to remove:", membersToRemove);
+        console.log("Members to add:", membersToAdd);
+        
+        // Remove members that are no longer selected
+        if (membersToRemove.length > 0) {
+          for (const memberName of membersToRemove) {
+            const { error: deleteError } = await supabase
+              .from('membros_guarnicao')
+              .delete()
+              .eq('guarnicao_id', guarnicao.id)
+              .eq('nome', memberName);
+            
+            if (deleteError) throw deleteError;
+          }
+        }
+        
+        // Add new members
+        if (membersToAdd.length > 0) {
+          const membrosToInsert = membersToAdd.map(agentName => ({
+            nome: agentName,
+            guarnicao_id: guarnicao.id,
+            funcao: 'Agente' // Default role
+          }));
+          
+          console.log("Inserting new members:", membrosToInsert);
+          
+          const { error: addMembersError } = await supabase
+            .from('membros_guarnicao')
+            .insert(membrosToInsert);
+          
+          if (addMembersError) throw addMembersError;
+        }
+      } else {
+        // Insert new guarnicao
+        const { data: guarnicaoData, error: guarnicaoError } = await supabase
+          .from('guarnicoes')
+          .insert([{
+            nome: formData.name,
+            supervisor: formData.supervisor
+          }])
+          .select()
+          .single();
+        
+        if (guarnicaoError) throw guarnicaoError;
+        
+        console.log("New guarnicao saved:", guarnicaoData);
+        
+        // Insert members
+        if (selectedAgents.length > 0) {
+          const membrosToInsert = selectedAgents.map(agentName => ({
+            nome: agentName,
+            guarnicao_id: guarnicaoData.id,
+            funcao: 'Agente' // Default role
+          }));
+          
+          console.log("Inserting members:", membrosToInsert);
+          
+          const { error: membrosError } = await supabase
+            .from('membros_guarnicao')
+            .insert(membrosToInsert);
+          
+          if (membrosError) throw membrosError;
+        }
       }
       
       toast({
-        title: "Guarnição salva",
-        description: "A guarnição foi salva com sucesso."
+        title: isEditing ? "Guarnição atualizada" : "Guarnição criada",
+        description: isEditing 
+          ? "A guarnição foi atualizada com sucesso." 
+          : "A guarnição foi criada com sucesso."
       });
       
       onSave();
     } catch (error: any) {
       console.error("Error saving guarnicao:", error);
       toast({
-        title: "Erro ao salvar guarnição",
+        title: isEditing ? "Erro ao atualizar guarnição" : "Erro ao criar guarnição",
         description: error.message || "Não foi possível salvar a guarnição.",
         variant: "destructive"
       });
@@ -136,6 +228,17 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">
+          {isEditing ? 'Editar Guarnição' : 'Nova Guarnição'}
+        </h2>
+        {isEditing && (
+          <Badge className="bg-yellow-100 text-yellow-800 px-3 py-1">
+            Modo de edição
+          </Badge>
+        )}
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="name">Nome da Guarnição</Label>
         <Input
@@ -242,6 +345,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           className="transition-all duration-200 hover:bg-muted"
           disabled={isSaving}
         >
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Cancelar
         </Button>
         <Button 
@@ -252,12 +356,12 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
+              {isEditing ? 'Atualizando...' : 'Salvando...'}
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Salvar Guarnição
+              {isEditing ? 'Atualizar Guarnição' : 'Salvar Guarnição'}
             </>
           )}
         </Button>

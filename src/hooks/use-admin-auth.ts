@@ -207,7 +207,7 @@ export function useAdminAuth() {
     sessionInitialized,
     userId, 
     userRole,
-    session,
+    session, // Return session separately from user
     user,
     refreshSession
   };

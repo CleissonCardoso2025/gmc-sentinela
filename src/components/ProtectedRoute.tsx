@@ -20,6 +20,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     isLoading, 
     sessionInitialized,
     user, 
+    session, // Make sure we're using the session properly
     userRole, 
     refreshSession 
   } = useAdminAuth();
@@ -36,12 +37,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     
     const checkSessionValidity = async () => {
       // Only check session once per component mount and only if authenticated
-      if (!mounted || !isAuthenticated || !user || sessionCheckedRef.current) return;
+      if (!mounted || !isAuthenticated || !user || !session || sessionCheckedRef.current) return;
       
       sessionCheckedRef.current = true;
       
       // Check if session is near expiration, and refresh if needed
-      const sessionExpiresAt = user?.session?.expires_at;
+      const sessionExpiresAt = session.expires_at; // Access expires_at from session, not user
       if (sessionExpiresAt) {
         const expiryTime = new Date(sessionExpiresAt * 1000);
         const now = new Date();
@@ -50,9 +51,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
         // Only refresh if expiring in less than 10 minutes
         if (timeUntilExpiry < 10 * 60 * 1000) {
           console.log("Session expires soon, refreshing...");
-          const { session, error } = await refreshSession();
+          const { session: newSession, error } = await refreshSession();
           
-          if (mounted && !session && error) {
+          if (mounted && !newSession && error) {
             console.error("Failed to refresh session:", error);
             
             // Only redirect on auth errors, not rate limiting
@@ -74,7 +75,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     return () => {
       mounted = false;
     };
-  }, [isAuthenticated, user, sessionInitialized, refreshSession, navigate]);
+  }, [isAuthenticated, user, session, sessionInitialized, refreshSession, navigate]);
   
   // Store auth data for pages that still use localStorage-based auth
   useEffect(() => {

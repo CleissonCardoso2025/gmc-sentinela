@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import UserForm from '@/components/Configuracoes/UserForm';
-import { UserFormData } from './types';
+import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
 
 interface UserFormDialogProps {
   isOpen: boolean;

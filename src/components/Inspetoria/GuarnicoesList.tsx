@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, UserX, Users, UserCheck, Car, Plus } from "lucide-react";
+import { Edit, Trash2, UserX, Users, UserCheck, Car, Plus, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "../Dashboard/EmptyState";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Membro {
   id: string;
@@ -33,6 +34,7 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
   const { toast } = useToast();
   const [guarnicoes, setGuarnicoes] = useState<Guarnicao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedGuarnicao, setSelectedGuarnicao] = useState<Guarnicao | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -42,21 +44,40 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
 
   const fetchGuarnicoes = async () => {
     setIsLoading(true);
+    setError(null);
     try {
+      console.log("Fetching guarnicoes...");
       // Fetch all guarnicoes
       const { data: guarnicoesData, error: guarnicoesError } = await supabase
         .from('guarnicoes')
         .select('*')
         .order('nome', { ascending: true });
       
-      if (guarnicoesError) throw guarnicoesError;
+      if (guarnicoesError) {
+        console.error("Error fetching guarnicoes:", guarnicoesError);
+        throw guarnicoesError;
+      }
+      
+      console.log("Guarnicoes data:", guarnicoesData);
+      
+      if (!guarnicoesData || guarnicoesData.length === 0) {
+        console.log("No guarnicoes found");
+        setGuarnicoes([]);
+        setIsLoading(false);
+        return;
+      }
       
       // Fetch all membros_guarnicao
       const { data: membrosData, error: membrosError } = await supabase
         .from('membros_guarnicao')
         .select('*');
       
-      if (membrosError) throw membrosError;
+      if (membrosError) {
+        console.error("Error fetching membros:", membrosError);
+        throw membrosError;
+      }
+      
+      console.log("Membros data:", membrosData);
       
       // Combine the data
       const guarnicoesWithMembros = guarnicoesData.map(guarnicao => {
@@ -64,9 +85,11 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
         return { ...guarnicao, membros };
       });
       
+      console.log("Guarnicoes with membros:", guarnicoesWithMembros);
       setGuarnicoes(guarnicoesWithMembros);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching guarnicoes:", error);
+      setError(error.message || "Erro ao carregar guarnições");
       toast({
         title: "Erro ao carregar guarnições",
         description: "Não foi possível carregar as guarnições cadastradas.",
@@ -106,11 +129,11 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
         title: "Guarnição excluída",
         description: "A guarnição foi excluída com sucesso."
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting guarnicao:", error);
       toast({
         title: "Erro ao excluir guarnição",
-        description: "Não foi possível excluir a guarnição.",
+        description: error.message || "Não foi possível excluir a guarnição.",
         variant: "destructive"
       });
     }
@@ -121,12 +144,31 @@ const GuarnicoesList: React.FC<GuarnicoesListProps> = ({ onCreateNew }) => {
     setSelectedGuarnicao(null);
   };
 
+  const retryFetch = () => {
+    fetchGuarnicoes();
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-48 w-full" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Erro de conexão</AlertTitle>
+        <AlertDescription className="space-y-2">
+          <p>Não foi possível conectar ao banco de dados: {error}</p>
+          <Button onClick={retryFetch} variant="outline" size="sm">
+            Tentar novamente
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 

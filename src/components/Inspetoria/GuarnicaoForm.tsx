@@ -12,9 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, X, Save } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { CheckCircle, X, Save, Loader2 } from "lucide-react";
 import { useAgentsData } from "@/hooks/use-agents-data";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GuarnicaoFormProps {
   onSave: () => void;
@@ -29,6 +30,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
 }) => {
   const { toast } = useToast();
   const { agents, isLoading, error } = useAgentsData();
+  const [isSaving, setIsSaving] = useState(false);
 
   // Separate agents by role (supervisors and regular agents)
   const availableSupervisors = agents
@@ -40,35 +42,80 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
     .map(agent => agent.nome);
 
   const [formData, setFormData] = useState({
-    name: guarnicao?.name || "",
+    name: guarnicao?.nome || "",
     supervisor: guarnicao?.supervisor || "",
-    selectedAgents: guarnicao?.team || [],
     observations: guarnicao?.observations || ""
   });
 
   const [selectedAgents, setSelectedAgents] = useState<string[]>(
-    guarnicao?.team || []
+    guarnicao?.membros?.map((m: any) => m.nome) || []
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     
     // Validate form
-    if (!formData.name || !formData.supervisor || selectedAgents.length < 2) {
+    if (!formData.name || !formData.supervisor || selectedAgents.length < 1) {
       toast({
         title: "Formulário incompleto",
         description: "Preencha todos os campos obrigatórios.",
         variant: "destructive"
       });
+      setIsSaving(false);
       return;
     }
     
-    // Submit form data
-    toast({
-      title: "Guarnição salva",
-      description: "A guarnição foi salva com sucesso."
-    });
-    onSave();
+    try {
+      console.log("Saving guarnicao:", formData);
+      
+      // Insert guarnicao
+      const { data: guarnicaoData, error: guarnicaoError } = await supabase
+        .from('guarnicoes')
+        .insert([{
+          nome: formData.name,
+          supervisor: formData.supervisor
+        }])
+        .select()
+        .single();
+      
+      if (guarnicaoError) throw guarnicaoError;
+      
+      console.log("Guarnicao saved:", guarnicaoData);
+      
+      // Insert members
+      if (selectedAgents.length > 0) {
+        const membrosToInsert = selectedAgents.map(agentName => ({
+          nome: agentName,
+          guarnicao_id: guarnicaoData.id,
+          funcao: 'Agente' // Default role
+        }));
+        
+        console.log("Inserting members:", membrosToInsert);
+        
+        const { error: membrosError } = await supabase
+          .from('membros_guarnicao')
+          .insert(membrosToInsert);
+        
+        if (membrosError) throw membrosError;
+      }
+      
+      toast({
+        title: "Guarnição salva",
+        description: "A guarnição foi salva com sucesso."
+      });
+      
+      onSave();
+    } catch (error: any) {
+      console.error("Error saving guarnicao:", error);
+      toast({
+        title: "Erro ao salvar guarnição",
+        description: error.message || "Não foi possível salvar a guarnição.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleAgentSelection = (agent: string) => {
@@ -97,6 +144,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           onChange={(e) => setFormData({...formData, name: e.target.value})}
           placeholder="Digite o nome da guarnição"
           className="transition-all duration-200 focus:border-primary"
+          disabled={isSaving}
         />
       </div>
 
@@ -105,6 +153,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
         <Select 
           value={formData.supervisor}
           onValueChange={(value) => setFormData({...formData, supervisor: value})}
+          disabled={isSaving}
         >
           <SelectTrigger className="transition-all duration-200 hover:border-primary">
             <SelectValue placeholder="Selecione o supervisor" />
@@ -126,7 +175,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <Label>Equipe (selecione no mínimo 2 agentes)</Label>
+        <Label>Equipe (selecione no mínimo 1 agente)</Label>
         <div className="border rounded-md p-4 max-h-48 overflow-y-auto space-y-2">
           {availableAgents.length > 0 ? (
             availableAgents.map((agent) => (
@@ -181,6 +230,7 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           placeholder="Detalhes adicionais sobre a guarnição..."
           rows={3}
           className="transition-all duration-200 focus:border-primary"
+          disabled={isSaving}
         />
       </div>
 
@@ -190,15 +240,26 @@ const GuarnicaoForm: React.FC<GuarnicaoFormProps> = ({
           variant="outline" 
           onClick={onCancel}
           className="transition-all duration-200 hover:bg-muted"
+          disabled={isSaving}
         >
           Cancelar
         </Button>
         <Button 
           type="submit"
           className="transition-all duration-200 hover:bg-primary/90"
+          disabled={isSaving}
         >
-          <Save className="mr-2 h-4 w-4" />
-          Salvar Guarnição
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar Guarnição
+            </>
+          )}
         </Button>
       </div>
     </form>

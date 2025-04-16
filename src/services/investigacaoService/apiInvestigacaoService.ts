@@ -3,6 +3,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { Investigacao, InvestigacaoAnexo } from "@/types/database";
 import { toast } from "sonner";
 
+// Helper function to safely validate and cast anexos
+const validateAnexos = (anexosData: unknown): InvestigacaoAnexo[] => {
+  // Check if it's an array first
+  if (!Array.isArray(anexosData)) {
+    console.error("Anexos data is not an array:", anexosData);
+    return [];
+  }
+
+  // Validate each item in the array has the required properties
+  const validAnexos = anexosData.filter((item): item is InvestigacaoAnexo => {
+    const hasRequiredFields = item && 
+      typeof item === 'object' && 
+      'id' in item && 
+      'path' in item && 
+      'name' in item && 
+      'type' in item;
+    
+    if (!hasRequiredFields) {
+      console.error("Invalid anexo item:", item);
+    }
+    
+    return hasRequiredFields;
+  });
+
+  return validAnexos;
+};
+
 // Get all investigations
 export const getInvestigacoes = async (): Promise<Investigacao[]> => {
   try {
@@ -27,7 +54,7 @@ export const getInvestigacoes = async (): Promise<Investigacao[]> => {
       status: item.status,
       etapaAtual: item.etapaatual,
       relatoInicial: item.relatoinicial,
-      anexos: Array.isArray(item.anexos) ? item.anexos as InvestigacaoAnexo[] : [],
+      anexos: validateAnexos(item.anexos),
       created_at: item.created_at,
       updated_at: item.updated_at
     }));
@@ -62,7 +89,7 @@ export const getInvestigacaoById = async (id: string): Promise<Investigacao | nu
       status: data.status,
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
-      anexos: Array.isArray(data.anexos) ? data.anexos as InvestigacaoAnexo[] : [],
+      anexos: validateAnexos(data.anexos),
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -111,7 +138,7 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' |
       status: data.status,
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
-      anexos: Array.isArray(data.anexos) ? data.anexos as InvestigacaoAnexo[] : [],
+      anexos: validateAnexos(data.anexos),
       created_at: data.created_at,
       updated_at: data.updated_at
     };

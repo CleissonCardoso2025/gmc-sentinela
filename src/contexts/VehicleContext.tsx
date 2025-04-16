@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from '@/hooks/use-toast';
@@ -148,11 +147,15 @@ export const VehicleProvider: React.FC<VehicleProviderProps> = ({ children }) =>
       
       if (!currentSession) {
         console.log("No active session, attempting to refresh...");
-        currentSession = await refreshSession();
+        const refreshResult = await refreshSession();
+        // Fix: Correctly extract the session object from the refresh result
+        currentSession = refreshResult.session;
       } else if (currentSession.expires_at && currentSession.expires_at * 1000 < Date.now() + 60000) {
         // If session expires in less than a minute, refresh it proactively
         console.log("Session about to expire, refreshing...");
-        currentSession = await refreshSession();
+        const refreshResult = await refreshSession();
+        // Fix: Correctly extract the session object from the refresh result
+        currentSession = refreshResult.session;
       }
       
       if (!currentSession || !currentSession.user) {

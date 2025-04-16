@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -104,8 +103,8 @@ export function useAdminAuth() {
     };
   }, []);
   
-  // Function to refresh the session
-  const refreshSession = async () => {
+  // Function to refresh the session with fixed return type
+  const refreshSession = async (): Promise<{ session: Session | null, error: any }> => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase.auth.refreshSession();

@@ -1,3 +1,4 @@
+
 // Modify the existing User interface
 export interface User {
   id: string;
@@ -52,6 +53,19 @@ export interface InvestigacaoAnexo {
   type: string;
   description?: string;
   uploaded_at?: string;
+}
+
+export interface EtapaInvestigacao {
+  id: string;
+  investigacao_id: string;
+  nome: string;
+  descricao: string;
+  responsavel: string;
+  data: string;
+  concluida: boolean;
+  ordem: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Add missing types for Escala

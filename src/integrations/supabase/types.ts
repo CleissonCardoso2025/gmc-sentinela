@@ -51,6 +51,53 @@ export type Database = {
         }
         Relationships: []
       }
+      etapas_investigacao: {
+        Row: {
+          concluida: boolean
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          investigacao_id: string
+          nome: string
+          ordem: number
+          responsavel: string
+          updated_at: string
+        }
+        Insert: {
+          concluida?: boolean
+          created_at?: string
+          data: string
+          descricao: string
+          id?: string
+          investigacao_id: string
+          nome: string
+          ordem: number
+          responsavel: string
+          updated_at?: string
+        }
+        Update: {
+          concluida?: boolean
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          investigacao_id?: string
+          nome?: string
+          ordem?: number
+          responsavel?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "etapas_investigacao_investigacao_id_fkey"
+            columns: ["investigacao_id"]
+            isOneToOne: false
+            referencedRelation: "investigacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guarnicoes: {
         Row: {
           created_at: string | null

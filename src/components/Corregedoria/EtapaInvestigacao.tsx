@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 
 interface EtapaProps {
   etapa: {
-    id: number;
+    id: string;
     nome: string;
     concluida: boolean;
     data: string;
@@ -50,7 +50,7 @@ export function EtapaInvestigacao({ etapa, onComplete }: EtapaProps) {
           <div className="flex items-center gap-2 text-left">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${etapa.concluida ? 'bg-green-500' : 'bg-gray-200'}`}>
               {etapa.concluida && <Check className="h-4 w-4 text-white" />}
-              {!etapa.concluida && <span className="text-sm">{etapa.id}</span>}
+              {!etapa.concluida && <span className="text-sm">•</span>}
             </div>
             <div>
               <h4 className="text-sm font-medium">{etapa.nome}</h4>
@@ -65,7 +65,7 @@ export function EtapaInvestigacao({ etapa, onComplete }: EtapaProps) {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Data</label>
-                  <Input type="date" defaultValue="2023-08-12" className="mt-1" />
+                  <Input type="date" defaultValue={new Date(etapa.data).toISOString().split('T')[0]} className="mt-1" />
                 </div>
                 
                 <div>
@@ -126,11 +126,8 @@ export function EtapaInvestigacao({ etapa, onComplete }: EtapaProps) {
                   <div className="bg-slate-50 p-2 rounded">
                     <p className="text-sm font-medium mb-1">Evidências:</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div className="text-sm bg-white p-1 rounded border">depoimento_{etapa.id}.pdf</div>
-                      <div className="text-sm bg-white p-1 rounded border">relatorio_{etapa.id}.docx</div>
-                      {etapa.id === 1 && (
-                        <div className="text-sm bg-white p-1 rounded border">evidencia_foto.jpg</div>
-                      )}
+                      <div className="text-sm bg-white p-1 rounded border">depoimento_{etapa.id.substring(0, 4)}.pdf</div>
+                      <div className="text-sm bg-white p-1 rounded border">relatorio_{etapa.id.substring(0, 4)}.docx</div>
                     </div>
                   </div>
                 )}

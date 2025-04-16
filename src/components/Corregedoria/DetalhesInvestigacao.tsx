@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { EtapaInvestigacao } from './EtapaInvestigacao';
-import { Calendar, Check, FileText, FileUp, Printer, Plus } from 'lucide-react';
+import { Calendar, Check, FileText, FileUp, Printer, Plus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Dialog, 
@@ -31,6 +31,11 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Investigacao } from '@/types/database';
+import { Etapa, getEtapasByInvestigacaoId, updateEtapaStatus, addEtapa } from '@/services/investigacaoService/etapaService';
+import { updateInvestigacaoStatus } from '@/services/investigacaoService/apiInvestigacaoService';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface DetalhesInvestigacaoProps {
   sindicancia: Investigacao;
@@ -48,41 +53,9 @@ type NovaEtapaForm = z.infer<typeof novaEtapaSchema>;
 export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState(sindicancia.status);
-  const [etapas, setEtapas] = useState([
-    {
-      id: 1,
-      nome: "Investigação Inicial",
-      concluida: true,
-      data: "12/08/2023",
-      responsavel: "Cap. Roberto Andrade",
-      descricao: "Levantamento inicial dos fatos e coleta de evidências preliminares. Análise da ocorrência e depoimento do supervisor responsável."
-    },
-    {
-      id: 2,
-      nome: "Coleta de Testemunhos",
-      concluida: sindicancia.etapaAtual !== "Investigação Inicial",
-      data: "18/08/2023",
-      responsavel: "Ten. Mariana Souza",
-      descricao: "Coleta de depoimentos de três testemunhas presentes no momento da ocorrência e do envolvido direto na denúncia."
-    },
-    {
-      id: 3,
-      nome: "Análise dos Fatos",
-      concluida: sindicancia.etapaAtual === "Parecer Final" || sindicancia.status === "Concluída",
-      data: "25/08/2023",
-      responsavel: "Maj. Carlos Eduardo",
-      descricao: "Análise detalhada dos depoimentos, inconsistências, e evidências coletadas. Confrontação entre os relatos e verificação de fatos."
-    },
-    {
-      id: 4,
-      nome: "Parecer Final",
-      concluida: sindicancia.status === "Concluída",
-      data: "02/09/2023",
-      responsavel: "Cel. Pedro Albuquerque",
-      descricao: "Conclusão da análise e emissão de parecer final sobre a conduta do GMC investigado e recomendações de ações disciplinares, se necessárias."
-    }
-  ]);
-  
+  const [etapas, setEtapas] = useState<Etapa[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const form = useForm<NovaEtapaForm>({
@@ -95,44 +68,86 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     }
   });
 
-  const handleStatusChange = (newStatus: string) => {
-    setStatus(newStatus);
-    toast({
-      title: "Status atualizado",
-      description: `A sindicância ${sindicancia.id} foi atualizada para: ${newStatus}`
-    });
-  };
-  
-  const concluirEtapa = (id: number) => {
-    setEtapas(etapas.map(etapa => 
-      etapa.id === id ? { ...etapa, concluida: true } : etapa
-    ));
-    
-    toast({
-      title: "Etapa concluída",
-      description: `A etapa ${etapas.find(e => e.id === id)?.nome} foi marcada como concluída.`
-    });
-  };
-  
-  const adicionarNovaEtapa = (data: NovaEtapaForm) => {
-    const novaEtapa = {
-      id: etapas.length + 1,
-      nome: data.nome,
-      concluida: false,
-      data: new Date(data.data).toLocaleDateString('pt-BR'),
-      responsavel: data.responsavel,
-      descricao: data.descricao
+  // Fetch etapas data
+  useEffect(() => {
+    const fetchEtapas = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getEtapasByInvestigacaoId(sindicancia.id);
+        if (data.length === 0) {
+          setError("Nenhuma etapa encontrada para esta sindicância.");
+        }
+        setEtapas(data);
+      } catch (err) {
+        console.error("Error fetching etapas:", err);
+        setError("Erro ao carregar as etapas da sindicância. Tente novamente mais tarde.");
+      } finally {
+        setIsLoading(false);
+      }
     };
     
-    setEtapas([...etapas, novaEtapa]);
+    fetchEtapas();
+  }, [sindicancia.id]);
+
+  const handleStatusChange = async (newStatus: string) => {
+    // Update the status in the database
+    const success = await updateInvestigacaoStatus(sindicancia.id, newStatus, sindicancia.etapaAtual);
     
-    toast({
-      title: "Nova etapa adicionada",
-      description: `A etapa "${data.nome}" foi adicionada com sucesso.`
-    });
+    if (success) {
+      setStatus(newStatus);
+      toast({
+        title: "Status atualizado",
+        description: `A sindicância ${sindicancia.numero} foi atualizada para: ${newStatus}`
+      });
+    }
+  };
+  
+  const concluirEtapa = async (id: string) => {
+    const success = await updateEtapaStatus(id, true);
     
-    setDialogOpen(false);
-    form.reset();
+    if (success) {
+      // Update the local state
+      setEtapas(prevEtapas => 
+        prevEtapas.map(etapa => 
+          etapa.id === id ? { ...etapa, concluida: true } : etapa
+        )
+      );
+      
+      toast({
+        title: "Etapa concluída",
+        description: `A etapa ${etapas.find(e => e.id === id)?.nome} foi marcada como concluída.`
+      });
+    }
+  };
+  
+  const adicionarNovaEtapa = async (data: NovaEtapaForm) => {
+    // Find the highest order number
+    const highestOrder = etapas.reduce((max, etapa) => Math.max(max, etapa.ordem), 0);
+    
+    const novaEtapa = {
+      investigacao_id: sindicancia.id,
+      nome: data.nome,
+      descricao: data.descricao,
+      responsavel: data.responsavel,
+      data: data.data,
+      concluida: false,
+      ordem: highestOrder + 1
+    };
+    
+    const addedEtapa = await addEtapa(novaEtapa);
+    
+    if (addedEtapa) {
+      setEtapas([...etapas, addedEtapa]);
+      
+      toast({
+        title: "Nova etapa adicionada",
+        description: `A etapa "${data.nome}" foi adicionada com sucesso.`
+      });
+      
+      setDialogOpen(false);
+      form.reset();
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -209,15 +224,25 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
           <div>
             <h3 className="font-semibold mb-2">Documentos Anexados</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="bg-slate-50 p-2 rounded text-sm">
-                relatorio_inicial.pdf
-              </div>
-              <div className="bg-slate-50 p-2 rounded text-sm">
-                foto_evidencia1.jpg
-              </div>
-              <div className="bg-slate-50 p-2 rounded text-sm">
-                depoimento_testemunha.pdf
-              </div>
+              {sindicancia.anexos && sindicancia.anexos.length > 0 ? (
+                sindicancia.anexos.map((anexo, index) => (
+                  <div key={index} className="bg-slate-50 p-2 rounded text-sm">
+                    {anexo.name}
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="bg-slate-50 p-2 rounded text-sm">
+                    relatorio_inicial.pdf
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded text-sm">
+                    foto_evidencia1.jpg
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded text-sm">
+                    depoimento_testemunha.pdf
+                  </div>
+                </>
+              )}
             </div>
             <Button variant="outline" size="sm" className="mt-2">
               <FileUp className="mr-2 h-4 w-4" />
@@ -236,13 +261,46 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
         <TabsContent value="etapas" className="space-y-4">
           <h3 className="text-lg font-semibold mb-2">Etapas da Sindicância</h3>
           
-          {etapas.map((etapa) => (
-            <EtapaInvestigacao 
-              key={etapa.id}
-              etapa={etapa}
-              onComplete={() => concluirEtapa(etapa.id)}
-            />
-          ))}
+          {isLoading ? (
+            // Loading state
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <div>
+                      <Skeleton className="h-4 w-40 mb-1" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            // Error state
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {error}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            // Data loaded
+            etapas.map((etapa) => (
+              <EtapaInvestigacao 
+                key={etapa.id}
+                etapa={{
+                  id: etapa.id,
+                  nome: etapa.nome,
+                  concluida: etapa.concluida,
+                  data: etapa.data,
+                  responsavel: etapa.responsavel,
+                  descricao: etapa.descricao
+                }}
+                onComplete={() => concluirEtapa(etapa.id)}
+              />
+            ))
+          )}
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>

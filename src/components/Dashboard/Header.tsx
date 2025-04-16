@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useState } from 'react';
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   notifications: number;
@@ -19,6 +20,7 @@ const Header: React.FC<HeaderProps> = ({
   const [showSearch, setShowSearch] = React.useState(false);
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,14 +41,37 @@ const Header: React.FC<HeaderProps> = ({
     }
   }, []);
 
-  const handleLogout = () => {
-    // Clear user data and redirect to login
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userProfile");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userEmail");
-    toast.success("Logout realizado com sucesso");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      
+      // Sign out using Supabase auth
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Clear local storage *after* successful signout
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("userProfile");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("currentUserId");
+      
+      toast.success("Logout realizado com sucesso");
+      
+      // Only redirect after everything is cleared
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+        setIsLoggingOut(false);
+      }, 100);
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Erro ao fazer logout. Tente novamente.");
+      setIsLoggingOut(false);
+    }
   };
 
   const handleProfileClick = () => {
@@ -106,9 +131,10 @@ const Header: React.FC<HeaderProps> = ({
                 <DropdownMenuItem 
                   className="cursor-pointer text-red-500 hover:text-red-400 hover:bg-zinc-800 focus:bg-zinc-800 focus:text-red-400"
                   onClick={handleLogout}
+                  disabled={isLoggingOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
+                  <span>{isLoggingOut ? "Saindo..." : "Sair"}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

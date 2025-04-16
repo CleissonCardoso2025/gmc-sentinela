@@ -25,6 +25,7 @@ export function useAdminAuth() {
   const refreshAttempts = useRef<number>(0);
   const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const isMountedRef = useRef<boolean>(true);
+  const authStateInitializedRef = useRef<boolean>(false);
   
   // Initialize auth state only once on mount
   useEffect(() => {
@@ -39,30 +40,45 @@ export function useAdminAuth() {
           
           console.log("Auth state changed:", event, newSession?.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : null);
           
-          // Update state with the new session
-          setSession(newSession);
-          setUser(newSession?.user || null);
-          setIsAuthenticated(!!newSession);
-          setUserId(newSession?.user?.id || null);
-          
-          if (newSession?.user) {
-            // Check if user has admin role in user_metadata
-            const role = newSession.user.user_metadata?.role;
-            setUserRole(role);
-            
-            // For now, all authenticated users get admin access
-            setIsAdmin(true);
-            
-            console.log("User authenticated:", { 
-              userId: newSession.user.id,
-              role: role,
-              isAdmin: true,
-              expiresAt: newSession.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : null
-            });
-          } else {
-            setIsAdmin(false);
+          // Handle auth state changes, including sign-out
+          if (event === 'SIGNED_OUT') {
+            // Clear all session-related state
+            setSession(null);
+            setUser(null);
+            setIsAuthenticated(false);
+            setUserId(null);
             setUserRole(null);
-            console.log("User not authenticated");
+            setIsAdmin(false);
+            console.log("User signed out, session cleared");
+          } else {
+            // Update state with the new session
+            setSession(newSession);
+            setUser(newSession?.user || null);
+            setIsAuthenticated(!!newSession);
+            setUserId(newSession?.user?.id || null);
+            
+            if (newSession?.user) {
+              // Check if user has admin role in user_metadata
+              const role = newSession.user.user_metadata?.role;
+              setUserRole(role);
+              
+              // For now, all authenticated users get admin access
+              setIsAdmin(true);
+              
+              console.log("User authenticated:", { 
+                userId: newSession.user.id,
+                role: role,
+                isAdmin: true,
+                expiresAt: newSession.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : null
+              });
+            }
+          }
+          
+          // Mark auth state as initialized after first event
+          if (!authStateInitializedRef.current) {
+            authStateInitializedRef.current = true;
+            setSessionInitialized(true);
+            setIsLoading(false);
           }
         });
         
@@ -98,13 +114,20 @@ export function useAdminAuth() {
             setIsAdmin(false);
             setUserRole(null);
           }
+          
+          // Mark auth state as initialized
+          if (!authStateInitializedRef.current) {
+            authStateInitializedRef.current = true;
+            setSessionInitialized(true);
+            setIsLoading(false);
+          }
         }
       } catch (error) {
         console.error("Authentication initialization failed:", error);
-      } finally {
+        
         if (isMountedRef.current) {
-          setIsLoading(false);
           setSessionInitialized(true);
+          setIsLoading(false);
         }
       }
     };
@@ -119,6 +142,40 @@ export function useAdminAuth() {
       }
     };
   }, []);
+  
+  // Function to manually sign out the user
+  const signOut = async (): Promise<{ error: any }> => {
+    try {
+      setIsLoading(true);
+      
+      // Sign out the user
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Failed to sign out:", error);
+        return { error };
+      }
+      
+      // Clear state immediately (don't wait for auth state change)
+      if (isMountedRef.current) {
+        setSession(null);
+        setUser(null);
+        setIsAuthenticated(false);
+        setUserId(null);
+        setUserRole(null);
+        setIsAdmin(false);
+      }
+      
+      return { error: null };
+    } catch (error) {
+      console.error("Error signing out:", error);
+      return { error };
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+    }
+  };
   
   // Function to refresh the session with fixed return type and throttling
   const refreshSession = async (): Promise<{ session: Session | null, error: any }> => {
@@ -209,6 +266,7 @@ export function useAdminAuth() {
     userRole,
     session, // Return session separately from user
     user,
-    refreshSession
+    refreshSession,
+    signOut // Add the signOut function to the returned object
   };
 }

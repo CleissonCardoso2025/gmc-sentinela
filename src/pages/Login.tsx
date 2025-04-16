@@ -1,13 +1,13 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const sessionCheckCompletedRef = useRef(false);
   const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
@@ -30,6 +30,13 @@ const Login = () => {
           if (!isMountedRef.current) return;
           
           console.log("Auth state changed on login page:", event);
+          
+          // Make sure we handle SIGNED_OUT event properly (clear redirect logic)
+          if (event === 'SIGNED_OUT') {
+            console.log("User signed out, staying on login page");
+            setIsCheckingSession(false);
+            return;
+          }
           
           // Don't proceed with redirect logic inside the listener itself
           // to avoid potential race conditions
@@ -64,12 +71,21 @@ const Login = () => {
         // Get existing session - this should happen just once
         const { data: sessionData, error } = await supabase.auth.getSession();
         
-        // Mark the session check as completed
+        // Mark the session check as completed to avoid duplicate checks
         sessionCheckCompletedRef.current = true;
         
         if (error) {
           console.error("Error checking session:", error);
           throw error;
+        }
+        
+        // If no session or the user just signed out (check URL), stay on login page
+        const justSignedOut = location.state?.signedOut === true;
+        
+        if (!sessionData.session || justSignedOut) {
+          console.log("No session found or user just signed out, staying on login page");
+          setIsCheckingSession(false);
+          return;
         }
         
         if (isMountedRef.current && sessionData.session) {
@@ -97,10 +113,11 @@ const Login = () => {
               navigate("/dashboard", { replace: true });
             }
           }, 100);
+        } else {
+          setIsCheckingSession(false);
         }
       } catch (error) {
         console.error("Session checking failed:", error);
-      } finally {
         if (isMountedRef.current) {
           setIsCheckingSession(false);
         }
@@ -118,7 +135,7 @@ const Login = () => {
         authSubscriptionRef.current = null;
       }
     };
-  }, [navigate]);
+  }, [navigate, location]);
   
   // Show loading indicator while checking session
   if (isCheckingSession) {

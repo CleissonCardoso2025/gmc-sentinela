@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginFormValues, loginFormSchema } from "../schemas/loginSchema";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function useLoginForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +36,15 @@ export function useLoginForm() {
       setIsCheckingSession(true);
       try {
         sessionCheckCompletedRef.current = true;
+        
+        // Check if we just logged out (passed via state)
+        const justSignedOut = location.state?.signedOut === true;
+        if (justSignedOut) {
+          console.log("User just signed out, skipping session check");
+          setIsCheckingSession(false);
+          return;
+        }
+        
         const { data } = await supabase.auth.getSession();
         
         if (isMountedRef.current && data.session) {
@@ -62,10 +72,11 @@ export function useLoginForm() {
               }
             }, 100);
           }
+        } else if (isMountedRef.current) {
+          setIsCheckingSession(false);
         }
       } catch (error) {
         console.error("Error checking session:", error);
-      } finally {
         if (isMountedRef.current) {
           setIsCheckingSession(false);
         }
@@ -77,7 +88,7 @@ export function useLoginForm() {
     return () => {
       isMountedRef.current = false;
     };
-  }, [navigate]);
+  }, [navigate, location]);
 
   const onSubmit = async (data: LoginFormValues) => {
     if (isCheckingSession) return; // Don't allow login attempts while checking session

@@ -9,9 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Vehicle } from "@/pages/Viaturas";
+import { Vehicle } from "@/contexts/VehicleContext";
 import { Edit, AlertTriangle, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useVehicles } from '@/contexts/VehicleContext';
 
 interface VehicleTableProps {
   vehicles: Vehicle[];
@@ -22,9 +23,9 @@ interface VehicleTableProps {
 
 const VehicleTable: React.FC<VehicleTableProps> = ({ 
   vehicles, 
-  onEdit, 
-  onAddMaintenance,
-  isAdmin = true  // Default to true to give all authenticated users admin access
+  onEdit: propOnEdit, 
+  onAddMaintenance: propOnAddMaintenance,
+  isAdmin = true
 }) => {
   const getStatusBadge = (status: string) => {
     switch(status) {
@@ -78,7 +79,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => onEdit(vehicle)}
+                      onClick={() => propOnEdit(vehicle)}
                       title="Editar"
                     >
                       <Edit className="h-4 w-4" />
@@ -86,7 +87,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => onAddMaintenance(vehicle)}
+                      onClick={() => propOnAddMaintenance(vehicle)}
                       className={isMaintenanceNeeded(vehicle) ? "text-yellow-600" : ""}
                       title="Adicionar manutenção"
                     >

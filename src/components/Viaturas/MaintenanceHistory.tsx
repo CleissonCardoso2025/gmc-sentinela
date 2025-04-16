@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Vehicle, Maintenance } from "@/pages/Viaturas";
+import { Vehicle, Maintenance } from "@/contexts/VehicleContext";
 import { History } from "lucide-react";
 
 interface MaintenanceHistoryProps {

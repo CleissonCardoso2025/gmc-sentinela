@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, BarChart2, TrendingUp, Calendar } from "lucide-react";
-import { Vehicle, Maintenance } from "@/pages/Viaturas";
+import { Vehicle, Maintenance } from "@/contexts/VehicleContext";
 
 interface ReportPanelProps {
   vehicles: Vehicle[];

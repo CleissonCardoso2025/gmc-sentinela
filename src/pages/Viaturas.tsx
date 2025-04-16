@@ -1,118 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
+
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import VehicleTable from "@/components/Viaturas/VehicleTable";
-import VehicleForm from "@/components/Viaturas/VehicleForm";
-import MaintenanceForm from "@/components/Viaturas/MaintenanceForm";
-import MaintenanceHistory from "@/components/Viaturas/MaintenanceHistory";
-import AlertPanel from "@/components/Viaturas/AlertPanel";
-import ReportPanel from "@/components/Viaturas/ReportPanel";
 import Dashboard from "@/layouts/Dashboard";
-import { Plus, FileText, AlertTriangle, History, ShieldAlert } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from '@/hooks/use-toast';
+import { Plus } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { VehicleProvider, Vehicle, Maintenance } from '@/contexts/VehicleContext';
+import ListTab from '@/components/Viaturas/TabContents/ListTab';
+import FormTab from '@/components/Viaturas/TabContents/FormTab';
+import MaintenanceTab from '@/components/Viaturas/TabContents/MaintenanceTab';
+import ReportsTab from '@/components/Viaturas/TabContents/ReportsTab';
 
-export interface Vehicle {
-  id: number;
-  placa: string;
-  modelo: string;
-  marca: string;
-  ano: string;
-  tipo: string;
-  status: string;
-  quilometragem: number;
-  ultimaManutencao: string;
-  proximaManutencao: string;
-  observacoes: string;
-}
-
-export interface Maintenance {
-  id: number;
-  veiculoId: number;
-  data: string;
-  tipo: string;
-  quilometragem: number;
-  custo: number;
-  status: string;
-  observacoes: string;
-  descricao: string;
-  previsaoTermino?: string;
-}
+// Export types from the context
+export type { Vehicle, Maintenance };
 
 const ViaturasPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("listar");
   const [formMode, setFormMode] = useState<"add" | "edit" | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const { isAdmin, isAuthenticated, isLoading: authLoading, userId, userRole } = useAdminAuth();
-
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
-  const [saveDisabled, setSaveDisabled] = useState(false);
-
-  useEffect(() => {
-    if (!authLoading) {
-      fetchVehicles();
-    }
-  }, [authLoading, isAuthenticated, userId]);
-
-  const fetchVehicles = async () => {
-    setIsLoading(true);
-    
-    try {
-      console.log("Buscando veículos...");
-      
-      const { data: vehiclesData, error: vehiclesError } = await supabase
-        .from('vehicles')
-        .select('*');
-        
-      if (vehiclesError) {
-        console.error("Erro ao buscar veículos:", vehiclesError);
-        throw vehiclesError;
-      }
-      
-      console.log("Veículos recuperados:", vehiclesData);
-      
-      const transformedVehicles = vehiclesData?.map(vehicle => ({
-        id: vehicle.id,
-        placa: vehicle.placa,
-        modelo: vehicle.modelo,
-        marca: vehicle.marca,
-        ano: vehicle.ano || '',
-        tipo: vehicle.tipo || '',
-        status: vehicle.status || 'Disponível',
-        quilometragem: vehicle.quilometragem || 0,
-        ultimaManutencao: vehicle.ultimamanutencao ? new Date(vehicle.ultimamanutencao).toISOString().split('T')[0] : '',
-        proximaManutencao: vehicle.proximamanutencao ? new Date(vehicle.proximamanutencao).toISOString().split('T')[0] : '',
-        observacoes: vehicle.observacoes || ''
-      })) || [];
-      
-      setVehicles(transformedVehicles);
-      
-    } catch (error: any) {
-      console.error("Error fetching vehicle data:", error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar as informações das viaturas.",
-        variant: "destructive"
-      });
-      
-      setVehicles([]);
-      setMaintenances([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { isAdmin, isAuthenticated, isLoading: authLoading } = useAdminAuth();
 
   const handleAddVehicle = () => {
     setFormMode("add");
@@ -131,184 +39,6 @@ const ViaturasPage: React.FC = () => {
     setMaintenanceMode(true);
     setActiveTab("manutencao");
   };
-
-  const handleSaveVehicle = async (vehicle: Vehicle) => {
-    try {
-      console.log("Iniciando processo de salvamento de veículo:", vehicle);
-      setSaveDisabled(true);
-      
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error("Erro ao verificar sessão:", sessionError);
-        throw new Error("Falha ao verificar autenticação");
-      }
-      
-      if (!session || !session.user) {
-        console.log("Usuário não autenticado. Não é possível salvar dados.");
-        toast({
-          title: "Não autenticado",
-          description: "Sua sessão expirou. Por favor, faça login novamente.",
-          variant: "destructive"
-        });
-        navigate('/login');
-        return;
-      }
-      
-      console.log("Sessão válida, prosseguindo com o salvamento", {
-        userId: session.user.id,
-        userMetadata: session.user.user_metadata,
-        role: session.user.user_metadata?.role
-      });
-      
-      if (formMode === "add") {
-        const vehicleData = {
-          placa: vehicle.placa,
-          modelo: vehicle.modelo,
-          marca: vehicle.marca,
-          ano: vehicle.ano,
-          tipo: vehicle.tipo,
-          status: vehicle.status,
-          quilometragem: vehicle.quilometragem,
-          ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
-          proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
-          observacoes: vehicle.observacoes,
-          user_id: session.user.id
-        };
-        
-        const { data, error } = await supabase
-          .from('vehicles')
-          .insert(vehicleData)
-          .select();
-          
-        if (error) {
-          console.error("Erro ao inserir veículo:", error);
-          throw error;
-        }
-        
-        console.log("Veículo inserido com sucesso:", data);
-        
-        if (data && data.length > 0) {
-          const newVehicle: Vehicle = {
-            id: data[0].id,
-            placa: data[0].placa,
-            modelo: data[0].modelo,
-            marca: data[0].marca,
-            ano: data[0].ano || '',
-            tipo: data[0].tipo || '',
-            status: data[0].status || 'Disponível',
-            quilometragem: data[0].quilometragem || 0,
-            ultimaManutencao: data[0].ultimamanutencao ? new Date(data[0].ultimamanutencao).toISOString().split('T')[0] : '',
-            proximaManutencao: data[0].proximamanutencao ? new Date(data[0].proximamanutencao).toISOString().split('T')[0] : '',
-            observacoes: data[0].observacoes || ''
-          };
-          
-          setVehicles([newVehicle, ...vehicles]);
-        }
-        
-        toast({
-          title: "Viatura adicionada",
-          description: "Viatura cadastrada com sucesso.",
-        });
-      } else if (formMode === "edit" && vehicle.id) {
-        const vehicleData = {
-          placa: vehicle.placa,
-          modelo: vehicle.modelo,
-          marca: vehicle.marca,
-          ano: vehicle.ano,
-          tipo: vehicle.tipo,
-          status: vehicle.status,
-          quilometragem: vehicle.quilometragem,
-          ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
-          proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
-          observacoes: vehicle.observacoes,
-          user_id: session.user.id
-        };
-        
-        const { error } = await supabase
-          .from('vehicles')
-          .update(vehicleData)
-          .eq('id', vehicle.id);
-          
-        if (error) {
-          console.error("Erro ao atualizar veículo:", error);
-          throw error;
-        }
-        
-        console.log("Veículo atualizado com sucesso");
-        
-        setVehicles(vehicles.map(v => v.id === vehicle.id ? vehicle : v));
-        
-        toast({
-          title: "Viatura atualizada",
-          description: "Dados da viatura atualizados com sucesso.",
-        });
-      }
-      
-      setActiveTab("listar");
-      setFormMode(null);
-    } catch (error: any) {
-      console.error("Error saving vehicle:", error);
-      toast({
-        title: "Erro ao salvar viatura",
-        description: `Não foi possível salvar os dados da viatura: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setSaveDisabled(false);
-    }
-  };
-
-  const handleSaveMaintenance = async (maintenance: Maintenance) => {
-    try {
-      if (!isAuthenticated) {
-        toast({
-          title: "Permissão negada",
-          description: "Você não tem permissão para gerenciar manutenções.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (!maintenance.id) {
-        const newMaintenance = { ...maintenance, id: maintenances.length + 1 };
-        setMaintenances([...maintenances, newMaintenance]);
-        
-        toast({
-          title: "Manutenção registrada",
-          description: "Registro de manutenção adicionado com sucesso.",
-        });
-      } else {
-        setMaintenances(maintenances.map(m => m.id === maintenance.id ? maintenance : m));
-        
-        toast({
-          title: "Manutenção atualizada",
-          description: "Registro de manutenção atualizado com sucesso.",
-        });
-      }
-      
-      setActiveTab("listar");
-      setMaintenanceMode(false);
-    } catch (error) {
-      console.error("Error saving maintenance:", error);
-      toast({
-        title: "Erro ao salvar manutenção",
-        description: "Não foi possível salvar os dados da manutenção.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = 
-      vehicle.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.marca.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter ? vehicle.status === statusFilter : true;
-    
-    return matchesSearch && matchesStatus;
-  });
 
   if (authLoading) {
     return (
@@ -330,145 +60,58 @@ const ViaturasPage: React.FC = () => {
 
   return (
     <Dashboard>
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Gestão de Viaturas</h1>
-          <div className="flex space-x-2">
-            <Button onClick={handleAddVehicle}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Viatura
-            </Button>
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="listar">Listagem de Viaturas</TabsTrigger>
-            <TabsTrigger value="cadastrar">Cadastro de Viatura</TabsTrigger>
-            <TabsTrigger value="manutencao">Manutenção</TabsTrigger>
-            <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="listar" className="space-y-4">
-            <Card className="p-4">
-              <div className="flex justify-between mb-4">
-                <div className="w-1/3">
-                  <Input
-                    placeholder="Buscar por placa, modelo..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant={statusFilter === null ? "default" : "outline"}
-                    onClick={() => setStatusFilter(null)}
-                  >
-                    Todos
-                  </Button>
-                  <Button
-                    variant={statusFilter === "Em serviço" ? "default" : "outline"}
-                    onClick={() => setStatusFilter("Em serviço")}
-                  >
-                    Em serviço
-                  </Button>
-                  <Button
-                    variant={statusFilter === "Manutenção" ? "default" : "outline"}
-                    onClick={() => setStatusFilter("Manutenção")}
-                  >
-                    Em manutenção
-                  </Button>
-                </div>
-              </div>
-
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : (
-                <VehicleTable 
-                  vehicles={filteredVehicles} 
-                  onEdit={handleEditVehicle} 
-                  onAddMaintenance={handleAddMaintenance}
-                  isAdmin={true}
-                />
-              )}
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <AlertPanel vehicles={vehicles} />
-              <MaintenanceHistory 
-                maintenances={maintenances.slice(0, 3)} 
-                vehicles={vehicles} 
-              />
+      <VehicleProvider>
+        <div className="container mx-auto p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Gestão de Viaturas</h1>
+            <div className="flex space-x-2">
+              <Button onClick={handleAddVehicle}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Viatura
+              </Button>
             </div>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="cadastrar">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                {formMode === "add" ? "Adicionar Nova Viatura" : "Editar Viatura"}
-              </h2>
-              <VehicleForm 
-                vehicle={selectedVehicle} 
-                onSave={handleSaveVehicle} 
-                onCancel={() => setActiveTab("listar")} 
-                disabled={saveDisabled}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="listar">Listagem de Viaturas</TabsTrigger>
+              <TabsTrigger value="cadastrar">Cadastro de Viatura</TabsTrigger>
+              <TabsTrigger value="manutencao">Manutenção</TabsTrigger>
+              <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="listar">
+              <ListTab 
+                onEditVehicle={handleEditVehicle}
+                onAddMaintenance={handleAddMaintenance}
               />
-            </Card>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="manutencao">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                {maintenanceMode ? "Adicionar Manutenção" : "Histórico de Manutenções"}
-              </h2>
-              {maintenanceMode ? (
-                <MaintenanceForm 
-                  vehicle={selectedVehicle}
-                  onSave={handleSaveMaintenance}
-                  onCancel={() => {
-                    setMaintenanceMode(false);
-                    setActiveTab("listar");
-                  }}
-                />
-              ) : (
-                isLoading ? (
-                  <div className="space-y-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                  </div>
-                ) : (
-                  <MaintenanceHistory 
-                    maintenances={maintenances} 
-                    vehicles={vehicles} 
-                    fullHistory 
-                  />
-                )
-              )}
-            </Card>
-          </TabsContent>
+            <TabsContent value="cadastrar">
+              <FormTab 
+                formMode={formMode} 
+                selectedVehicle={selectedVehicle} 
+                onCancel={() => setActiveTab("listar")} 
+              />
+            </TabsContent>
 
-          <TabsContent value="relatorios">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Relatórios</h2>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-80 w-full" />
-                </div>
-              ) : (
-                <ReportPanel vehicles={vehicles} maintenances={maintenances} />
-              )}
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+            <TabsContent value="manutencao">
+              <MaintenanceTab 
+                maintenanceMode={maintenanceMode}
+                selectedVehicle={selectedVehicle}
+                onCancel={() => {
+                  setMaintenanceMode(false);
+                  setActiveTab("listar");
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="relatorios">
+              <ReportsTab />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </VehicleProvider>
     </Dashboard>
   );
 };

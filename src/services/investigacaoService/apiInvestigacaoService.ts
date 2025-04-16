@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Investigacao } from "@/types/database";
+import { Investigacao, InvestigacaoAnexo } from "@/types/database";
 import { toast } from "sonner";
 
 // Get all investigations
@@ -17,7 +17,7 @@ export const getInvestigacoes = async (): Promise<Investigacao[]> => {
       return [];
     }
 
-    // Map database fields to our interface
+    // Map database fields to our interface and safely handle anexos
     return data.map(item => ({
       id: item.id,
       numero: item.numero,
@@ -27,7 +27,7 @@ export const getInvestigacoes = async (): Promise<Investigacao[]> => {
       status: item.status,
       etapaAtual: item.etapaatual,
       relatoInicial: item.relatoinicial,
-      anexos: item.anexos || [],
+      anexos: Array.isArray(item.anexos) ? item.anexos as InvestigacaoAnexo[] : [],
       created_at: item.created_at,
       updated_at: item.updated_at
     }));
@@ -62,7 +62,7 @@ export const getInvestigacaoById = async (id: string): Promise<Investigacao | nu
       status: data.status,
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
-      anexos: data.anexos || [],
+      anexos: Array.isArray(data.anexos) ? data.anexos as InvestigacaoAnexo[] : [],
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -111,7 +111,7 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' |
       status: data.status,
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
-      anexos: data.anexos || [],
+      anexos: Array.isArray(data.anexos) ? data.anexos as InvestigacaoAnexo[] : [],
       created_at: data.created_at,
       updated_at: data.updated_at
     };

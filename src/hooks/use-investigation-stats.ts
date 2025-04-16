@@ -8,7 +8,7 @@ export interface InvestigationStats {
   openCount: number;
   closedCount: number;
   archivedCount: number;
-  // Add the missing properties
+  // Additional properties for variations/trends
   emAndamento: number;
   emAndamentoVariacao: number;
   concluidas: number;
@@ -38,6 +38,15 @@ export const useInvestigationStats = () => {
     setError(null);
     
     try {
+      // Get current date for calculations
+      const currentDate = new Date();
+      const lastMonthDate = new Date();
+      lastMonthDate.setMonth(currentDate.getMonth() - 1);
+      
+      const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+      const lastMonthStart = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1).toISOString();
+      const lastMonthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).toISOString();
+      
       // Fetch total count
       const { count: totalCount, error: totalError } = await supabase
         .from('investigacoes')
@@ -45,7 +54,7 @@ export const useInvestigationStats = () => {
       
       if (totalError) throw new Error(`Error fetching total investigations: ${totalError.message}`);
       
-      // Fetch in progress count
+      // Fetch in progress count (total)
       const { count: openCount, error: openError } = await supabase
         .from('investigacoes')
         .select('*', { count: 'exact', head: true })
@@ -53,7 +62,26 @@ export const useInvestigationStats = () => {
         
       if (openError) throw new Error(`Error fetching open investigations: ${openError.message}`);
       
-      // Fetch closed count
+      // Fetch in progress count (this month)
+      const { count: openCountThisMonth, error: openThisMonthError } = await supabase
+        .from('investigacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'Em andamento')
+        .gte('created_at', currentMonthStart);
+        
+      if (openThisMonthError) throw new Error(`Error fetching this month's open investigations: ${openThisMonthError.message}`);
+      
+      // Fetch in progress count (last month)
+      const { count: openCountLastMonth, error: openLastMonthError } = await supabase
+        .from('investigacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'Em andamento')
+        .gte('created_at', lastMonthStart)
+        .lt('created_at', lastMonthEnd);
+        
+      if (openLastMonthError) throw new Error(`Error fetching last month's open investigations: ${openLastMonthError.message}`);
+      
+      // Fetch closed count (total)
       const { count: closedCount, error: closedError } = await supabase
         .from('investigacoes')
         .select('*', { count: 'exact', head: true })
@@ -61,7 +89,26 @@ export const useInvestigationStats = () => {
         
       if (closedError) throw new Error(`Error fetching closed investigations: ${closedError.message}`);
       
-      // Fetch archived count
+      // Fetch closed count (this month)
+      const { count: closedCountThisMonth, error: closedThisMonthError } = await supabase
+        .from('investigacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'Concluída')
+        .gte('created_at', currentMonthStart);
+        
+      if (closedThisMonthError) throw new Error(`Error fetching this month's closed investigations: ${closedThisMonthError.message}`);
+      
+      // Fetch closed count (last month)
+      const { count: closedCountLastMonth, error: closedLastMonthError } = await supabase
+        .from('investigacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'Concluída')
+        .gte('created_at', lastMonthStart)
+        .lt('created_at', lastMonthEnd);
+        
+      if (closedLastMonthError) throw new Error(`Error fetching last month's closed investigations: ${closedLastMonthError.message}`);
+      
+      // Fetch archived count (total)
       const { count: archivedCount, error: archivedError } = await supabase
         .from('investigacoes')
         .select('*', { count: 'exact', head: true })
@@ -69,10 +116,29 @@ export const useInvestigationStats = () => {
         
       if (archivedError) throw new Error(`Error fetching archived investigations: ${archivedError.message}`);
       
-      // Calculate variations (mock data for now, could be replaced with actual month-over-month comparisons)
-      const emAndamentoVariacao = Math.floor(Math.random() * 5) - 2; // Random between -2 and 2
-      const concluidasVariacao = Math.floor(Math.random() * 5) - 1; // Random between -1 and 3
-      const arquivadasVariacao = Math.floor(Math.random() * 3); // Random between 0 and 2
+      // Fetch archived count (this month)
+      const { count: archivedCountThisMonth, error: archivedThisMonthError } = await supabase
+        .from('investigacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'Arquivada')
+        .gte('created_at', currentMonthStart);
+        
+      if (archivedThisMonthError) throw new Error(`Error fetching this month's archived investigations: ${archivedThisMonthError.message}`);
+      
+      // Fetch archived count (last month)
+      const { count: archivedCountLastMonth, error: archivedLastMonthError } = await supabase
+        .from('investigacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'Arquivada')
+        .gte('created_at', lastMonthStart)
+        .lt('created_at', lastMonthEnd);
+        
+      if (archivedLastMonthError) throw new Error(`Error fetching last month's archived investigations: ${archivedLastMonthError.message}`);
+      
+      // Calculate variations by comparing this month to last month
+      const emAndamentoVariacao = (openCountThisMonth || 0) - (openCountLastMonth || 0);
+      const concluidasVariacao = (closedCountThisMonth || 0) - (closedCountLastMonth || 0);
+      const arquivadasVariacao = (archivedCountThisMonth || 0) - (archivedCountLastMonth || 0);
       
       setStats({
         totalCount: totalCount || 0,

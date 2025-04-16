@@ -1,3 +1,4 @@
+
 // Modify the existing User interface
 export interface User {
   id: string;
@@ -30,7 +31,7 @@ export interface UserFormData {
   confirmPassword?: string;
 }
 
-// Add missing types for Corregedoria
+// Updated Investigacao interface with anexos field
 export interface Investigacao {
   id: string;
   numero: string;
@@ -40,8 +41,18 @@ export interface Investigacao {
   status: string;
   etapaAtual: string;
   relatoInicial?: string;
+  anexos?: InvestigacaoAnexo[];
   created_at?: string;
   updated_at?: string;
+}
+
+export interface InvestigacaoAnexo {
+  id: string;
+  path: string;
+  name: string;
+  type: string;
+  description?: string;
+  uploaded_at?: string;
 }
 
 // Add missing types for Escala

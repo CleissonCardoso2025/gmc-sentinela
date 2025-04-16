@@ -27,6 +27,7 @@ export const getInvestigacoes = async (): Promise<Investigacao[]> => {
       status: item.status,
       etapaAtual: item.etapaatual,
       relatoInicial: item.relatoinicial,
+      anexos: item.anexos || [],
       created_at: item.created_at,
       updated_at: item.updated_at
     }));
@@ -61,6 +62,7 @@ export const getInvestigacaoById = async (id: string): Promise<Investigacao | nu
       status: data.status,
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
+      anexos: data.anexos || [],
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -72,7 +74,7 @@ export const getInvestigacaoById = async (id: string): Promise<Investigacao | nu
 };
 
 // Create new investigation
-export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' | 'created_at' | 'updated_at'>): Promise<Investigacao | null> => {
+export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' | 'created_at' | 'updated_at' | 'anexos'>, anexos?: any[]): Promise<Investigacao | null> => {
   try {
     console.log("Creating investigation:", investigacao);
     
@@ -85,7 +87,8 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' |
         motivo: investigacao.motivo,
         status: investigacao.status,
         etapaatual: investigacao.etapaAtual,
-        relatoinicial: investigacao.relatoInicial
+        relatoinicial: investigacao.relatoInicial,
+        anexos: anexos || []
       }])
       .select()
       .single();
@@ -108,6 +111,7 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' |
       status: data.status,
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
+      anexos: data.anexos || [],
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -115,5 +119,32 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' |
     console.error("Exception creating investigation:", error);
     toast.error("Erro ao criar sindicância");
     return null;
+  }
+};
+
+// Update investigation status
+export const updateInvestigacaoStatus = async (id: string, status: string, etapaAtual: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('investigacoes')
+      .update({ 
+        status: status,
+        etapaatual: etapaAtual,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error updating investigation status:", error);
+      toast.error("Erro ao atualizar status da sindicância");
+      return false;
+    }
+
+    toast.success("Status da sindicância atualizado com sucesso");
+    return true;
+  } catch (error) {
+    console.error("Exception updating investigation status:", error);
+    toast.error("Erro ao atualizar status da sindicância");
+    return false;
   }
 };

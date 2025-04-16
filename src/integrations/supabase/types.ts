@@ -399,6 +399,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_all_user_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
       get_latest_vehicle_locations: {
         Args: Record<PropertyKey, never>
         Returns: {

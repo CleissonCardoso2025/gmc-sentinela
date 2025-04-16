@@ -19,7 +19,7 @@ export const useAccessControl = (userProfile: string) => {
 
   const handleSavePageAccess = async (pages: PageAccess[]): Promise<void> => {
     try {
-      const success = updatePageAccess(pages);
+      const success = await updatePageAccess(pages);
       if (success) {
         setShowAccessDialog(false);
         toast.success('Permissões de acesso atualizadas com sucesso');

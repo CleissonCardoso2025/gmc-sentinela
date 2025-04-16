@@ -29,7 +29,7 @@ const Configuracoes = () => {
 
   const handleSavePageAccess = async (pages: typeof pageAccessSettings): Promise<void> => {
     try {
-      const success = updatePageAccess(pages);
+      await updatePageAccess(pages);
       return Promise.resolve();
     } catch (error) {
       console.error('Error saving page access:', error);

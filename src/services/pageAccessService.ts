@@ -8,8 +8,12 @@ export const fetchPageAccess = async (): Promise<PageAccess[]> => {
   const { data: pageEntries, error: pagesError } = await supabase
     .from('page_access')
     .select('page_name')
-    .order('page_name')
-    .distinct();
+    .order('page_name');
+    
+  // Get unique page names
+  const uniquePageNames = pageEntries ? 
+    Array.from(new Set(pageEntries.map(entry => entry.page_name))) : 
+    [];
     
   if (pagesError) {
     console.error('Error fetching page names:', pagesError);
@@ -20,8 +24,12 @@ export const fetchPageAccess = async (): Promise<PageAccess[]> => {
   const { data: roleEntries, error: rolesError } = await supabase
     .from('page_access')
     .select('role')
-    .order('role')
-    .distinct();
+    .order('role');
+    
+  // Get unique roles
+  const uniqueRoles = roleEntries ? 
+    Array.from(new Set(roleEntries.map(entry => entry.role))) : 
+    [];
     
   if (rolesError) {
     console.error('Error fetching roles:', rolesError);
@@ -39,16 +47,16 @@ export const fetchPageAccess = async (): Promise<PageAccess[]> => {
   }
   
   // Build the PageAccess objects
-  const pageAccessList: PageAccess[] = pageEntries.map(page => {
-    const pageId = page.page_name.toLowerCase().replace(/\s+/g, '-');
+  const pageAccessList: PageAccess[] = uniquePageNames.map(pageName => {
+    const pageId = pageName.toLowerCase().replace(/\s+/g, '-');
     
     const allowedProfiles = accessEntries
-      .filter(entry => entry.page_name === page.page_name && entry.can_access)
+      .filter(entry => entry.page_name === pageName && entry.can_access)
       .map(entry => entry.role);
       
     return {
       id: pageId,
-      name: page.page_name,
+      name: pageName,
       path: `/${pageId}`,
       allowedProfiles
     };
@@ -142,8 +150,12 @@ export const getAllRoles = async (): Promise<string[]> => {
     const { data: pageAccessRoles, error: pageAccessError } = await supabase
       .from('page_access')
       .select('role')
-      .order('role')
-      .distinct();
+      .order('role');
+      
+    // Get unique roles
+    const uniquePageAccessRoles = pageAccessRoles ? 
+      Array.from(new Set(pageAccessRoles.map(entry => entry.role))) : 
+      [];
       
     if (pageAccessError) {
       console.error('Error fetching roles from page_access:', pageAccessError);
@@ -153,8 +165,12 @@ export const getAllRoles = async (): Promise<string[]> => {
     const { data: userRoles, error: userRolesError } = await supabase
       .from('users')
       .select('perfil')
-      .order('perfil')
-      .distinct();
+      .order('perfil');
+      
+    // Get unique roles
+    const uniqueUserRoles = userRoles ? 
+      Array.from(new Set(userRoles.map(u => u.perfil))) : 
+      [];
       
     if (userRolesError) {
       console.error('Error fetching roles from users:', userRolesError);
@@ -170,8 +186,8 @@ export const getAllRoles = async (): Promise<string[]> => {
     
     // Combine all roles and remove duplicates
     const allRoles = [
-      ...(pageAccessRoles?.map(r => r.role) || []),
-      ...(userRoles?.map(u => u.perfil) || []),
+      ...(uniquePageAccessRoles || []),
+      ...(uniqueUserRoles || []),
       ...(authRoles || [])
     ];
     

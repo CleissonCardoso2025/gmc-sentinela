@@ -2,7 +2,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const updateUserProfile = async (email: string, newProfile: string): Promise<boolean> => {
+export const updateUserProfile = async (
+  email: string, 
+  newProfile: string, 
+  skipIfSameProfile: boolean = false
+): Promise<boolean> => {
   try {
     console.log(`Attempting to update profile for email: ${email} to profile: ${newProfile}`);
     
@@ -19,9 +23,16 @@ export const updateUserProfile = async (email: string, newProfile: string): Prom
       return false;
     }
 
-    // If user exists, update their profile
+    // If user exists, check if update is needed
     if (userByEmail) {
       console.log("User found:", userByEmail);
+      
+      // If current profile is already the target profile and we want to skip, return success
+      if (skipIfSameProfile && userByEmail.perfil === newProfile) {
+        console.log(`User ${email} already has profile ${newProfile}, skipping update`);
+        return true;
+      }
+      
       const { error: updateError } = await supabase
         .from('users')
         .update({ perfil: newProfile })

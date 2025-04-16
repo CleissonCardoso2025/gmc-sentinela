@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
 import { useNavigate } from "react-router-dom";
@@ -9,51 +9,70 @@ import { Loader2 } from "lucide-react";
 const Login = () => {
   const navigate = useNavigate();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const sessionCheckCompletedRef = useRef(false);
+  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const isMountedRef = useRef(true);
   
   // Check for existing session and redirect if found
   useEffect(() => {
-    let authSubscription: { unsubscribe: () => void } | null = null;
+    isMountedRef.current = true;
     
     const checkAndRedirect = async () => {
       try {
+        // Skip if we've already completed a session check on this component instance
+        if (sessionCheckCompletedRef.current) return;
+        
         setIsCheckingSession(true);
         
         // First set up the auth state listener to handle changes
         const { data } = await supabase.auth.onAuthStateChange((event, session) => {
+          // Skip updates if component is unmounted
+          if (!isMountedRef.current) return;
+          
           console.log("Auth state changed on login page:", event);
           
-          if (session) {
-            // Get user profile from user_metadata
-            const userProfile = session.user.user_metadata?.role || "Agente";
-            
-            // Store the user profile in localStorage for compatibility with existing code
-            localStorage.setItem("isAuthenticated", "true");
-            localStorage.setItem("userProfile", userProfile);
-            localStorage.setItem("userName", session.user.email || "");
-            localStorage.setItem("userId", session.user.id);
-            localStorage.setItem("userEmail", session.user.email || "");
-            
-            // Redirect based on user profile
-            if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-              navigate("/index", { replace: true });
-            } else {
-              navigate("/dashboard", { replace: true });
-            }
+          // Don't proceed with redirect logic inside the listener itself
+          // to avoid potential race conditions
+          if (session && event !== 'INITIAL_SESSION') {
+            // Defer the redirect logic slightly to avoid React state update conflicts
+            setTimeout(() => {
+              if (!isMountedRef.current) return;
+              
+              // Get user profile from user_metadata
+              const userProfile = session.user.user_metadata?.role || "Agente";
+              
+              // Store the user profile in localStorage for compatibility with existing code
+              localStorage.setItem("isAuthenticated", "true");
+              localStorage.setItem("userProfile", userProfile);
+              localStorage.setItem("userName", session.user.email || "");
+              localStorage.setItem("userId", session.user.id);
+              localStorage.setItem("userEmail", session.user.email || "");
+              
+              // Redirect based on user profile
+              if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+                navigate("/index", { replace: true });
+              } else {
+                navigate("/dashboard", { replace: true });
+              }
+            }, 100);
           }
         });
         
         // Store the subscription for cleanup
-        authSubscription = data.subscription;
+        authSubscriptionRef.current = data.subscription;
         
-        // Get existing session
+        // Get existing session - this should happen just once
         const { data: sessionData, error } = await supabase.auth.getSession();
+        
+        // Mark the session check as completed
+        sessionCheckCompletedRef.current = true;
         
         if (error) {
           console.error("Error checking session:", error);
           throw error;
         }
         
-        if (sessionData.session) {
+        if (isMountedRef.current && sessionData.session) {
           console.log("Existing session found, redirecting...");
           console.log("Session expires at:", 
             sessionData.session.expires_at ? new Date(sessionData.session.expires_at * 1000).toISOString() : "unknown");
@@ -70,6 +89,8 @@ const Login = () => {
           
           // Redirect based on user profile
           setTimeout(() => {
+            if (!isMountedRef.current) return;
+            
             if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
               navigate("/index", { replace: true });
             } else {
@@ -80,16 +101,21 @@ const Login = () => {
       } catch (error) {
         console.error("Session checking failed:", error);
       } finally {
-        setIsCheckingSession(false);
+        if (isMountedRef.current) {
+          setIsCheckingSession(false);
+        }
       }
     };
     
     checkAndRedirect();
     
     return () => {
+      isMountedRef.current = false;
+      
       // Use the stored subscription for cleanup
-      if (authSubscription) {
-        authSubscription.unsubscribe();
+      if (authSubscriptionRef.current) {
+        authSubscriptionRef.current.unsubscribe();
+        authSubscriptionRef.current = null;
       }
     };
   }, [navigate]);

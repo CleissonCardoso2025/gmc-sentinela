@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthorization } from '@/hooks/use-authorization';
 import { toast } from 'sonner';
@@ -25,23 +25,44 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   } = useAdminAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
+  const sessionCheckedRef = useRef(false);
   
   // Login page should always be accessible
   const isLoginPage = location.pathname === '/login';
   
-  // Make sure we refresh the session if needed
+  // Make sure we refresh the session if needed, but only once per component mount
   useEffect(() => {
     let mounted = true;
     
     const checkSessionValidity = async () => {
-      if (mounted && isAuthenticated && user) {
-        // Check if session is near expiration, and refresh if needed
-        const { session, error } = await refreshSession();
-        if (mounted && !session && error) {
-          console.error("Failed to refresh session:", error);
-          // If session refresh failed, redirect to login
-          toast.error("Sua sessão expirou. Por favor, faça login novamente.");
-          navigate('/login', { replace: true });
+      // Only check session once per component mount and only if authenticated
+      if (!mounted || !isAuthenticated || !user || sessionCheckedRef.current) return;
+      
+      sessionCheckedRef.current = true;
+      
+      // Check if session is near expiration, and refresh if needed
+      const sessionExpiresAt = user?.session?.expires_at;
+      if (sessionExpiresAt) {
+        const expiryTime = new Date(sessionExpiresAt * 1000);
+        const now = new Date();
+        const timeUntilExpiry = expiryTime.getTime() - now.getTime();
+        
+        // Only refresh if expiring in less than 10 minutes
+        if (timeUntilExpiry < 10 * 60 * 1000) {
+          console.log("Session expires soon, refreshing...");
+          const { session, error } = await refreshSession();
+          
+          if (mounted && !session && error) {
+            console.error("Failed to refresh session:", error);
+            
+            // Only redirect on auth errors, not rate limiting
+            if (error.status !== 429) {
+              toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+              navigate('/login', { replace: true });
+            }
+          }
+        } else {
+          console.log(`Session valid for ${Math.round(timeUntilExpiry / 60000)} more minutes`);
         }
       }
     };

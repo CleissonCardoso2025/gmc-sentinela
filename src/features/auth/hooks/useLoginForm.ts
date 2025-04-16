@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,8 @@ export function useLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const sessionCheckCompletedRef = useRef(false);
+  const isMountedRef = useRef(true);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -24,16 +26,18 @@ export function useLoginForm() {
 
   // Check if user is already authenticated on component mount
   useEffect(() => {
-    let mounted = true;
+    isMountedRef.current = true;
     
     const checkSession = async () => {
-      if (!mounted) return;
+      // Skip if we've already checked the session
+      if (sessionCheckCompletedRef.current || !isMountedRef.current) return;
       
       setIsCheckingSession(true);
       try {
+        sessionCheckCompletedRef.current = true;
         const { data } = await supabase.auth.getSession();
         
-        if (mounted && data.session) {
+        if (isMountedRef.current && data.session) {
           console.log("User already has an active session, expires at:", 
             data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : "unknown");
           
@@ -48,7 +52,7 @@ export function useLoginForm() {
           localStorage.setItem("userEmail", data.session.user.email || "");
           
           // Only redirect after we've confirmed there's a valid session
-          if (mounted) {
+          if (isMountedRef.current) {
             setTimeout(() => {
               // Redirect based on user profile
               if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
@@ -62,7 +66,7 @@ export function useLoginForm() {
       } catch (error) {
         console.error("Error checking session:", error);
       } finally {
-        if (mounted) {
+        if (isMountedRef.current) {
           setIsCheckingSession(false);
         }
       }
@@ -71,7 +75,7 @@ export function useLoginForm() {
     checkSession();
     
     return () => {
-      mounted = false;
+      isMountedRef.current = false;
     };
   }, [navigate]);
 
@@ -104,6 +108,8 @@ export function useLoginForm() {
           errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
         } else if (error.message.includes("Email not confirmed")) {
           errorMessage = "Email não confirmado. Verifique sua caixa de entrada.";
+        } else if (error.status === 429) {
+          errorMessage = "Muitas tentativas de login. Por favor, aguarde alguns minutos e tente novamente.";
         }
         
         toast({

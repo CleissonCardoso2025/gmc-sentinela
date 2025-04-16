@@ -67,6 +67,23 @@ const ViaturasPage: React.FC = () => {
     
     try {
       console.log("Buscando veículos...");
+      
+      // First check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("Usuário não autenticado. Usando dados de exemplo.");
+        // Set mock data or show authentication error
+        setVehicles([]);
+        toast({
+          title: "Não autenticado",
+          description: "Você precisa estar autenticado para visualizar viaturas.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       const { data: vehiclesData, error: vehiclesError } = await supabase
         .from('vehicles')
         .select('*');
@@ -94,9 +111,6 @@ const ViaturasPage: React.FC = () => {
       })) || [];
       
       setVehicles(transformedVehicles);
-      
-      // Fetch maintenance data (in a real system)
-      // setMaintenances([]);
       
     } catch (error: any) {
       console.error("Error fetching vehicle data:", error);
@@ -136,6 +150,19 @@ const ViaturasPage: React.FC = () => {
     try {
       console.log("Salvando veículo:", vehicle);
       
+      // First check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("Usuário não autenticado. Não é possível salvar dados.");
+        toast({
+          title: "Não autenticado",
+          description: "Você precisa estar autenticado para salvar viaturas.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       if (formMode === "add") {
         // Prepare vehicle data for insert
         const vehicleData = {
@@ -148,7 +175,8 @@ const ViaturasPage: React.FC = () => {
           quilometragem: vehicle.quilometragem,
           ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
           proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
-          observacoes: vehicle.observacoes
+          observacoes: vehicle.observacoes,
+          user_id: session.user.id // Add user_id for RLS policy
         };
         
         console.log("Dados preparados para inserção:", vehicleData);
@@ -200,7 +228,8 @@ const ViaturasPage: React.FC = () => {
           quilometragem: vehicle.quilometragem,
           ultimamanutencao: vehicle.ultimaManutencao ? new Date(vehicle.ultimaManutencao).toISOString() : null,
           proximamanutencao: vehicle.proximaManutencao ? new Date(vehicle.proximaManutencao).toISOString() : null,
-          observacoes: vehicle.observacoes
+          observacoes: vehicle.observacoes,
+          user_id: session.user.id // Add user_id for RLS policy
         };
         
         console.log("Dados preparados para atualização:", vehicleData);

@@ -20,10 +20,17 @@ export const LoginForm: React.FC = () => {
       </div>
     );
   }
+  
+  // Prevenir o envio do formulário via Enter se os campos não estiverem preenchidos
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (!form.getValues('username') || !form.getValues('password'))) {
+      e.preventDefault();
+    }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form onSubmit={onSubmit} className="space-y-5" onKeyDown={handleKeyDown}>
         <UsernameField form={form} disabled={isLoading} />
         
         <PasswordField 

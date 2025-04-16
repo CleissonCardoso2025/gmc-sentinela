@@ -69,19 +69,34 @@ export function useLoginForm() {
     setIsLoading(true);
     
     try {
-      console.log("Login attempt with:", data.username);
+      // Limpar qualquer espaço em branco nas credenciais
+      const cleanEmail = data.username.trim();
+      const cleanPassword = data.password.trim();
+      
+      console.log("Login attempt with:", cleanEmail);
       
       // Use Supabase auth for real authentication
       const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.username,
-        password: data.password,
+        email: cleanEmail,
+        password: cleanPassword,
       });
       
       if (error) {
         console.error("Login error:", error);
+        
+        // Exibir mensagem de erro mais específica
+        let errorMessage = "Verifique suas credenciais e tente novamente";
+        
+        // Verificar tipo de erro para fornecer mensagem mais específica
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Email não confirmado. Verifique sua caixa de entrada.";
+        }
+        
         toast({
           title: "Erro ao fazer login",
-          description: "Verifique suas credenciais e tente novamente",
+          description: errorMessage,
           variant: "destructive",
         });
         return;

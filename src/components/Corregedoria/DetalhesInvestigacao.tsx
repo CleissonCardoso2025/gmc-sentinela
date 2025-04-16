@@ -8,8 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { EtapaInvestigacao } from './EtapaInvestigacao';
-import { Calendar, Check, FileText, FileUp, Printer, Plus, Loader2, File, Trash2, Download } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Calendar, Check, FileUp, Plus, Loader2, File, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { 
   Dialog, 
   DialogContent, 
@@ -30,9 +30,9 @@ import {
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Investigacao, InvestigacaoAnexo, InvestigacaoRelatorio } from '@/types/database';
+import { Investigacao, InvestigacaoAnexo } from '@/types/database';
 import { Etapa, getEtapasByInvestigacaoId, updateEtapaStatus, addEtapa } from '@/services/investigacaoService/etapaService';
-import { updateInvestigacaoStatus, uploadAnexo, deleteAnexo, generateReport } from '@/services/investigacaoService/apiInvestigacaoService';
+import { updateInvestigacaoStatus, uploadAnexo, deleteAnexo } from '@/services/investigacaoService/apiInvestigacaoService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -62,7 +62,6 @@ const anexoSchema = z.object({
 type AnexoForm = z.infer<typeof anexoSchema>;
 
 export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps) {
-  const { toast } = useToast();
   const [status, setStatus] = useState(sindicancia.status);
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [isLoadingEtapas, setIsLoadingEtapas] = useState(true);
@@ -70,9 +69,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [anexoDialogOpen, setAnexoDialogOpen] = useState(false);
   const [isUploadingAnexo, setIsUploadingAnexo] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState<'detailed' | 'summary'>('detailed');
-  const [selectedReportFormat, setSelectedReportFormat] = useState('pdf');
   
   // Forms
   const etapaForm = useForm<NovaEtapaForm>({
@@ -188,7 +184,10 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
       }
     } catch (error) {
       console.error("Error uploading anexo:", error);
-      toast.error("Erro ao fazer upload do anexo");
+      toast({
+        title: "Erro ao fazer upload do anexo",
+        variant: "destructive"
+      });
     } finally {
       setIsUploadingAnexo(false);
     }
@@ -201,29 +200,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
         // Refresh the page to get updated anexos
         window.location.reload();
       }
-    }
-  };
-
-  const handleGenerateReport = async () => {
-    setIsGeneratingReport(true);
-    try {
-      const report = await generateReport(
-        sindicancia.id, 
-        selectedReportType, 
-        selectedReportFormat
-      );
-      
-      if (report) {
-        // In a real scenario, we might redirect to the report or download it
-        console.log("Report generated:", report);
-        // Refresh the page to get updated reports
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error("Error generating report:", error);
-      toast.error("Erro ao gerar relatório");
-    } finally {
-      setIsGeneratingReport(false);
     }
   };
 
@@ -241,14 +217,10 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
   };
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return <FileText className="h-4 w-4 text-red-500" />;
+    if (fileType.includes('pdf')) return <File className="h-4 w-4 text-red-500" />;
     if (fileType.includes('image')) return <File className="h-4 w-4 text-blue-500" />;
     if (fileType.includes('doc')) return <File className="h-4 w-4 text-blue-700" />;
     return <File className="h-4 w-4" />;
-  };
-  
-  const getReportTypeLabel = (type: string): string => {
-    return type === 'detailed' ? 'Detalhado' : 'Resumido';
   };
   
   return (
@@ -262,10 +234,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
           <Button variant="outline" size="sm">
             <Calendar className="mr-2 h-4 w-4" />
             Agendar
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handleGenerateReport()}>
-            <Printer className="mr-2 h-4 w-4" />
-            Relatório
           </Button>
           {status !== "Concluída" && (
             <Button size="sm" onClick={() => handleStatusChange("Concluída")}>
@@ -320,9 +288,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
                       <span className="truncate max-w-[150px]">{anexo.name}</span>
                     </div>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <Download className="h-3 w-3" />
-                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -416,270 +381,138 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
         </CardContent>
       </Card>
       
-      <Tabs defaultValue="etapas">
-        <TabsList>
-          <TabsTrigger value="etapas">Passo a Passo da Apuração</TabsTrigger>
-          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold mb-2">Etapas da Sindicância</h3>
         
-        <TabsContent value="etapas" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Etapas da Sindicância</h3>
-          
-          {isLoadingEtapas ? (
-            // Loading state
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="border rounded-lg p-4">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-6 w-6 rounded-full" />
-                    <div>
-                      <Skeleton className="h-4 w-40 mb-1" />
-                      <Skeleton className="h-3 w-24" />
-                    </div>
+        {isLoadingEtapas ? (
+          // Loading state
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="border rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                  <div>
+                    <Skeleton className="h-4 w-40 mb-1" />
+                    <Skeleton className="h-3 w-24" />
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : etapasError ? (
-            // Error state
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {etapasError}
-              </AlertDescription>
-            </Alert>
-          ) : (
-            // Data loaded
-            etapas.map((etapa) => (
-              <EtapaInvestigacao 
-                key={etapa.id}
-                etapa={{
-                  id: etapa.id,
-                  nome: etapa.nome,
-                  concluida: etapa.concluida,
-                  data: etapa.data,
-                  responsavel: etapa.responsavel,
-                  descricao: etapa.descricao
-                }}
-                onComplete={() => concluirEtapa(etapa.id)}
-              />
-            ))
-          )}
-          
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="mt-4">
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar Nova Etapa
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Adicionar Nova Etapa</DialogTitle>
-                <DialogDescription>
-                  Preencha as informações para adicionar uma nova etapa à sindicância.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <Form {...etapaForm}>
-                <form onSubmit={etapaForm.handleSubmit(adicionarNovaEtapa)} className="space-y-4">
-                  <FormField
-                    control={etapaForm.control}
-                    name="nome"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome da Etapa</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Oitiva de Testemunhas" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={etapaForm.control}
-                    name="data"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={etapaForm.control}
-                    name="responsavel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Responsável</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome do responsável" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={etapaForm.control}
-                    name="descricao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Descrição</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Descreva as ações a serem realizadas nesta etapa" 
-                            className="min-h-[100px]"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit">Adicionar Etapa</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </TabsContent>
+              </div>
+            ))}
+          </div>
+        ) : etapasError ? (
+          // Error state
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {etapasError}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          // Data loaded
+          etapas.map((etapa) => (
+            <EtapaInvestigacao 
+              key={etapa.id}
+              etapa={{
+                id: etapa.id,
+                nome: etapa.nome,
+                concluida: etapa.concluida,
+                data: etapa.data,
+                responsavel: etapa.responsavel,
+                descricao: etapa.descricao
+              }}
+              onComplete={() => concluirEtapa(etapa.id)}
+            />
+          ))
+        )}
         
-        <TabsContent value="relatorios">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatórios da Sindicância</CardTitle>
-              <CardDescription>Gere relatórios da sindicância em diferentes formatos</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  variant={selectedReportType === 'detailed' ? 'default' : 'outline'} 
-                  className="h-auto py-6 flex flex-col items-center justify-center"
-                  onClick={() => setSelectedReportType('detailed')}
-                >
-                  <Printer className="h-6 w-6 mb-2" />
-                  <span className="font-medium">Relatório Detalhado</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Relatório completo com todas as etapas e evidências
-                  </span>
-                </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="mt-4">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Nova Etapa
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Adicionar Nova Etapa</DialogTitle>
+              <DialogDescription>
+                Preencha as informações para adicionar uma nova etapa à sindicância.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...etapaForm}>
+              <form onSubmit={etapaForm.handleSubmit(adicionarNovaEtapa)} className="space-y-4">
+                <FormField
+                  control={etapaForm.control}
+                  name="nome"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome da Etapa</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Oitiva de Testemunhas" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <Button 
-                  variant={selectedReportType === 'summary' ? 'default' : 'outline'} 
-                  className="h-auto py-6 flex flex-col items-center justify-center"
-                  onClick={() => setSelectedReportType('summary')}
-                >
-                  <FileText className="h-6 w-6 mb-2" />
-                  <span className="font-medium">Relatório Resumido</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Resumo com principais pontos e conclusão
-                  </span>
-                </Button>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h3 className="font-medium mb-2">Relatórios Disponíveis</h3>
+                <FormField
+                  control={etapaForm.control}
+                  name="data"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                {sindicancia.relatorios && sindicancia.relatorios.length > 0 ? (
-                  <div className="space-y-2">
-                    {sindicancia.relatorios.map((relatorio) => (
-                      <div key={relatorio.id} className="bg-slate-50 p-3 rounded flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {relatorio.format === 'pdf' ? (
-                            <FileText className="h-5 w-5 text-red-500" />
-                          ) : (
-                            <File className="h-5 w-5 text-blue-500" />
-                          )}
-                          <div>
-                            <p className="font-medium">{relatorio.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {getReportTypeLabel(relatorio.type)} • {new Date(relatorio.created_at).toLocaleDateString()} • {relatorio.author}
-                            </p>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState 
-                    icon="file-text"
-                    title="Nenhum relatório disponível"
-                    description="Gere um relatório da sindicância para começar."
-                  />
-                )}
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h3 className="font-medium mb-2">Filtros de Relatório</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Período</label>
-                    <div className="flex mt-1 gap-2">
-                      <Input type="date" placeholder="Data inicial" />
-                      <Input type="date" placeholder="Data final" />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Formato de Saída</label>
-                    <div className="flex mt-1 gap-2">
-                      <Button 
-                        variant={selectedReportFormat === 'pdf' ? 'default' : 'outline'} 
-                        size="sm"
-                        onClick={() => setSelectedReportFormat('pdf')}
-                      >
-                        PDF
-                      </Button>
-                      <Button 
-                        variant={selectedReportFormat === 'doc' ? 'default' : 'outline'} 
-                        size="sm"
-                        onClick={() => setSelectedReportFormat('doc')}
-                      >
-                        DOC
-                      </Button>
-                      <Button 
-                        variant={selectedReportFormat === 'csv' ? 'default' : 'outline'} 
-                        size="sm"
-                        onClick={() => setSelectedReportFormat('csv')}
-                      >
-                        CSV
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  className="mt-4 w-full" 
-                  onClick={handleGenerateReport}
-                  disabled={isGeneratingReport}
-                >
-                  {isGeneratingReport && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Gerar Relatório {selectedReportType === 'detailed' ? 'Detalhado' : 'Resumido'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                <FormField
+                  control={etapaForm.control}
+                  name="responsavel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Responsável</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do responsável" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={etapaForm.control}
+                  name="descricao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Descreva as ações a serem realizadas nesta etapa" 
+                          className="min-h-[100px]"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">Adicionar Etapa</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

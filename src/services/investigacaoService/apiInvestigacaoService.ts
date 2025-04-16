@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Investigacao, InvestigacaoAnexo, InvestigacaoRelatorio } from "@/types/database";
+import { Investigacao, InvestigacaoAnexo } from "@/types/database";
 import { toast } from "sonner";
 
 // Helper function to safely validate and cast anexos
@@ -30,36 +30,6 @@ const validateAnexos = (anexosData: unknown): InvestigacaoAnexo[] => {
   return validAnexos;
 };
 
-// Helper function to safely validate and cast relatórios
-const validateRelatorios = (relatoriosData: unknown): InvestigacaoRelatorio[] => {
-  // Check if it's an array first
-  if (!Array.isArray(relatoriosData)) {
-    console.error("Relatórios data is not an array:", relatoriosData);
-    return [];
-  }
-
-  // Validate each item in the array has the required properties
-  const validRelatorios = relatoriosData.filter((item): item is InvestigacaoRelatorio => {
-    const hasRequiredFields = item && 
-      typeof item === 'object' && 
-      'id' in item && 
-      'title' in item && 
-      'type' in item && 
-      'format' in item &&
-      'created_at' in item &&
-      'author' in item &&
-      'path' in item;
-    
-    if (!hasRequiredFields) {
-      console.error("Invalid relatorio item:", item);
-    }
-    
-    return hasRequiredFields;
-  });
-
-  return validRelatorios;
-};
-
 // Get all investigations
 export const getInvestigacoes = async (): Promise<Investigacao[]> => {
   try {
@@ -74,7 +44,7 @@ export const getInvestigacoes = async (): Promise<Investigacao[]> => {
       return [];
     }
 
-    // Map database fields to our interface and safely handle anexos and relatórios
+    // Map database fields to our interface and safely handle anexos
     return data.map(item => ({
       id: item.id,
       numero: item.numero,
@@ -85,7 +55,6 @@ export const getInvestigacoes = async (): Promise<Investigacao[]> => {
       etapaAtual: item.etapaatual,
       relatoInicial: item.relatoinicial,
       anexos: validateAnexos(item.anexos),
-      relatorios: validateRelatorios(item.relatorios),
       created_at: item.created_at,
       updated_at: item.updated_at
     }));
@@ -121,7 +90,6 @@ export const getInvestigacaoById = async (id: string): Promise<Investigacao | nu
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
       anexos: validateAnexos(data.anexos),
-      relatorios: validateRelatorios(data.relatorios),
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -208,9 +176,7 @@ export const deleteAnexo = async (investigacaoId: string, anexoId: string): Prom
     
     // Filter out the anexo to delete
     const currentAnexos = Array.isArray(investigacao.anexos) ? investigacao.anexos : [];
-    const updatedAnexos = currentAnexos.filter(
-      (anexo: InvestigacaoAnexo) => anexo.id !== anexoId
-    );
+    const updatedAnexos = currentAnexos.filter(anexo => anexo.id !== anexoId);
     
     // Update the investigation record with the filtered anexos array
     const { error: updateError } = await supabase
@@ -236,67 +202,8 @@ export const deleteAnexo = async (investigacaoId: string, anexoId: string): Prom
   }
 };
 
-// Generate report for investigation
-export const generateReport = async (
-  investigacaoId: string,
-  reportType: 'detailed' | 'summary',
-  format: string = 'pdf'
-): Promise<InvestigacaoRelatorio | null> => {
-  try {
-    // First get the current investigation
-    const { data: investigacao, error: fetchError } = await supabase
-      .from('investigacoes')
-      .select('relatorios, numero')
-      .eq('id', investigacaoId)
-      .single();
-    
-    if (fetchError) {
-      console.error("Error fetching investigation for report:", fetchError);
-      toast.error("Erro ao preparar relatório");
-      return null;
-    }
-    
-    // Create a new report object
-    const newRelatorio: InvestigacaoRelatorio = {
-      id: crypto.randomUUID(),
-      title: `Relatório ${reportType === 'detailed' ? 'Detalhado' : 'Resumido'} - ${investigacao.numero}`,
-      type: reportType,
-      format: format,
-      created_at: new Date().toISOString(),
-      author: 'Sistema Sentinela',
-      path: `relatorios/${investigacaoId}/${reportType}_${format}_${Date.now()}.${format}`
-    };
-    
-    // Add to existing relatorios array or create a new one
-    const currentRelatorios = Array.isArray(investigacao.relatorios) ? investigacao.relatorios : [];
-    const updatedRelatorios = [...currentRelatorios, newRelatorio];
-    
-    // Update the investigation record with the new relatorios array
-    const { error: updateError } = await supabase
-      .from('investigacoes')
-      .update({ 
-        relatorios: updatedRelatorios,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', investigacaoId);
-    
-    if (updateError) {
-      console.error("Error updating investigation with new report:", updateError);
-      toast.error("Erro ao salvar relatório");
-      return null;
-    }
-    
-    toast.success("Relatório gerado com sucesso");
-    return newRelatorio;
-  } catch (error) {
-    console.error("Exception generating report:", error);
-    toast.error("Erro ao gerar relatório");
-    return null;
-  }
-};
-
 // Create new investigation
-export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' | 'created_at' | 'updated_at' | 'anexos' | 'relatorios'>, anexos?: any[]): Promise<Investigacao | null> => {
+export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' | 'created_at' | 'updated_at' | 'anexos'>, anexos?: any[]): Promise<Investigacao | null> => {
   try {
     console.log("Creating investigation:", investigacao);
     
@@ -310,8 +217,7 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' |
         status: investigacao.status,
         etapaatual: investigacao.etapaAtual,
         relatoinicial: investigacao.relatoInicial,
-        anexos: anexos || [],
-        relatorios: []
+        anexos: anexos || []
       }])
       .select()
       .single();
@@ -335,7 +241,6 @@ export const createInvestigacao = async (investigacao: Omit<Investigacao, 'id' |
       etapaAtual: data.etapaatual,
       relatoInicial: data.relatoinicial,
       anexos: validateAnexos(data.anexos),
-      relatorios: validateRelatorios(data.relatorios),
       created_at: data.created_at,
       updated_at: data.updated_at
     };

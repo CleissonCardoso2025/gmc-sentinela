@@ -104,6 +104,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCancel }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submitted with data:", formData);
     
     if (validate()) {
       onSave({

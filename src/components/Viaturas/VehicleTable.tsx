@@ -36,6 +36,8 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, onEdit, onAddMain
   };
   
   const isMaintenanceNeeded = (vehicle: Vehicle) => {
+    if (!vehicle.proximaManutencao) return false;
+    
     const today = new Date();
     const maintenanceDate = new Date(vehicle.proximaManutencao);
     const daysUntil = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -71,6 +73,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, onEdit, onAddMain
                       variant="ghost" 
                       size="icon" 
                       onClick={() => onEdit(vehicle)}
+                      title="Editar"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -79,6 +82,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({ vehicles, onEdit, onAddMain
                       size="icon"
                       onClick={() => onAddMaintenance(vehicle)}
                       className={isMaintenanceNeeded(vehicle) ? "text-yellow-600" : ""}
+                      title="Adicionar manutenção"
                     >
                       {isMaintenanceNeeded(vehicle) ? 
                         <AlertTriangle className="h-4 w-4" /> : 

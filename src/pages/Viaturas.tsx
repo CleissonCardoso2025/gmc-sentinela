@@ -59,57 +59,60 @@ const ViaturasPage: React.FC = () => {
 
   // Fetch vehicles and maintenance data
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      
-      try {
-        // Fetch vehicles
-        const { data: vehiclesData, error: vehiclesError } = await supabase
-          .from('vehicles')
-          .select('*');
-          
-        if (vehiclesError) throw vehiclesError;
-        
-        // Transform vehicle data if needed
-        const transformedVehicles = vehiclesData.map(vehicle => ({
-          id: vehicle.id,
-          placa: vehicle.placa,
-          modelo: vehicle.modelo,
-          marca: vehicle.marca,
-          ano: vehicle.ano || '',
-          tipo: vehicle.tipo || '',
-          status: vehicle.status || 'Disponível',
-          quilometragem: vehicle.quilometragem || 0,
-          ultimaManutencao: vehicle.ultimamanutencao ? new Date(vehicle.ultimamanutencao).toISOString().split('T')[0] : '',
-          proximaManutencao: vehicle.proximamanutencao ? new Date(vehicle.proximamanutencao).toISOString().split('T')[0] : '',
-          observacoes: vehicle.observacoes || ''
-        }));
-        
-        setVehicles(transformedVehicles);
-        
-        // Fetch maintenance data
-        // In a real system, you would have a maintenance table
-        // For now, we'll set an empty array
-        setMaintenances([]);
-        
-      } catch (error) {
-        console.error("Error fetching vehicle data:", error);
-        toast({
-          title: "Erro ao carregar dados",
-          description: "Não foi possível carregar as informações das viaturas.",
-          variant: "destructive"
-        });
-        
-        // Set empty arrays on error
-        setVehicles([]);
-        setMaintenances([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    setIsLoading(true);
     
-    fetchData();
-  }, [toast]);
+    try {
+      console.log("Buscando veículos...");
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select('*');
+        
+      if (vehiclesError) {
+        console.error("Erro ao buscar veículos:", vehiclesError);
+        throw vehiclesError;
+      }
+      
+      console.log("Veículos recuperados:", vehiclesData);
+      
+      // Transform vehicle data if needed
+      const transformedVehicles = vehiclesData?.map(vehicle => ({
+        id: vehicle.id,
+        placa: vehicle.placa,
+        modelo: vehicle.modelo,
+        marca: vehicle.marca,
+        ano: vehicle.ano || '',
+        tipo: vehicle.tipo || '',
+        status: vehicle.status || 'Disponível',
+        quilometragem: vehicle.quilometragem || 0,
+        ultimaManutencao: vehicle.ultimamanutencao ? new Date(vehicle.ultimamanutencao).toISOString().split('T')[0] : '',
+        proximaManutencao: vehicle.proximamanutencao ? new Date(vehicle.proximamanutencao).toISOString().split('T')[0] : '',
+        observacoes: vehicle.observacoes || ''
+      })) || [];
+      
+      setVehicles(transformedVehicles);
+      
+      // Fetch maintenance data (in a real system)
+      // setMaintenances([]);
+      
+    } catch (error: any) {
+      console.error("Error fetching vehicle data:", error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar as informações das viaturas.",
+        variant: "destructive"
+      });
+      
+      // Set empty arrays on error
+      setVehicles([]);
+      setMaintenances([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddVehicle = () => {
     setFormMode("add");
@@ -131,6 +134,8 @@ const ViaturasPage: React.FC = () => {
 
   const handleSaveVehicle = async (vehicle: Vehicle) => {
     try {
+      console.log("Salvando veículo:", vehicle);
+      
       if (formMode === "add") {
         // Prepare vehicle data for insert
         const vehicleData = {
@@ -146,12 +151,19 @@ const ViaturasPage: React.FC = () => {
           observacoes: vehicle.observacoes
         };
         
+        console.log("Dados preparados para inserção:", vehicleData);
+        
         const { data, error } = await supabase
           .from('vehicles')
           .insert(vehicleData)
           .select();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao inserir veículo:", error);
+          throw error;
+        }
+        
+        console.log("Veículo inserido com sucesso:", data);
         
         if (data && data.length > 0) {
           // Transform returned data to match Vehicle interface
@@ -169,14 +181,14 @@ const ViaturasPage: React.FC = () => {
             observacoes: data[0].observacoes || ''
           };
           
-          setVehicles([...vehicles, newVehicle]);
+          setVehicles([newVehicle, ...vehicles]);
         }
         
         toast({
           title: "Viatura adicionada",
           description: "Viatura cadastrada com sucesso.",
         });
-      } else {
+      } else if (formMode === "edit" && vehicle.id) {
         // Prepare vehicle data for update
         const vehicleData = {
           placa: vehicle.placa,
@@ -191,12 +203,19 @@ const ViaturasPage: React.FC = () => {
           observacoes: vehicle.observacoes
         };
         
+        console.log("Dados preparados para atualização:", vehicleData);
+        
         const { error } = await supabase
           .from('vehicles')
           .update(vehicleData)
           .eq('id', vehicle.id);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao atualizar veículo:", error);
+          throw error;
+        }
+        
+        console.log("Veículo atualizado com sucesso");
         
         // Update local state
         setVehicles(vehicles.map(v => v.id === vehicle.id ? vehicle : v));
@@ -209,11 +228,11 @@ const ViaturasPage: React.FC = () => {
       
       setActiveTab("listar");
       setFormMode(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving vehicle:", error);
       toast({
         title: "Erro ao salvar viatura",
-        description: "Não foi possível salvar os dados da viatura.",
+        description: `Não foi possível salvar os dados da viatura: ${error.message}`,
         variant: "destructive"
       });
     }

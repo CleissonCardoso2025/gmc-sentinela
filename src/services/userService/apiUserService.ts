@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+
+import { supabase } from '@/integrations/supabase/client';
 import { User, UserFormData } from '@/types/database';
 
 export const createUser = async (data: UserFormData) => {
@@ -48,4 +49,14 @@ export const toggleUserStatus = async (userId: string, currentStatus: boolean) =
 
   if (error) throw error;
   return updatedUser;
+};
+
+export const getUsers = async (): Promise<User[]> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .order('nome', { ascending: true });
+  
+  if (error) throw error;
+  return data || [];
 };

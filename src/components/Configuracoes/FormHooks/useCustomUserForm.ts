@@ -24,11 +24,15 @@ export const useCustomUserForm = ({ initialData, onSubmit, onCancel }: UseCustom
         email: formData.get('email') as string,
         matricula: formData.get('matricula') as string,
         data_nascimento: formData.get('data_nascimento') as string,
-        perfil: formData.get('perfil') as 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente' | 'Motorista' | 'Monitor',
+        perfil: formData.get('perfil') as string,
         status: formData.get('status') === 'on',
         password: formData.get('password') as string,
-        confirmPassword: formData.get('confirmPassword') as string,
       };
+
+      // If editing, include the ID
+      if (isEditing && initialData?.id) {
+        data.id = initialData.id;
+      }
 
       // Create new user
       if (!isEditing) {

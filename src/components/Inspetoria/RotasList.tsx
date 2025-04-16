@@ -3,16 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit, Trash2, Map, Plus } from "lucide-react";
+import { Eye, Edit, Trash2, Map, Plus, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/Dashboard/EmptyState";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Rota {
   id: string;
   nome: string;
+  descricao?: string;
   bairros?: string;
   pontoInicial?: string;
   pontoFinal?: string;
@@ -31,6 +33,7 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [rotas, setRotas] = useState<Rota[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRotas();
@@ -38,16 +41,25 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
 
   const fetchRotas = async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
+      console.log("Buscando rotas...");
       const { data, error } = await supabase
         .from('rotas')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar rotas:", error);
+        throw error;
+      }
+      
+      console.log("Rotas recuperadas:", data);
       setRotas(data || []);
-    } catch (error) {
-      console.error("Error fetching rotas:", error);
+    } catch (error: any) {
+      console.error("Erro ao carregar rotas:", error);
+      setError(error.message || "Não foi possível carregar as rotas cadastradas.");
       toast({
         title: "Erro ao carregar rotas",
         description: "Não foi possível carregar as rotas cadastradas.",
@@ -75,8 +87,8 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
         title: "Rota excluída",
         description: `A rota ${rotaToDelete.nome} foi excluída com sucesso.`,
       });
-    } catch (error) {
-      console.error("Error deleting rota:", error);
+    } catch (error: any) {
+      console.error("Erro ao excluir rota:", error);
       toast({
         title: "Erro ao excluir rota",
         description: "Não foi possível excluir a rota.",
@@ -104,6 +116,10 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
     }
   };
 
+  const retryFetch = () => {
+    fetchRotas();
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -115,6 +131,21 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
         </div>
         <Skeleton className="h-64 w-full" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Erro de conexão</AlertTitle>
+        <AlertDescription className="space-y-2">
+          <p>Não foi possível conectar ao banco de dados: {error}</p>
+          <Button onClick={retryFetch} variant="outline" size="sm">
+            Tentar novamente
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 

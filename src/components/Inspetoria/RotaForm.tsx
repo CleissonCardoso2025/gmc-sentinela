@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define the validation schema for the form
 const formSchema = z.object({
@@ -51,16 +52,50 @@ const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota }) =>
     },
   });
 
-  const onSubmit = (values: RotaFormValues) => {
-    // Here you would typically save to the database
-    console.log('Rota form submitted:', values);
-    
-    toast({
-      title: editingRota ? "Rota atualizada" : "Rota cadastrada",
-      description: `A rota ${values.nome} foi ${editingRota ? 'atualizada' : 'cadastrada'} com sucesso.`,
-    });
-    
-    onSave();
+  const onSubmit = async (values: RotaFormValues) => {
+    try {
+      // Adicionar informações de debug
+      console.log('Rota form submitted:', values);
+      
+      // Preparar dados para o Supabase
+      const rotaData = {
+        nome: values.nome,
+        descricao: values.descricao,
+        bairros: values.bairros,
+        pontoInicial: values.pontoInicial,
+        pontoFinal: values.pontoFinal,
+        tempoPrevisto: values.tempoPrevisto,
+        prioridade: values.prioridade,
+        ultimoPatrulhamento: null
+      };
+      
+      // Salvar no banco de dados
+      const { data, error } = await supabase
+        .from('rotas')
+        .insert([rotaData])
+        .select();
+      
+      if (error) {
+        console.error('Erro ao salvar rota:', error);
+        throw error;
+      }
+      
+      console.log('Rota salva com sucesso:', data);
+      
+      toast({
+        title: editingRota ? "Rota atualizada" : "Rota cadastrada",
+        description: `A rota ${values.nome} foi ${editingRota ? 'atualizada' : 'cadastrada'} com sucesso.`,
+      });
+      
+      onSave();
+    } catch (error: any) {
+      console.error('Erro ao processar o formulário:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Ocorreu um erro ao salvar a rota. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

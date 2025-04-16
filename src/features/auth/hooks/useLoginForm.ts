@@ -30,7 +30,8 @@ export function useLoginForm() {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          console.log("User already has an active session");
+          console.log("User already has an active session, expires at:", 
+            session.expires_at ? new Date(session.expires_at * 1000).toISOString() : "unknown");
           
           // Get user profile from user_metadata
           const userProfile = session.user.user_metadata?.role || "Agente";
@@ -43,12 +44,14 @@ export function useLoginForm() {
           localStorage.setItem("userEmail", session.user.email || "");
           
           // Only redirect after we've confirmed there's a valid session
-          // Redirect based on user profile
-          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-            navigate("/index", { replace: true });
-          } else {
-            navigate("/dashboard", { replace: true });
-          }
+          setTimeout(() => {
+            // Redirect based on user profile
+            if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+              navigate("/index", { replace: true });
+            } else {
+              navigate("/dashboard", { replace: true });
+            }
+          }, 100);
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -68,61 +71,69 @@ export function useLoginForm() {
     try {
       console.log("Login attempt with:", data.username);
       
-      // Since we're using mock auth for now, simulate Supabase auth
-      // In production, this would use supabase.auth.signInWithPassword
+      // Use Supabase auth for real authentication
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.username,
+        password: data.password,
+      });
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (error) {
+        console.error("Login error:", error);
+        toast({
+          title: "Erro ao fazer login",
+          description: "Verifique suas credenciais e tente novamente",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      // Mock user login - in a real implementation, you'd use Supabase auth
-      const mockUserProfile = getMockUserProfile(data.username);
+      const session = authData.session;
+      const user = authData.user;
       
-      // Store auth data in localStorage for now (this is just for the mock implementation)
+      if (!session || !user) {
+        toast({
+          title: "Erro ao fazer login",
+          description: "Não foi possível estabelecer uma sessão",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Get user profile from user_metadata
+      const userProfile = user.user_metadata?.role || "Agente";
+      
+      // Store auth data in localStorage for now (for compatibility with existing code)
       localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userProfile", mockUserProfile);
-      localStorage.setItem("userName", data.username);
-      localStorage.setItem("userId", "e632890d-208e-489b-93a3-eae0dd0a9a08"); // Mock ID
-      localStorage.setItem("userEmail", data.username);
+      localStorage.setItem("userProfile", userProfile);
+      localStorage.setItem("userName", user.email || "");
+      localStorage.setItem("userId", user.id);
+      localStorage.setItem("userEmail", user.email || "");
       
       // Success notification
       toast({
         title: "Login realizado",
-        description: `Bem-vindo, ${mockUserProfile}. Você será redirecionado.`,
+        description: `Bem-vindo, ${userProfile}. Você será redirecionado.`,
       });
       
-      // Redirect based on user profile
+      // Wait a moment to ensure session is properly set before redirecting
       setTimeout(() => {
-        if (mockUserProfile === "Inspetor" || mockUserProfile === "Subinspetor") {
+        if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
           navigate("/index", { replace: true });
         } else {
           navigate("/dashboard", { replace: true });
         }
-      }, 1000);
+      }, 100);
       
     } catch (error) {
       console.error("Login error:", error);
       toast({
         title: "Erro ao fazer login",
-        description: "Verifique suas credenciais e tente novamente",
+        description: "Ocorreu um erro inesperado. Tente novamente mais tarde.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Helper function to determine user profile based on username (mock implementation)
-  const getMockUserProfile = (username: string): string => {
-    if (username.toLowerCase().includes("inspetor")) {
-      return "Inspetor";
-    } else if (username.toLowerCase().includes("subinspetor")) {
-      return "Subinspetor";
-    } else if (username.toLowerCase().includes("supervisor")) {
-      return "Supervisor";
-    } else if (username.toLowerCase().includes("corregedor")) {
-      return "Corregedor";
-    }
-    return "Agente"; // Default profile
   };
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);

@@ -16,6 +16,30 @@ const Login = () => {
       try {
         setIsCheckingSession(true);
         
+        // First set up the auth state listener to handle changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("Auth state changed on login page:", event);
+          
+          if (session) {
+            // Get user profile from user_metadata
+            const userProfile = session.user.user_metadata?.role || "Agente";
+            
+            // Store the user profile in localStorage for compatibility with existing code
+            localStorage.setItem("isAuthenticated", "true");
+            localStorage.setItem("userProfile", userProfile);
+            localStorage.setItem("userName", session.user.email || "");
+            localStorage.setItem("userId", session.user.id);
+            localStorage.setItem("userEmail", session.user.email || "");
+            
+            // Redirect based on user profile
+            if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+              navigate("/index", { replace: true });
+            } else {
+              navigate("/dashboard", { replace: true });
+            }
+          }
+        });
+        
         // Get existing session
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -26,6 +50,8 @@ const Login = () => {
         
         if (session) {
           console.log("Existing session found, redirecting...");
+          console.log("Session expires at:", 
+            session.expires_at ? new Date(session.expires_at * 1000).toISOString() : "unknown");
           
           // Get user profile from user_metadata
           const userProfile = session.user.user_metadata?.role || "Agente";
@@ -38,17 +64,23 @@ const Login = () => {
           localStorage.setItem("userEmail", session.user.email || "");
           
           // Redirect based on user profile
-          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-            navigate("/index", { replace: true });
-          } else {
-            navigate("/dashboard", { replace: true });
-          }
+          setTimeout(() => {
+            if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+              navigate("/index", { replace: true });
+            } else {
+              navigate("/dashboard", { replace: true });
+            }
+          }, 100);
         }
       } catch (error) {
         console.error("Session checking failed:", error);
       } finally {
         setIsCheckingSession(false);
       }
+      
+      return () => {
+        subscription.unsubscribe();
+      };
     };
     
     checkAndRedirect();

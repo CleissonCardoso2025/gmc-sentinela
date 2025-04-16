@@ -16,7 +16,7 @@ export const LoginForm: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
-        <p className="text-gray-500">Verificando sessão...</p>
+        <p className="text-gray-300">Verificando sessão...</p>
       </div>
     );
   }
@@ -54,7 +54,12 @@ export const LoginForm: React.FC = () => {
           className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           disabled={isLoading}
         >
-          {isLoading ? "Autenticando..." : "Entrar"}
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <span>Autenticando...</span>
+            </div>
+          ) : "Entrar"}
         </Button>
       </form>
     </Form>

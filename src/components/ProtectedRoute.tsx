@@ -15,7 +15,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   const location = useLocation();
   const navigate = useNavigate();
   const { hasAccessToPage } = useAuthorization(userProfile);
-  const { isAuthenticated, isLoading, user, userRole, refreshSession } = useAdminAuth();
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    sessionInitialized,
+    user, 
+    userRole, 
+    refreshSession 
+  } = useAdminAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
   
   // Login page should always be accessible
@@ -28,20 +35,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     const checkSessionValidity = async () => {
       if (isAuthenticated && user) {
         // Check if session is near expiration, and refresh if needed
-        const { session } = await refreshSession();
-        if (!session) {
+        const { session, error } = await refreshSession();
+        if (!session && error) {
+          console.error("Failed to refresh session:", error);
           // If session refresh failed, redirect to login
+          toast.error("Sua sessão expirou. Por favor, faça login novamente.");
           navigate('/login', { replace: true });
         }
       }
     };
     
-    checkSessionValidity();
-    // Only run this once when the component mounts or when isAuthenticated/user changes
-  }, [isAuthenticated, user, refreshSession, navigate]);
+    if (sessionInitialized) {
+      checkSessionValidity();
+    }
+  }, [isAuthenticated, user, sessionInitialized, refreshSession, navigate]);
   
   // Show loading state while auth is being checked
-  if (isLoading || isRedirecting) {
+  if (isLoading || !sessionInitialized || isRedirecting) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center">
@@ -54,12 +64,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
   
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   // Store auth data for pages that still use localStorage-based auth
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && sessionInitialized) {
       localStorage.setItem('isAuthenticated', 'true');
       
       // Get user profile from user_metadata or fall back to the role passed to this component
@@ -78,21 +89,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
         localStorage.setItem('userEmail', 'gcmribeiradopombal@hotmail.com');
       }
     }
-  }, [isAuthenticated, user, userProfile, userRole]);
+  }, [isAuthenticated, user, userProfile, userRole, sessionInitialized]);
   
   // Check if the stored profile should be redirected
   useEffect(() => {
-    const storedUserProfile = localStorage.getItem('userProfile');
-    
-    // If there's a logged in user and they're at the root path
-    if (storedUserProfile && location.pathname === '/') {
+    if (sessionInitialized && isAuthenticated && location.pathname === '/') {
       setIsRedirecting(true);
       setTimeout(() => {
         navigate('/dashboard', { replace: true });
         setIsRedirecting(false);
       }, 100);
     }
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, isAuthenticated, sessionInitialized]);
   
   // Special check for /index path - only Inspetor or Subinspetor can access
   if (location.pathname === '/index') {

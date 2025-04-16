@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -110,14 +111,22 @@ export function useAdminAuth() {
       const { data, error } = await supabase.auth.refreshSession();
       
       if (error) {
-        throw error;
+        console.error("Failed to refresh session:", error);
+        toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+        return { session: null, error };
       }
       
       if (data.session) {
         setSession(data.session);
         setUser(data.session.user);
+        setIsAuthenticated(true);
         console.log("Session refreshed, new expiry:", 
           data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : "unknown");
+      } else {
+        setIsAuthenticated(false);
+        setSession(null);
+        setUser(null);
+        console.log("No session returned after refresh attempt");
       }
       
       return { session: data.session, error: null };

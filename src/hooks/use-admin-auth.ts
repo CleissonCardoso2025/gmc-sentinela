@@ -112,7 +112,11 @@ export function useAdminAuth() {
       return data.session;
     } catch (error) {
       console.error("Failed to refresh session:", error);
-      toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+      toast({
+        title: "Erro de autenticação",
+        description: "Sua sessão expirou. Por favor, faça login novamente.",
+        variant: "destructive"
+      });
       return null;
     } finally {
       setIsLoading(false);

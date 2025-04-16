@@ -12,8 +12,6 @@ const UserProfile = () => {
   const [userEmail, setUserEmail] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isSpecialUser, setIsSpecialUser] = useState<boolean>(false);
-  const [isUpdating, setIsUpdating] = useState<boolean>(false);
-  const [lastUpdateTime, setLastUpdateTime] = useState<number | null>(null);
   
   useEffect(() => {
     // Get user profile from localStorage
@@ -30,25 +28,16 @@ const UserProfile = () => {
   }, []);
   
   const handleUpdateGcmRibeiraProfile = async () => {
-    // Prevent multiple rapid update attempts (within 3 seconds)
-    const now = Date.now();
-    if (lastUpdateTime && now - lastUpdateTime < 3000) {
-      toast.info("Por favor, aguarde alguns segundos antes de tentar novamente");
-      return;
-    }
-    
-    setIsUpdating(true);
-    setLastUpdateTime(now);
-    
     const success = await updateGcmRibeiraProfile();
     if (success) {
+      toast.success("Perfil do usuário gcmribeiradopombal@hotmail.com atualizado para Inspetor");
       if (userEmail === 'gcmribeiradopombal@hotmail.com') {
         setUserProfile('Inspetor');
         setIsAdmin(true);
       }
+    } else {
+      toast.error("Erro ao atualizar perfil do usuário");
     }
-    
-    setIsUpdating(false);
   };
   
   return (
@@ -99,10 +88,9 @@ const UserProfile = () => {
                     variant="default"
                     onClick={handleUpdateGcmRibeiraProfile}
                     className="gap-2"
-                    disabled={isUpdating}
                   >
-                    <RefreshCcw className={`h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} />
-                    {isUpdating ? 'Atualizando...' : 'Atualizar meu perfil para Inspetor'}
+                    <RefreshCcw className="h-4 w-4" />
+                    Atualizar meu perfil para Inspetor
                   </Button>
                 </div>
               )}
@@ -114,10 +102,9 @@ const UserProfile = () => {
                     variant="secondary" 
                     onClick={handleUpdateGcmRibeiraProfile}
                     className="gap-2"
-                    disabled={isUpdating}
                   >
-                    <RefreshCcw className={`h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} />
-                    {isUpdating ? 'Verificando...' : 'Verificar perfil do gcmribeiradopombal@hotmail.com'}
+                    <RefreshCcw className="h-4 w-4" />
+                    Atualizar perfil do gcmribeiradopombal@hotmail.com para Inspetor
                   </Button>
                 </div>
               )}

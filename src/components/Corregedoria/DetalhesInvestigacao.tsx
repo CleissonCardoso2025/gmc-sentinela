@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,7 +50,6 @@ const novaEtapaSchema = z.object({
 
 type NovaEtapaForm = z.infer<typeof novaEtapaSchema>;
 
-// Schema for upload anexo form
 const anexoSchema = z.object({
   file: z.any().refine((file) => file instanceof File, {
     message: "Arquivo é obrigatório",
@@ -70,7 +68,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
   const [anexoDialogOpen, setAnexoDialogOpen] = useState(false);
   const [isUploadingAnexo, setIsUploadingAnexo] = useState(false);
   
-  // Forms
   const etapaForm = useForm<NovaEtapaForm>({
     resolver: zodResolver(novaEtapaSchema),
     defaultValues: {
@@ -89,7 +86,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     }
   });
 
-  // Fetch etapas data
   useEffect(() => {
     const fetchEtapas = async () => {
       setIsLoadingEtapas(true);
@@ -112,14 +108,11 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
   }, [sindicancia.id]);
 
   const handleStatusChange = async (newStatus: string) => {
-    // Update the status in the database
     const success = await updateInvestigacaoStatus(sindicancia.id, newStatus, sindicancia.etapaAtual);
     
     if (success) {
       setStatus(newStatus);
-      toast({
-        description: `A sindicância ${sindicancia.numero} foi atualizada para: ${newStatus}`
-      });
+      toast(`A sindicância ${sindicancia.numero} foi atualizada para: ${newStatus}`);
     }
   };
   
@@ -127,21 +120,17 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     const success = await updateEtapaStatus(id, true);
     
     if (success) {
-      // Update the local state
       setEtapas(prevEtapas => 
         prevEtapas.map(etapa => 
           etapa.id === id ? { ...etapa, concluida: true } : etapa
         )
       );
       
-      toast({
-        description: `A etapa ${etapas.find(e => e.id === id)?.nome} foi marcada como concluída.`
-      });
+      toast(`A etapa ${etapas.find(e => e.id === id)?.nome} foi marcada como concluída.`);
     }
   };
   
   const adicionarNovaEtapa = async (data: NovaEtapaForm) => {
-    // Find the highest order number
     const highestOrder = etapas.reduce((max, etapa) => Math.max(max, etapa.ordem), 0);
     
     const novaEtapa = {
@@ -159,9 +148,7 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     if (addedEtapa) {
       setEtapas([...etapas, addedEtapa]);
       
-      toast({
-        description: `A etapa "${data.nome}" foi adicionada com sucesso.`
-      });
+      toast(`A etapa "${data.nome}" foi adicionada com sucesso.`);
       
       setDialogOpen(false);
       etapaForm.reset();
@@ -176,15 +163,11 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
       if (success) {
         setAnexoDialogOpen(false);
         anexoForm.reset();
-        // Refresh the page to get updated anexos
         window.location.reload();
       }
     } catch (error) {
       console.error("Error uploading anexo:", error);
-      toast({
-        description: "Erro ao fazer upload do anexo",
-        variant: "destructive"
-      });
+      toast.error("Erro ao fazer upload do anexo");
     } finally {
       setIsUploadingAnexo(false);
     }
@@ -194,7 +177,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
     if (window.confirm("Tem certeza que deseja excluir este anexo?")) {
       const success = await deleteAnexo(sindicancia.id, anexoId);
       if (success) {
-        // Refresh the page to get updated anexos
         window.location.reload();
       }
     }
@@ -382,7 +364,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
         <h3 className="text-lg font-semibold mb-2">Etapas da Sindicância</h3>
         
         {isLoadingEtapas ? (
-          // Loading state
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="border rounded-lg p-4">
@@ -397,7 +378,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
             ))}
           </div>
         ) : etapasError ? (
-          // Error state
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -405,7 +385,6 @@ export function DetalhesInvestigacao({ sindicancia }: DetalhesInvestigacaoProps)
             </AlertDescription>
           </Alert>
         ) : (
-          // Data loaded
           etapas.map((etapa) => (
             <EtapaInvestigacao 
               key={etapa.id}

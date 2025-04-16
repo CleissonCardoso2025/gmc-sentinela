@@ -2,16 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { updateGcmRibeiraProfile } from '../scripts/updateGcmRibeiraProfile';
+import { updateGcmRibeiraProfile, initializeProfileCheck } from '../scripts/updateGcmRibeiraProfile';
 import { toast } from 'sonner';
 import { RefreshCcw, ShieldCheck } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
 
 const UserProfile = () => {
   const [userProfile, setUserProfile] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isSpecialUser, setIsSpecialUser] = useState<boolean>(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState<boolean>(false);
   
   useEffect(() => {
     // Get user profile from localStorage
@@ -25,18 +27,47 @@ const UserProfile = () => {
     
     // Check if this is our special user
     setIsSpecialUser(email === 'gcmribeiradopombal@hotmail.com');
+    
+    // Initialize profile check once
+    if (email === 'gcmribeiradopombal@hotmail.com') {
+      initializeProfileCheck();
+    }
   }, []);
   
-  const handleUpdateGcmRibeiraProfile = async () => {
-    const success = await updateGcmRibeiraProfile();
-    if (success) {
-      toast.success("Perfil do usuário gcmribeiradopombal@hotmail.com atualizado para Inspetor");
-      if (userEmail === 'gcmribeiradopombal@hotmail.com') {
-        setUserProfile('Inspetor');
-        setIsAdmin(true);
+  // Listen for auth state changes to update profile
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'USER_UPDATED') {
+        const role = session?.user?.user_metadata?.role;
+        if (role && role !== userProfile) {
+          console.log('User role updated in auth state:', role);
+          setUserProfile(role);
+          setIsAdmin(role === 'Inspetor');
+          localStorage.setItem('userProfile', role);
+        }
       }
-    } else {
-      toast.error("Erro ao atualizar perfil do usuário");
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [userProfile]);
+  
+  const handleUpdateGcmRibeiraProfile = async () => {
+    setIsCheckingProfile(true);
+    try {
+      const updated = await updateGcmRibeiraProfile();
+      if (updated) {
+        toast.success("Perfil do usuário gcmribeiradopombal@hotmail.com atualizado para Inspetor");
+        if (userEmail === 'gcmribeiradopombal@hotmail.com') {
+          setUserProfile('Inspetor');
+          setIsAdmin(true);
+        }
+      } else {
+        toast.info("Nenhuma atualização necessária para o perfil");
+      }
+    } finally {
+      setIsCheckingProfile(false);
     }
   };
   
@@ -88,9 +119,16 @@ const UserProfile = () => {
                     variant="default"
                     onClick={handleUpdateGcmRibeiraProfile}
                     className="gap-2"
+                    disabled={isCheckingProfile}
                   >
-                    <RefreshCcw className="h-4 w-4" />
-                    Atualizar meu perfil para Inspetor
+                    {isCheckingProfile ? (
+                      <>Verificando...</>
+                    ) : (
+                      <>
+                        <RefreshCcw className="h-4 w-4" />
+                        Atualizar meu perfil para Inspetor
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
@@ -102,9 +140,16 @@ const UserProfile = () => {
                     variant="secondary" 
                     onClick={handleUpdateGcmRibeiraProfile}
                     className="gap-2"
+                    disabled={isCheckingProfile}
                   >
-                    <RefreshCcw className="h-4 w-4" />
-                    Atualizar perfil do gcmribeiradopombal@hotmail.com para Inspetor
+                    {isCheckingProfile ? (
+                      <>Verificando...</>
+                    ) : (
+                      <>
+                        <RefreshCcw className="h-4 w-4" />
+                        Atualizar perfil do gcmribeiradopombal@hotmail.com para Inspetor
+                      </>
+                    )}
                   </Button>
                 </div>
               )}

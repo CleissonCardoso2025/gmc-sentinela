@@ -15,13 +15,20 @@ export const updateUserProfile = async (email: string, newProfile: string): Prom
 
     if (searchError) {
       console.error("Error finding user by email:", searchError);
-      toast.error("Erro ao buscar usuário");
       return false;
     }
 
-    // If user exists, update their profile
+    // If user exists, check if update is needed
     if (userByEmail) {
       console.log("User found:", userByEmail);
+      
+      // Skip update if the profile is already correct
+      if (userByEmail.perfil === newProfile) {
+        console.log(`User ${email} already has the correct profile (${newProfile}). No update needed.`);
+        return false;
+      }
+      
+      // Update the profile since it's different
       const { error: updateError } = await supabase
         .from('users')
         .update({ perfil: newProfile })
@@ -29,12 +36,10 @@ export const updateUserProfile = async (email: string, newProfile: string): Prom
 
       if (updateError) {
         console.error("Error updating user profile:", updateError);
-        toast.error("Erro ao atualizar perfil do usuário");
         return false;
       }
 
       console.log(`User ${email} profile updated to ${newProfile}`);
-      toast.success(`Perfil de ${email} atualizado para ${newProfile}`);
       return true;
     }
     
@@ -51,17 +56,14 @@ export const updateUserProfile = async (email: string, newProfile: string): Prom
 
     if (createError) {
       console.error("Error creating user:", createError);
-      toast.error("Erro ao criar usuário");
       return false;
     }
 
     console.log(`New user created for ${email} with profile ${newProfile}`);
-    toast.success(`Novo usuário criado para ${email} com perfil ${newProfile}`);
     return true;
     
   } catch (error) {
     console.error("Exception in updateUserProfile:", error);
-    toast.error("Erro ao atualizar perfil do usuário");
     return false;
   }
 };

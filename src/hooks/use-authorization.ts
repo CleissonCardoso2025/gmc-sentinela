@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { PageAccess } from '@/components/Configuracoes/PageAccessControl';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getAllUserRoles } from '@/services/userService/apiUserService';
 
 // Função que retorna configurações de acesso padrão
 const getPageAccessSettings = (): PageAccess[] => {
@@ -61,6 +62,21 @@ export const useAuthorization = (userProfile: string) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [effectiveProfile, setEffectiveProfile] = useState<string>(userProfile);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  
+  // Load roles from the database
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const roles = await getAllUserRoles();
+        setAvailableRoles(roles);
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+      }
+    };
+    
+    fetchRoles();
+  }, []);
   
   // Carrega o ID do usuário atual e email
   useEffect(() => {
@@ -141,7 +157,7 @@ export const useAuthorization = (userProfile: string) => {
       return effectiveProfile === 'Inspetor';
     }
     
-    return page.allowedProfiles.includes(effectiveProfile as any);
+    return page.allowedProfiles.includes(effectiveProfile);
   };
   
   // Get list of pages that the current user has access to
@@ -162,7 +178,7 @@ export const useAuthorization = (userProfile: string) => {
     }
     
     return pageAccessSettings.filter(page => 
-      page.allowedProfiles.includes(effectiveProfile as any)
+      page.allowedProfiles.includes(effectiveProfile)
     );
   };
   
@@ -189,6 +205,7 @@ export const useAuthorization = (userProfile: string) => {
     getAccessiblePages,
     updatePageAccess,
     pageAccessSettings,
-    isLoading
+    isLoading,
+    availableRoles
   };
 };

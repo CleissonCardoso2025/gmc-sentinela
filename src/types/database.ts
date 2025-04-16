@@ -1,4 +1,3 @@
-
 // Modify the existing User interface
 export interface User {
   id: string;
@@ -6,10 +5,29 @@ export interface User {
   email: string;
   matricula?: string;
   data_nascimento?: string;
-  perfil: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente' | 'Motorista' | 'Monitor';
+  perfil: string; // Changed from enum to string to allow dynamic roles
   status: boolean;
   created_at?: string;
   updated_at?: string;
+  user_metadata?: {
+    nome?: string;
+    matricula?: string;
+    data_nascimento?: string;
+    role?: string;
+    status?: boolean;
+  };
+}
+
+export interface UserFormData {
+  id?: string;
+  nome: string;
+  email: string;
+  matricula: string;
+  data_nascimento: string;
+  perfil: string; // Changed from enum to string
+  status: boolean;
+  password?: string;
+  confirmPassword?: string;
 }
 
 // Add missing types for Corregedoria

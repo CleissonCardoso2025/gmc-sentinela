@@ -27,6 +27,7 @@ export const useCustomUserForm = ({ initialData, onSubmit, onCancel }: UseCustom
         perfil: formData.get('perfil') as string,
         status: formData.get('status') === 'on',
         password: formData.get('password') as string,
+        confirmPassword: formData.get('confirmPassword') as string,
       };
 
       // If editing, include the ID

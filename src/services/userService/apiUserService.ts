@@ -60,3 +60,16 @@ export const getUsers = async (): Promise<User[]> => {
   if (error) throw error;
   return data || [];
 };
+
+export const getAllUserRoles = async (): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('perfil')
+    .order('perfil');
+  
+  if (error) throw error;
+
+  // Extract unique roles
+  const roles = data?.map(item => item.perfil) || [];
+  return [...new Set(roles)];
+};

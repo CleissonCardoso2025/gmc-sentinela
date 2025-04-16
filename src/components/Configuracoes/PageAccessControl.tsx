@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -7,17 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAllUserRoles } from '@/services/userService/apiUserService';
 
 // Define page access structure
 export type PageAccess = {
   id: string;
   name: string;
   path: string;
-  allowedProfiles: ('Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente')[];
+  allowedProfiles: string[];
 };
-
-// Available profiles
-export const availableProfiles = ['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente'] as const;
 
 interface PageAccessControlProps {
   initialPages: PageAccess[];
@@ -34,19 +32,44 @@ const PageAccessControl: React.FC<PageAccessControlProps> = ({
 }) => {
   const [pages, setPages] = useState<PageAccess[]>(initialPages);
   const [hasChanges, setHasChanges] = useState(false);
+  const [availableProfiles, setAvailableProfiles] = useState<string[]>([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
+  
+  // Fetch all available roles from the database
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        setLoadingProfiles(true);
+        const roles = await getAllUserRoles();
+        
+        // If no roles returned, use default roles
+        if (roles.length === 0) {
+          setAvailableProfiles(['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente', 'Motorista', 'Monitor']);
+        } else {
+          setAvailableProfiles(roles);
+        }
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+        // Fallback to default roles
+        setAvailableProfiles(['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente', 'Motorista', 'Monitor']);
+      } finally {
+        setLoadingProfiles(false);
+      }
+    };
+
+    fetchRoles();
+  }, []);
   
   const toggleAccess = (pageId: string, profile: string) => {
     setPages(prevPages => 
       prevPages.map(page => {
         if (page.id === pageId) {
-          const profileType = profile as 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente';
+          let updatedAllowedProfiles: string[];
           
-          let updatedAllowedProfiles: typeof page.allowedProfiles;
-          
-          if (page.allowedProfiles.includes(profileType)) {
-            updatedAllowedProfiles = page.allowedProfiles.filter(p => p !== profileType);
+          if (page.allowedProfiles.includes(profile)) {
+            updatedAllowedProfiles = page.allowedProfiles.filter(p => p !== profile);
           } else {
-            updatedAllowedProfiles = [...page.allowedProfiles, profileType];
+            updatedAllowedProfiles = [...page.allowedProfiles, profile];
           }
           
           return {
@@ -65,7 +88,7 @@ const PageAccessControl: React.FC<PageAccessControlProps> = ({
     setHasChanges(false);
   };
 
-  if (isLoading) {
+  if (isLoading || loadingProfiles) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-full mb-4" />
@@ -100,7 +123,7 @@ const PageAccessControl: React.FC<PageAccessControlProps> = ({
                 {availableProfiles.map(profile => (
                   <td key={`${page.id}-${profile}`} className="text-center p-2 border">
                     <Switch
-                      checked={page.allowedProfiles.includes(profile as any)}
+                      checked={page.allowedProfiles.includes(profile)}
                       onCheckedChange={() => toggleAccess(page.id, profile)}
                       className="data-[state=checked]:bg-green-500"
                     />

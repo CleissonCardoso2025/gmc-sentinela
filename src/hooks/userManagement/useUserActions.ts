@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/types/database';
@@ -55,7 +56,7 @@ export const useUserActions = (
         setShowUserDialog(false);
         toast({
           title: "Usuário atualizado",
-          description: `Dados de ${updatedUser.user_metadata?.nome || "usuário"} atualizados.`,
+          description: `Dados de ${userData.nome || "usuário"} atualizados.`,
         });
       }
     } catch (error) {
@@ -71,12 +72,12 @@ export const useUserActions = (
   const handleEditUser = (user: User) => {
     const userFormData: UserFormData = {
       id: user.id,
-      nome: user.user_metadata?.nome || '',
+      nome: user.user_metadata?.nome || user.nome || '',
       email: user.email,
-      matricula: user.user_metadata?.matricula || '',
-      data_nascimento: user.user_metadata?.data_nascimento || '',
-      perfil: user.user_metadata?.role || 'Agente',
-      status: user.user_metadata?.status ?? true,
+      matricula: user.user_metadata?.matricula || user.matricula || '',
+      data_nascimento: user.user_metadata?.data_nascimento || user.data_nascimento || '',
+      perfil: user.user_metadata?.role || user.perfil || 'Agente',
+      status: user.user_metadata?.status ?? user.status ?? true,
     };
 
     setEditingUser(userFormData);
@@ -88,12 +89,17 @@ export const useUserActions = (
       const user = users.find(u => u.id === userId);
       if (!user) return;
 
-      const updatedUser = await toggleUserStatus(userId, user.user_metadata?.status ?? true);
+      const currentStatus = user.user_metadata?.status ?? user.status ?? true;
+      const updatedUser = await toggleUserStatus(userId, currentStatus);
+      
       if (updatedUser) {
         await refetchUsers();
+        const userName = user.user_metadata?.nome || user.nome || '';
+        const newStatus = updatedUser.user_metadata?.status;
+        
         toast({
           title: "Status atualizado",
-          description: `Usuário ${user.user_metadata?.nome || ''} foi ${updatedUser.user_metadata?.status ? 'ativado' : 'desativado'}.`,
+          description: `Usuário ${userName} foi ${newStatus ? 'ativado' : 'desativado'}.`,
         });
       }
     } catch (error) {
@@ -122,9 +128,10 @@ export const useUserActions = (
         await refetchUsers();
         setShowDeleteDialog(false);
         setUserToDelete(null);
+        const userName = userToRemove?.user_metadata?.nome || userToRemove?.nome || 'Usuário';
         toast({
           title: "Usuário excluído",
-          description: `${userToRemove?.user_metadata?.nome || 'Usuário'} excluído com sucesso.`,
+          description: `${userName} excluído com sucesso.`,
           variant: "destructive",
         });
       }

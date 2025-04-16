@@ -6,13 +6,13 @@ import { z } from 'zod';
 import { User } from '@/types/database';
 import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
 
-// Update the zod schema to include new profile types
+// Update the zod schema to make perfil a string instead of enum
 const userFormSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('Email inválido'),
   matricula: z.string().min(1, 'Matrícula é obrigatória'),
   data_nascimento: z.string().min(1, 'Data de nascimento é obrigatória'),
-  perfil: z.enum(['Inspetor', 'Subinspetor', 'Supervisor', 'Corregedor', 'Agente', 'Motorista', 'Monitor']),
+  perfil: z.string().min(1, 'Perfil é obrigatório'), // Changed from enum to string
   status: z.boolean().default(true),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres').or(z.string().length(0)).optional(),
   confirmPassword: z.string().or(z.string().length(0)).optional(),

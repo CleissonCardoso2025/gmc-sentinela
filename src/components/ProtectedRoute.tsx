@@ -24,11 +24,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     refreshSession 
   } = useAdminAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
   
   // Login page should always be accessible
-  if (location.pathname === '/login') {
-    return <>{children}</>;
-  }
+  const isLoginPage = location.pathname === '/login';
   
   // Make sure we refresh the session if needed
   useEffect(() => {
@@ -55,24 +54,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
       mounted = false;
     };
   }, [isAuthenticated, user, sessionInitialized, refreshSession, navigate]);
-  
-  // Show loading state while auth is being checked
-  if (isLoading || !sessionInitialized || isRedirecting) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
-          <p className="text-gray-500">Verificando autenticação...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // If not authenticated, redirect to login
-  if (!isAuthenticated) {
-    console.log("User not authenticated, redirecting to login");
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
   
   // Store auth data for pages that still use localStorage-based auth
   useEffect(() => {
@@ -107,7 +88,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     };
   }, [isAuthenticated, user, userProfile, userRole, sessionInitialized]);
   
-  // Check if the stored profile should be redirected
+  // Check if the stored profile should be redirected from root to dashboard
   useEffect(() => {
     let mounted = true;
     
@@ -130,23 +111,60 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     };
   }, [location.pathname, navigate, isAuthenticated, sessionInitialized]);
   
-  // Special check for /index path - only Inspetor or Subinspetor can access
-  if (location.pathname === '/index') {
-    const effectiveProfile = userRole || userProfile;
-    const canAccess = effectiveProfile === 'Inspetor' || effectiveProfile === 'Subinspetor';
-    
-    if (!canAccess) {
-      toast.error("Você não tem permissão para acessar o Centro de Comando");
-      return <Navigate to="/dashboard" replace />;
+  // Determine if user has access to the requested page
+  useEffect(() => {
+    // Only check access if not on login page and authenticated
+    if (!isLoginPage && isAuthenticated && sessionInitialized) {
+      // Special check for /index path - only Inspetor or Subinspetor can access
+      if (location.pathname === '/index') {
+        const effectiveProfile = userRole || userProfile;
+        const canAccess = effectiveProfile === 'Inspetor' || effectiveProfile === 'Subinspetor';
+        
+        if (!canAccess) {
+          toast.error("Você não tem permissão para acessar o Centro de Comando");
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+      }
+      
+      // Check if user has access to the current page
+      const access = hasAccessToPage(location.pathname);
+      setHasAccess(access);
+      
+      if (!access) {
+        toast.error("Você não tem permissão para acessar esta página");
+      }
+    } else {
+      // By default, allow access to login page
+      setHasAccess(isLoginPage);
     }
+  }, [isLoginPage, location.pathname, hasAccessToPage, userProfile, userRole, isAuthenticated, sessionInitialized, navigate]);
+  
+  // Show loading state while auth is being checked
+  if (isLoading || !sessionInitialized || isRedirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+          <p className="text-gray-500">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
   }
   
-  // Determine if user has access to the requested page
-  const hasAccess = hasAccessToPage(location.pathname);
+  // If login page, always render
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
   
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to login");
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  
+  // If no access, show access denied message
   if (!hasAccess) {
-    toast.error("Você não tem permissão para acessar esta página");
-    
     return (
       <div className="p-8 max-w-md mx-auto my-12 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
         <h2 className="text-2xl font-bold mb-4">Acesso Negado</h2>
@@ -166,6 +184,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
     );
   }
   
+  // If user has access, render the children
   return <>{children}</>;
 };
 

@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { UserFormData } from '@/components/Configuracoes/UserManagement/types';
+import { UserFormData } from '@/types/database';
 
 interface UseCustomUserFormProps {
   initialData?: UserFormData;
@@ -24,7 +24,7 @@ export const useCustomUserForm = ({ initialData, onSubmit, onCancel }: UseCustom
         email: formData.get('email') as string,
         matricula: formData.get('matricula') as string,
         data_nascimento: formData.get('data_nascimento') as string,
-        perfil: formData.get('perfil') as string,
+        perfil: formData.get('perfil') as string, // Now using string type
         status: formData.get('status') === 'on',
         password: formData.get('password') as string,
         confirmPassword: formData.get('confirmPassword') as string,

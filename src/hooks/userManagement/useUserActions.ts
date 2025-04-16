@@ -95,7 +95,8 @@ export const useUserActions = (
       if (updatedUser) {
         await refetchUsers();
         const userName = user.user_metadata?.nome || user.nome || '';
-        const newStatus = updatedUser.user_metadata?.status;
+        // Fix: properly access user_metadata from the response
+        const newStatus = updatedUser.user?.user_metadata?.status;
         
         toast({
           title: "Status atualizado",

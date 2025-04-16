@@ -7,7 +7,8 @@ export type UserFormData = {
   email: string;
   matricula: string;
   data_nascimento: string;
-  perfil: 'Inspetor' | 'Subinspetor' | 'Supervisor' | 'Corregedor' | 'Agente' | 'Motorista' | 'Monitor';
+  perfil: string; // Changed from enum to string
   status: boolean;
   password?: string;
+  confirmPassword?: string;
 };

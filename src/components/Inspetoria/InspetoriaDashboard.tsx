@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Car, Clock, Megaphone } from "lucide-react";
@@ -9,13 +9,12 @@ import { ptBR } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertBoard } from '@/components/Dashboard/AlertBoard';
 import EmptyState from "@/components/Dashboard/EmptyState";
-
-// Lazy load the components for better performance
-const RecentOccurrences = React.lazy(() => import('@/components/Dashboard/RecentOccurrences'));
-const TasksProgress = React.lazy(() => import('@/components/Dashboard/TasksProgress'));
-const Chart = React.lazy(() => import('@/components/Dashboard/Chart'));
-const UserList = React.lazy(() => import('@/components/Dashboard/UserList'));
-const VehicleList = React.lazy(() => import('@/components/Dashboard/VehicleList'));
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { DateRangeType } from '@/hooks/use-occurrence-data';
+import Chart from '@/components/Dashboard/Chart';
+import UserList from '@/components/Dashboard/UserList';
+import VehicleList from '@/components/Dashboard/VehicleList';
 
 interface DashboardCardProps {
   title: string;
@@ -55,14 +54,99 @@ const InspetoriaDashboard: React.FC = () => {
     to: new Date(),
   });
 
-  // Limpa todos os dados, mantendo apenas os valores de estado inicial
-  const totalUsers = 0;
-  const activeUsers = 0;
-  const totalVehicles = 0;
-  const availableVehicles = 0;
-  const usersData = [];
-  const vehiclesData = [];
-  const isLoading = false;
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [activeUsers, setActiveUsers] = useState(0);
+  const [totalVehicles, setTotalVehicles] = useState(0);
+  const [availableVehicles, setAvailableVehicles] = useState(0);
+  const [usersData, setUsersData] = useState([]);
+  const [vehiclesData, setVehiclesData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [alerts, setAlerts] = useState([]);
+  const [occurrencesByType, setOccurrencesByType] = useState([]);
+  const [tasksProgress, setTasksProgress] = useState([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch users data
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('*');
+        
+        if (usersError) throw usersError;
+        
+        const activeUsersList = users?.filter(user => user.status === true) || [];
+        setTotalUsers(users?.length || 0);
+        setActiveUsers(activeUsersList.length);
+        setUsersData(users || []);
+
+        // Fetch vehicles data
+        const { data: vehicles, error: vehiclesError } = await supabase
+          .from('viaturas')
+          .select('*');
+        
+        if (vehiclesError) throw vehiclesError;
+        
+        // Ideally we would have a status field to determine available vehicles
+        // For now, let's assume all are available as a placeholder
+        setTotalVehicles(vehicles?.length || 0);
+        setAvailableVehicles(vehicles?.length || 0);
+        setVehiclesData(vehicles || []);
+
+        // Fetch alerts
+        const { data: alertsData, error: alertsError } = await supabase
+          .from('alerts')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (alertsError) throw alertsError;
+        setAlerts(alertsData || []);
+
+        // Fetch occurrences by type using the date range
+        const fromDate = format(date.from, 'yyyy-MM-dd');
+        const toDate = format(date.to, 'yyyy-MM-dd');
+        
+        const { data: occurrences, error: occurrencesError } = await supabase
+          .from('ocorrencias')
+          .select('tipo, id')
+          .gte('created_at', `${fromDate}T00:00:00`)
+          .lte('created_at', `${toDate}T23:59:59`);
+        
+        if (occurrencesError) throw occurrencesError;
+        
+        // Process occurrences by type for chart
+        const occurrenceTypes = {};
+        occurrences?.forEach(occurrence => {
+          const tipo = occurrence.tipo;
+          occurrenceTypes[tipo] = (occurrenceTypes[tipo] || 0) + 1;
+        });
+        
+        const chartData = Object.keys(occurrenceTypes).map(type => ({
+          name: type,
+          quantidade: occurrenceTypes[type]
+        }));
+        
+        setOccurrencesByType(chartData);
+        
+        // For tasks progress, we could use the escala_items or another relevant table
+        // For now, using a placeholder
+        
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        toast({
+          title: 'Erro ao carregar dados',
+          description: 'Não foi possível carregar os dados do dashboard.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [date, toast]);
 
   return (
     <div className="grid gap-4">
@@ -100,33 +184,58 @@ const InspetoriaDashboard: React.FC = () => {
               <h2 className="text-lg font-semibold">Ocorrências por tipo</h2>
               <DateRangePicker date={date} setDate={setDate} />
             </div>
-            <EmptyState
-              title="Sem dados disponíveis"
-              description="Não há dados de ocorrências para exibir"
-              icon="info"
-            />
+            {isLoading ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <Skeleton className="h-[250px] w-full" />
+              </div>
+            ) : occurrencesByType.length > 0 ? (
+              <Chart date={{from: date.from, to: date.to} as DateRangeType} />
+            ) : (
+              <EmptyState
+                title="Sem dados disponíveis"
+                description="Não há dados de ocorrências para exibir"
+                icon="info"
+              />
+            )}
           </CardContent>
         </Card>
 
         <Card className="shadow-md">
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold mb-4">Alertas do Sistema</h2>
-            <EmptyState
-              title="Sem alertas"
-              description="Não há alertas pendentes no momento"
-              icon="info"
-            />
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : alerts.length > 0 ? (
+              <AlertBoard limit={5} showViewAll={false} />
+            ) : (
+              <EmptyState
+                title="Sem alertas"
+                description="Não há alertas pendentes no momento"
+                icon="info"
+              />
+            )}
           </CardContent>
         </Card>
 
         <Card className="shadow-md">
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold mb-4">Progresso das Operações</h2>
-            <EmptyState
-              title="Sem operações"
-              description="Não há operações em andamento"
-              icon="info"
-            />
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : (
+              <EmptyState
+                title="Sem operações"
+                description="Não há operações em andamento"
+                icon="info"
+              />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -142,11 +251,21 @@ const InspetoriaDashboard: React.FC = () => {
               </Badge>
             </div>
           </div>
-          <EmptyState
-            title="Sem usuários"
-            description="Não há usuários cadastrados"
-            icon="users"
-          />
+          {isLoading ? (
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : usersData.length > 0 ? (
+            <UserList />
+          ) : (
+            <EmptyState
+              title="Sem usuários"
+              description="Não há usuários cadastrados"
+              icon="users"
+            />
+          )}
         </Card>
 
         <Card className="shadow-md">
@@ -159,11 +278,21 @@ const InspetoriaDashboard: React.FC = () => {
               </Badge>
             </div>
           </div>
-          <EmptyState
-            title="Sem viaturas"
-            description="Não há viaturas cadastradas"
-            icon="car"
-          />
+          {isLoading ? (
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : vehiclesData.length > 0 ? (
+            <VehicleList vehicles={vehiclesData} />
+          ) : (
+            <EmptyState
+              title="Sem viaturas"
+              description="Não há viaturas cadastradas"
+              icon="car"
+            />
+          )}
         </Card>
       </div>
     </div>

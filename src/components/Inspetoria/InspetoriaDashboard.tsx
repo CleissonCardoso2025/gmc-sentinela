@@ -210,7 +210,7 @@ const InspetoriaDashboard: React.FC = () => {
                 <Skeleton className="h-20 w-full" />
               </div>
             ) : alerts.length > 0 ? (
-              <AlertBoard limit={5} showViewAll={false} />
+              <AlertBoard /* Remove the limit prop that's causing the error */ maxDisplayedAlerts={5} showViewAll={false} />
             ) : (
               <EmptyState
                 title="Sem alertas"
@@ -258,7 +258,7 @@ const InspetoriaDashboard: React.FC = () => {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : usersData.length > 0 ? (
-            <UserList />
+            <UserList users={usersData} /> {/* Add the required users prop */}
           ) : (
             <EmptyState
               title="Sem usuários"

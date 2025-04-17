@@ -10,11 +10,16 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+// Add interface for Safari's standalone property
+interface SafariNavigator extends Navigator {
+  standalone?: boolean;
+}
+
 // Check if the app is already installed
 export const isPWAInstalled = (): boolean => {
   // Check if in standalone mode or installed through native methods
   return window.matchMedia('(display-mode: standalone)').matches || 
-         window.navigator.standalone === true;
+         !!(window.navigator as SafariNavigator).standalone;
 };
 
 // Check if the app has been prompted before

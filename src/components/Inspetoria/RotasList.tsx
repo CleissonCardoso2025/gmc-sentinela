@@ -3,13 +3,20 @@ import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit, Trash2, Map, Plus, AlertCircle } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/Dashboard/EmptyState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Rota {
   id: string;
@@ -34,6 +41,9 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
   const [rotas, setRotas] = useState<Rota[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRota, setSelectedRota] = useState<Rota | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchRotas();
@@ -106,6 +116,21 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleViewRota = (rota: Rota) => {
+    setSelectedRota(rota);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEditRota = (rota: Rota) => {
+    setSelectedRota(rota);
+    setIsEditDialogOpen(true);
+    // In a real implementation, this would navigate to the edit form or open an edit dialog
+    toast({
+      title: "Editar rota",
+      description: `Funcionalidade de edição para "${rota.nome}" será implementada em breve.`,
+    });
   };
 
   const filteredRotas = rotas.filter(rota => 
@@ -214,10 +239,20 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
                     <TableCell>{rota.ultimopatrulhamento || "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="icon" title="Visualizar">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Visualizar"
+                          onClick={() => handleViewRota(rota)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" title="Editar">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Editar"
+                          onClick={() => handleEditRota(rota)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -227,9 +262,6 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
                           onClick={() => handleDeleteRota(rota.id)}
                         >
                           <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Ver no mapa">
-                          <Map className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -246,6 +278,54 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
           </Table>
         </div>
       )}
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{selectedRota?.nome || "Detalhes da Rota"}</DialogTitle>
+            <DialogDescription>
+              Informações detalhadas sobre a rota.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRota && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Nome:</span>
+                <span className="col-span-3">{selectedRota.nome}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Descrição:</span>
+                <span className="col-span-3">{selectedRota.descricao || "-"}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Bairros:</span>
+                <span className="col-span-3">{selectedRota.bairros || "-"}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Ponto Inicial:</span>
+                <span className="col-span-3">{selectedRota.pontoinicial || "-"}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Ponto Final:</span>
+                <span className="col-span-3">{selectedRota.pontofinal || "-"}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Tempo Previsto:</span>
+                <span className="col-span-3">{selectedRota.tempoprevisto ? `${selectedRota.tempoprevisto} minutos` : "-"}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Prioridade:</span>
+                <span className="col-span-3">{getPriorityBadge(selectedRota.prioridade || "Normal")}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right font-semibold">Último Patrulhamento:</span>
+                <span className="col-span-3">{selectedRota.ultimopatrulhamento || "Nunca patrulhada"}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

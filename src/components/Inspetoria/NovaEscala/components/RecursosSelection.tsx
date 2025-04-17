@@ -76,13 +76,13 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
             <Label htmlFor="guarnicao">Guarnição</Label>
             {guarnicoes.length > 0 ? (
               <Select 
-                value={selectedGuarnicaoId}
+                value={selectedGuarnicaoId || ""}
                 onValueChange={setSelectedGuarnicaoId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma guarnição" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background">
                   {guarnicoes.map(guarnicao => (
                     <SelectItem key={guarnicao.id} value={guarnicao.id}>
                       {guarnicao.nome}
@@ -117,13 +117,13 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
             <Label htmlFor="viatura">Viatura</Label>
             {viaturas.length > 0 ? (
               <Select 
-                value={selectedViaturaId}
+                value={selectedViaturaId || ""}
                 onValueChange={setSelectedViaturaId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma viatura" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background">
                   {viaturas.map(viatura => (
                     <SelectItem key={viatura.id} value={viatura.id}>
                       {viatura.codigo} ({viatura.modelo})
@@ -145,13 +145,13 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
             <Label htmlFor="rota">Rota de Patrulhamento</Label>
             {rotas.length > 0 ? (
               <Select 
-                value={selectedRotaId}
+                value={selectedRotaId || ""}
                 onValueChange={setSelectedRotaId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma rota" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background">
                   {rotas.map(rota => (
                     <SelectItem key={rota.id} value={rota.id}>
                       {rota.nome}

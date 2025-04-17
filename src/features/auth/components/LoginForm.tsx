@@ -7,10 +7,13 @@ import { UsernameField } from "./UsernameField";
 import { PasswordField } from "./PasswordField";
 import { useLoginForm } from "../hooks/useLoginForm";
 import { Loader2 } from "lucide-react";
+import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
+import { useState } from "react";
 
 export const LoginForm: React.FC = () => {
   const { form, isLoading, isCheckingSession, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const { toast } = useToast();
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   if (isCheckingSession) {
     return (
@@ -46,10 +49,7 @@ export const LoginForm: React.FC = () => {
             className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
             onClick={(e) => {
               e.preventDefault();
-              toast({
-                title: "Recuperação de senha",
-                description: "Funcionalidade em desenvolvimento",
-              });
+              setForgotPasswordOpen(true);
             }}
           >
             Esqueceu a senha?
@@ -69,6 +69,11 @@ export const LoginForm: React.FC = () => {
           ) : "Entrar"}
         </Button>
       </form>
+      
+      <ForgotPasswordDialog 
+        open={forgotPasswordOpen} 
+        onOpenChange={setForgotPasswordOpen} 
+      />
     </Form>
   );
 };

@@ -17,6 +17,7 @@ import Ocorrencias from "./pages/Ocorrencias";
 import Corregedoria from "./pages/Corregedoria";
 import Configuracoes from "./pages/Configuracoes";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { VehicleProvider } from "./contexts/VehicleContext";
 
@@ -53,6 +54,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/index" element={
               <ProtectedRoute userProfile={userProfile}>
                 <Index />

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -15,8 +15,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RecursosSelectionProps } from '../types';
-import { guarnicoes, viaturas, rotas } from '../constants';
 
 const RecursosSelection: React.FC<RecursosSelectionProps> = ({
   selectedGuarnicaoId,
@@ -24,8 +25,43 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
   selectedViaturaId,
   setSelectedViaturaId,
   selectedRotaId,
-  setSelectedRotaId
+  setSelectedRotaId,
+  supervisor,
+  setSupervisor,
+  guarnicoes,
+  viaturas,
+  rotas,
+  isLoading
 }) => {
+  // Auto-fill supervisor when guarnicao is selected
+  useEffect(() => {
+    if (selectedGuarnicaoId) {
+      const selectedGuarnicao = guarnicoes.find(g => g.id === selectedGuarnicaoId);
+      if (selectedGuarnicao) {
+        setSupervisor(selectedGuarnicao.supervisor);
+      }
+    }
+  }, [selectedGuarnicaoId, guarnicoes, setSupervisor]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">2. Selecione os Recursos</CardTitle>
+          <CardDescription>Carregando dados...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -51,6 +87,19 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="supervisor">Supervisor</Label>
+            <Input
+              id="supervisor"
+              value={supervisor}
+              readOnly
+              className="bg-gray-50"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Preenchido automaticamente com base na guarnição selecionada
+            </p>
           </div>
 
           <div className="grid gap-2">

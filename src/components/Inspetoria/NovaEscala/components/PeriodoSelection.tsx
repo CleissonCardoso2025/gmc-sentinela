@@ -18,19 +18,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PeriodoSelectionProps } from '../types';
 
 const PeriodoSelection: React.FC<PeriodoSelectionProps> = ({
   startDate,
   setStartDate,
   startDateOpen,
-  setStartDateOpen
+  setStartDateOpen,
+  periodoDuration,
+  setPeriodoDuration
 }) => {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">1. Selecione o Período</CardTitle>
-        <CardDescription>Defina o período inicial da escala</CardDescription>
+        <CardDescription>Defina o período inicial e duração da escala</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
@@ -63,8 +72,22 @@ const PeriodoSelection: React.FC<PeriodoSelectionProps> = ({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="periodoSelect">Duração da Escala</Label>
+            <Select value={periodoDuration} onValueChange={setPeriodoDuration}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione a duração" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 dias</SelectItem>
+                <SelectItem value="15">15 dias</SelectItem>
+                <SelectItem value="30">30 dias</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              A escala será gerada para 30 dias a partir desta data
+              A escala será gerada para {periodoDuration} dias a partir da data inicial
             </p>
           </div>
         </div>

@@ -19,6 +19,8 @@ export interface PeriodoSelectionProps {
   setStartDate: Dispatch<SetStateAction<Date>>;
   startDateOpen: boolean;
   setStartDateOpen: Dispatch<SetStateAction<boolean>>;
+  periodoDuration: string;
+  setPeriodoDuration: Dispatch<SetStateAction<string>>;
 }
 
 export interface RecursosSelectionProps {
@@ -28,11 +30,19 @@ export interface RecursosSelectionProps {
   setSelectedViaturaId: Dispatch<SetStateAction<string>>;
   selectedRotaId: string;
   setSelectedRotaId: Dispatch<SetStateAction<string>>;
+  supervisor: string;
+  setSupervisor: Dispatch<SetStateAction<string>>;
+  guarnicoes: GuarnicaoOption[];
+  viaturas: ViaturaOption[];
+  rotas: RotaOption[];
+  isLoading: boolean;
 }
 
 export interface DistribuicaoTurnosProps {
   selectedGuarnicao: any;
   handleSortSchedule: () => void;
+  escalaType: string;
+  setEscalaType: Dispatch<SetStateAction<string>>;
 }
 
 export interface EscalaPreviewProps {
@@ -48,4 +58,21 @@ export interface ActionsProps {
   onCancel: () => void;
   onSave: () => void;
   isDisabled: boolean;
+}
+
+export interface GuarnicaoOption {
+  id: string;
+  nome: string;
+  supervisor: string;
+}
+
+export interface RotaOption {
+  id: string;
+  nome: string;
+}
+
+export interface ViaturaOption {
+  id: string;
+  codigo: string;
+  modelo: string;
 }

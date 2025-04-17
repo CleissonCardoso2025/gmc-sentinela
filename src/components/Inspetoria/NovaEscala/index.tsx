@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { guarnicoes } from './constants';
-import { NovaEscalaProps, ScheduleEntry } from './types';
+import { supabase } from "@/integrations/supabase/client";
+import { NovaEscalaProps, ScheduleEntry, GuarnicaoOption, ViaturaOption, RotaOption } from './types';
 import { 
-  generate30DaysFromDate, 
+  generateDaysFromDate, 
   getShiftColor, 
   createEmptySchedule,
   generateSortedSchedule
@@ -20,14 +20,74 @@ import Actions from './components/Actions';
 const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState<Date>(new Date());
+  const [periodoDuration, setPeriodoDuration] = useState<string>("7");
+  const [escalaType, setEscalaType] = useState<string>("24/72");
+  
   const [selectedGuarnicaoId, setSelectedGuarnicaoId] = useState("");
   const [selectedGuarnicao, setSelectedGuarnicao] = useState<any>(null);
   const [selectedViaturaId, setSelectedViaturaId] = useState("");
   const [selectedRotaId, setSelectedRotaId] = useState("");
+  const [supervisor, setSupervisor] = useState("");
+  
   const [scheduleData, setScheduleData] = useState<ScheduleEntry[]>([]);
   const [startDateOpen, setStartDateOpen] = useState(false);
+  
+  const [guarnicoes, setGuarnicoes] = useState<GuarnicaoOption[]>([]);
+  const [viaturas, setViaturas] = useState<ViaturaOption[]>([]);
+  const [rotas, setRotas] = useState<RotaOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get selected guarnicao objects
+  // Fetch options from database
+  useEffect(() => {
+    const fetchOptions = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch guarnicoes
+        const { data: guarnicoesData, error: guarnicoesError } = await supabase
+          .from('guarnicoes')
+          .select('id, nome, supervisor, membros_guarnicao(id, nome, funcao)');
+
+        if (guarnicoesError) throw guarnicoesError;
+        
+        // Format to include membros as a nested property
+        const formattedGuarnicoes = guarnicoesData.map(g => ({
+          ...g,
+          membros: g.membros_guarnicao
+        }));
+        
+        setGuarnicoes(formattedGuarnicoes);
+
+        // Fetch viaturas
+        const { data: viaturasData, error: viaturasError } = await supabase
+          .from('viaturas')
+          .select('id, codigo, modelo');
+
+        if (viaturasError) throw viaturasError;
+        setViaturas(viaturasData);
+
+        // Fetch rotas
+        const { data: rotasData, error: rotasError } = await supabase
+          .from('rotas')
+          .select('id, nome');
+
+        if (rotasError) throw rotasError;
+        setRotas(rotasData);
+      } catch (error: any) {
+        console.error("Erro ao carregar opções:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as opções dos campos.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOptions();
+  }, [toast]);
+
+  // Get selected guarnicao object when ID changes
   useEffect(() => {
     if (selectedGuarnicaoId) {
       const guarnicao = guarnicoes.find(g => g.id === selectedGuarnicaoId);
@@ -35,15 +95,16 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     } else {
       setSelectedGuarnicao(null);
     }
-  }, [selectedGuarnicaoId]);
+  }, [selectedGuarnicaoId, guarnicoes]);
 
-  // Initialize schedule with empty data
+  // Initialize schedule with empty data when guarnicao or dates change
   useEffect(() => {
     if (selectedGuarnicao) {
-      const newSchedule = createEmptySchedule(selectedGuarnicao, startDate);
+      const durationInDays = parseInt(periodoDuration, 10);
+      const newSchedule = createEmptySchedule(selectedGuarnicao, startDate, durationInDays);
       setScheduleData(newSchedule);
     }
-  }, [selectedGuarnicao, startDate]);
+  }, [selectedGuarnicao, startDate, periodoDuration]);
 
   const handleSortSchedule = () => {
     if (!selectedGuarnicao) {
@@ -55,12 +116,13 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
       return;
     }
 
-    const newSchedule = generateSortedSchedule(scheduleData, selectedGuarnicao, startDate);
+    const durationInDays = parseInt(periodoDuration, 10);
+    const newSchedule = generateSortedSchedule(scheduleData, selectedGuarnicao, startDate, durationInDays);
     setScheduleData(newSchedule);
     
     toast({
       title: "Escala sorteada",
-      description: "A escala de 24h/72h foi distribuída automaticamente."
+      description: `A escala de ${escalaType} foi distribuída automaticamente.`
     });
   };
 
@@ -94,8 +156,9 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     return result;
   };
 
-  // Calculate days to display (first 7 for preview)
-  const daysToDisplay = generate30DaysFromDate(startDate).slice(0, 7);
+  // Calculate days to display (based on selected period duration)
+  const numDaysToDisplay = parseInt(periodoDuration, 10) > 7 ? 7 : parseInt(periodoDuration, 10);
+  const daysToDisplay = generateDaysFromDate(startDate, numDaysToDisplay);
 
   return (
     <div className="space-y-8">
@@ -105,6 +168,8 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
           setStartDate={setStartDate}
           startDateOpen={startDateOpen}
           setStartDateOpen={setStartDateOpen}
+          periodoDuration={periodoDuration}
+          setPeriodoDuration={setPeriodoDuration}
         />
 
         <RecursosSelection
@@ -114,11 +179,19 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
           setSelectedViaturaId={setSelectedViaturaId}
           selectedRotaId={selectedRotaId}
           setSelectedRotaId={setSelectedRotaId}
+          supervisor={supervisor}
+          setSupervisor={setSupervisor}
+          guarnicoes={guarnicoes}
+          viaturas={viaturas}
+          rotas={rotas}
+          isLoading={isLoading}
         />
 
         <DistribuicaoTurnos
           selectedGuarnicao={selectedGuarnicao}
           handleSortSchedule={handleSortSchedule}
+          escalaType={escalaType}
+          setEscalaType={setEscalaType}
         />
       </div>
 

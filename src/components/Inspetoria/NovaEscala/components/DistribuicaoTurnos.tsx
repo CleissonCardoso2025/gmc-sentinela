@@ -9,20 +9,48 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { DistribuicaoTurnosProps } from '../types';
 
 const DistribuicaoTurnos: React.FC<DistribuicaoTurnosProps> = ({
   selectedGuarnicao,
-  handleSortSchedule
+  handleSortSchedule,
+  escalaType,
+  setEscalaType
 }) => {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">3. Distribua os Turnos</CardTitle>
-        <CardDescription>Distribuição automática 24h/72h</CardDescription>
+        <CardDescription>Configuração da escala de trabalho</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="escalaType">Tipo de Escala</Label>
+            <Select 
+              value={escalaType}
+              onValueChange={setEscalaType}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de escala" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24/72">Escala 24h/72h</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Distribuição de trabalho 24h seguidas de 72h de folga
+            </p>
+          </div>
+          
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
             <div className="flex items-start">
               <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2 mt-0.5" />

@@ -2,10 +2,10 @@
 import { format, addDays } from "date-fns";
 import { ScheduleEntry } from "./types";
 
-// Function to generate dates for 30 days
-export const generate30DaysFromDate = (startDate: Date) => {
+// Function to generate dates for specified period duration
+export const generateDaysFromDate = (startDate: Date, durationInDays: number) => {
   const days = [];
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < durationInDays; i++) {
     days.push(addDays(startDate, i));
   }
   return days;
@@ -30,11 +30,11 @@ export const getShiftColor = (shift: string) => {
   }
 };
 
-export const createEmptySchedule = (selectedGuarnicao: any, startDate: Date) => {
+export const createEmptySchedule = (selectedGuarnicao: any, startDate: Date, durationInDays: number) => {
   if (!selectedGuarnicao) return [];
   
   const newSchedule: ScheduleEntry[] = [];
-  const days = generate30DaysFromDate(startDate);
+  const days = generateDaysFromDate(startDate, durationInDays);
   
   selectedGuarnicao.membros.forEach((membro: any) => {
     days.forEach(day => {
@@ -50,11 +50,16 @@ export const createEmptySchedule = (selectedGuarnicao: any, startDate: Date) => 
   return newSchedule;
 };
 
-export const generateSortedSchedule = (scheduleData: ScheduleEntry[], selectedGuarnicao: any, startDate: Date) => {
+export const generateSortedSchedule = (
+  scheduleData: ScheduleEntry[], 
+  selectedGuarnicao: any, 
+  startDate: Date,
+  durationInDays: number
+) => {
   if (!selectedGuarnicao) return [];
 
   const newSchedule = [...scheduleData];
-  const days = generate30DaysFromDate(startDate);
+  const days = generateDaysFromDate(startDate, durationInDays);
   const agents = selectedGuarnicao.membros;
   
   // Reset all to folga first
@@ -67,7 +72,7 @@ export const generateSortedSchedule = (scheduleData: ScheduleEntry[], selectedGu
     // Each agent starts at a different day (offset by agentIndex)
     const startOffset = agentIndex % 4;
     
-    for (let i = startOffset; i < 30; i += 4) {
+    for (let i = startOffset; i < durationInDays; i += 4) {
       const day = days[i];
       
       // Find entry for this agent and day

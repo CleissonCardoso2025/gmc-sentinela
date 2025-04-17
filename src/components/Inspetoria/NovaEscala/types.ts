@@ -4,7 +4,7 @@ import { Dispatch, SetStateAction } from 'react';
 export interface NovaEscalaProps {
   onSave: () => void;
   onCancel: () => void;
-  editingId?: number | null;
+  editingId?: string | null;
 }
 
 export interface ScheduleEntry {

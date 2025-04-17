@@ -15,6 +15,7 @@ import { DateRangeType } from '@/hooks/use-occurrence-data';
 import Chart from '@/components/Dashboard/Chart';
 import UserList from '@/components/Dashboard/UserList';
 import VehicleList from '@/components/Dashboard/VehicleList';
+import { useVehicleLocations } from '@/hooks/use-vehicle-locations';
 
 interface DashboardCardProps {
   title: string;
@@ -56,15 +57,22 @@ const InspetoriaDashboard: React.FC = () => {
 
   const [totalUsers, setTotalUsers] = useState(0);
   const [activeUsers, setActiveUsers] = useState(0);
-  const [totalVehicles, setTotalVehicles] = useState(0);
-  const [availableVehicles, setAvailableVehicles] = useState(0);
   const [usersData, setUsersData] = useState([]);
-  const [vehiclesData, setVehiclesData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [alerts, setAlerts] = useState([]);
   const [occurrencesByType, setOccurrencesByType] = useState([]);
-  const [tasksProgress, setTasksProgress] = useState([]);
   const { toast } = useToast();
+  
+  // Use the vehicle locations hook to get real vehicle data
+  const { vehicles, isLoading: isLoadingVehicles } = useVehicleLocations();
+  
+  // Calculate vehicle statistics
+  const totalVehicles = vehicles.length;
+  const availableVehicles = vehicles.filter(v => 
+    v.status?.toLowerCase() === 'disponível' || 
+    v.status?.toLowerCase() === 'em serviço' || 
+    v.status?.toLowerCase() === 'ativo'
+  ).length;
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -81,19 +89,6 @@ const InspetoriaDashboard: React.FC = () => {
         setTotalUsers(users?.length || 0);
         setActiveUsers(activeUsersList.length);
         setUsersData(users || []);
-
-        // Fetch vehicles data
-        const { data: vehicles, error: vehiclesError } = await supabase
-          .from('viaturas')
-          .select('*');
-        
-        if (vehiclesError) throw vehiclesError;
-        
-        // Ideally we would have a status field to determine available vehicles
-        // For now, let's assume all are available as a placeholder
-        setTotalVehicles(vehicles?.length || 0);
-        setAvailableVehicles(vehicles?.length || 0);
-        setVehiclesData(vehicles || []);
 
         // Fetch alerts
         const { data: alertsData, error: alertsError } = await supabase
@@ -130,9 +125,6 @@ const InspetoriaDashboard: React.FC = () => {
         
         setOccurrencesByType(chartData);
         
-        // For tasks progress, we could use the escala_items or another relevant table
-        // For now, using a placeholder
-        
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         toast({
@@ -167,13 +159,13 @@ const InspetoriaDashboard: React.FC = () => {
           title="Total de Viaturas"
           value={totalVehicles}
           icon={<Car className="h-8 w-8 text-gcm-500" />}
-          loading={isLoading}
+          loading={isLoadingVehicles}
         />
         <DashboardCard
           title="Viaturas Disponíveis"
           value={availableVehicles}
           icon={<Car className="h-8 w-8 text-green-500" />}
-          loading={isLoading}
+          loading={isLoadingVehicles}
         />
       </div>
 
@@ -278,14 +270,14 @@ const InspetoriaDashboard: React.FC = () => {
               </Badge>
             </div>
           </div>
-          {isLoading ? (
+          {isLoadingVehicles ? (
             <div className="p-4 space-y-2">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
-          ) : vehiclesData.length > 0 ? (
-            <VehicleList vehicles={vehiclesData} />
+          ) : vehicles.length > 0 ? (
+            <VehicleList vehicles={vehicles} />
           ) : (
             <EmptyState
               title="Sem viaturas"

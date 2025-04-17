@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { EscalaItem } from './Escala/types';
 import NovaEscala from './NovaEscala';
+import { VehicleProvider } from '@/contexts/VehicleContext';
 
 const EscalaTrabalho: React.FC = () => {
   const [escalaItems, setEscalaItems] = useState<EscalaItem[]>([]);
@@ -28,11 +28,9 @@ const EscalaTrabalho: React.FC = () => {
   const [rotaNames, setRotaNames] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
 
-  // Fetch lookup data for guarnicoes, viaturas, and rotas
   useEffect(() => {
     const fetchLookupData = async () => {
       try {
-        // Fetch guarnicoes
         const { data: guarnicoesData, error: guarnicoesError } = await supabase
           .from('guarnicoes')
           .select('id, nome');
@@ -45,7 +43,6 @@ const EscalaTrabalho: React.FC = () => {
         });
         setGuarnicaoNames(guarnicoes);
         
-        // Fetch viaturas
         const { data: viaturasData, error: viaturasError } = await supabase
           .from('viaturas')
           .select('id, codigo, modelo');
@@ -58,7 +55,6 @@ const EscalaTrabalho: React.FC = () => {
         });
         setViaturaCodes(viaturas);
         
-        // Fetch rotas
         const { data: rotasData, error: rotasError } = await supabase
           .from('rotas')
           .select('id, nome');
@@ -78,7 +74,6 @@ const EscalaTrabalho: React.FC = () => {
     fetchLookupData();
   }, []);
 
-  // Fetch escala items
   useEffect(() => {
     const fetchEscalaItems = async () => {
       setIsLoading(true);
@@ -89,7 +84,6 @@ const EscalaTrabalho: React.FC = () => {
 
         if (error) throw error;
 
-        // Convert JSON data to proper format if needed
         const transformedData = data.map(item => ({
           ...item,
           schedule: Array.isArray(item.schedule) 
@@ -130,7 +124,6 @@ const EscalaTrabalho: React.FC = () => {
     });
     setIsCreatingEscala(false);
     
-    // Refresh the data
     const { data, error } = await supabase
       .from('escala_items')
       .select('*');
@@ -179,7 +172,6 @@ const EscalaTrabalho: React.FC = () => {
     }
   };
 
-  // Get display name for external IDs
   const getDisplayName = (type: 'guarnicao' | 'rota' | 'viatura', id: string): string => {
     if (type === 'guarnicao') {
       return guarnicaoNames[id] || id;
@@ -194,11 +186,13 @@ const EscalaTrabalho: React.FC = () => {
   return (
     <div className="space-y-4">
       {isCreatingEscala ? (
-        <NovaEscala 
-          onSave={handleSave} 
-          onCancel={handleCancel}
-          editingId={selectedEscalaItem}
-        />
+        <VehicleProvider>
+          <NovaEscala 
+            onSave={handleSave} 
+            onCancel={handleCancel}
+            editingId={selectedEscalaItem}
+          />
+        </VehicleProvider>
       ) : (
         <>
           <div className="flex justify-between items-center">

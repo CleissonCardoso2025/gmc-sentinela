@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import {
   createEmptySchedule,
   generateSortedSchedule
 } from './utils';
+import { useVehicles } from '@/contexts/VehicleContext';
 
 // Component imports
 import PeriodoSelection from './components/PeriodoSelection';
@@ -19,6 +19,7 @@ import Actions from './components/Actions';
 
 const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) => {
   const { toast } = useToast();
+  const { vehicles } = useVehicles();
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [periodoDuration, setPeriodoDuration] = useState<string>("7");
   const [escalaType, setEscalaType] = useState<string>("24/72");
@@ -61,14 +62,25 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
         
         setGuarnicoes(formattedGuarnicoes);
 
-        // Fetch viaturas
-        const { data: viaturasData, error: viaturasError } = await supabase
-          .from('viaturas')
-          .select('id, codigo, modelo');
+        // Fetch viaturas - now using the vehicles from the VehicleContext
+        if (vehicles && vehicles.length > 0) {
+          const formattedViaturas = vehicles.map(vehicle => ({
+            id: vehicle.id.toString(),
+            codigo: vehicle.placa,
+            modelo: vehicle.modelo
+          }));
+          console.log("Using vehicles from context:", formattedViaturas);
+          setViaturas(formattedViaturas);
+        } else {
+          // Fallback to fetching from viaturas table if VehicleContext is empty
+          const { data: viaturasData, error: viaturasError } = await supabase
+            .from('viaturas')
+            .select('id, codigo, modelo');
 
-        if (viaturasError) throw viaturasError;
-        console.log("Fetched viaturas:", viaturasData);
-        setViaturas(viaturasData);
+          if (viaturasError) throw viaturasError;
+          console.log("Fetched viaturas:", viaturasData);
+          setViaturas(viaturasData);
+        }
 
         // Fetch rotas
         const { data: rotasData, error: rotasError } = await supabase
@@ -91,7 +103,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     };
 
     fetchOptions();
-  }, [toast]);
+  }, [toast, vehicles]);
 
   // Load existing escala data if editing
   useEffect(() => {

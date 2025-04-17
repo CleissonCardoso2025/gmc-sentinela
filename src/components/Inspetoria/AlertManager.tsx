@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,22 +14,12 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { AlertBoard } from '@/components/Dashboard/AlertBoard';
 import { ptBR } from 'date-fns/locale';
-
-interface AlertFormValues {
-  title: string;
-  description: string;
-  type: string;
-  target: string;
-  targetDetail: string;
-  scheduleType: string;
-  scheduleDate: string;
-  recurring: boolean;
-  recurrencePattern: string;
-}
+import { createAlert, AlertFormValues } from '@/services/alertService';
 
 const AlertManager: React.FC = () => {
   const { toast } = useToast();
   const [tab, setTab] = useState("view");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<AlertFormValues>({
     defaultValues: {
@@ -44,17 +35,31 @@ const AlertManager: React.FC = () => {
     }
   });
 
-  const onSubmit = (data: AlertFormValues) => {
+  const onSubmit = async (data: AlertFormValues) => {
     console.log("Form data:", data);
+    setIsSubmitting(true);
     
-    // Here you would typically save the data to your database
-    toast({
-      title: "Alerta criado",
-      description: "O alerta foi criado com sucesso."
-    });
-    
-    form.reset();
-    setTab("view");
+    try {
+      // Salvar o alerta no banco de dados
+      await createAlert(data, "Admin");
+      
+      toast({
+        title: "Alerta criado",
+        description: "O alerta foi criado com sucesso."
+      });
+      
+      form.reset();
+      setTab("view");
+    } catch (error: any) {
+      console.error("Erro ao criar alerta:", error);
+      toast({
+        title: "Erro ao criar alerta",
+        description: error.message || "Não foi possível criar o alerta.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -232,7 +237,7 @@ const AlertManager: React.FC = () => {
                       <FormField
                         control={form.control}
                         name="targetDetail"
-                        rules={{ required: "Este campo é obrigat��rio" }}
+                        rules={{ required: "Este campo é obrigatório" }}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
@@ -376,10 +381,20 @@ const AlertManager: React.FC = () => {
                   </div>
                   
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setTab("view")}>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setTab("view")}
+                      disabled={isSubmitting}
+                    >
                       Cancelar
                     </Button>
-                    <Button type="submit">Criar Alerta</Button>
+                    <Button 
+                      type="submit"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Criando..." : "Criar Alerta"}
+                    </Button>
                   </div>
                 </form>
               </Form>

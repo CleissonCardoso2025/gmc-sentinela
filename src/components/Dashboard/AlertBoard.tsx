@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Megaphone, Package, BookOpen, ClipboardList, CheckCircle, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,17 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import EmptyState from '../Dashboard/EmptyState';
-
-interface Alert {
-  id: number;
-  title: string;
-  description: string;
-  type: 'urgente' | 'ordem' | 'diligencia' | 'procedimento' | 'administrativo';
-  createdAt: string;
-  author: string;
-  status: 'ativo' | 'resolvido';
-  read: boolean;
-}
+import { Alert, getAlerts, updateAlertStatus, deleteAlert } from '@/services/alertService';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AlertBoardProps {
   maxDisplayedAlerts?: number;
@@ -25,6 +17,30 @@ interface AlertBoardProps {
 export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }) => {
   const { toast } = useToast();
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  const fetchAlerts = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAlerts();
+      setAlerts(data);
+    } catch (err: any) {
+      console.error("Error fetching alerts:", err);
+      setError(err.message || "Failed to load alerts");
+      toast({
+        title: "Error loading alerts",
+        description: err.message || "Failed to load alerts",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -111,30 +127,68 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
     }).format(date);
   };
 
-  const handleMarkAsRead = (id: number) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, read: true } : alert
-    ));
-    
-    toast({
-      title: "Alerta marcado como lido",
-      description: "O alerta foi marcado como lido com sucesso."
-    });
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await updateAlertStatus(id, true);
+      setAlerts(alerts.map(alert => 
+        alert.id === id ? { ...alert, read: true } : alert
+      ));
+      
+      toast({
+        title: "Alerta marcado como lido",
+        description: "O alerta foi marcado como lido com sucesso."
+      });
+    } catch (err: any) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar o alerta como lido.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDismiss = (id: number) => {
-    setAlerts(alerts.filter(alert => alert.id !== id));
-    
-    toast({
-      title: "Alerta removido",
-      description: "O alerta foi removido da sua lista."
-    });
+  const handleDismiss = async (id: string) => {
+    try {
+      await deleteAlert(id);
+      setAlerts(alerts.filter(alert => alert.id !== id));
+      
+      toast({
+        title: "Alerta removido",
+        description: "O alerta foi removido da sua lista."
+      });
+    } catch (err: any) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o alerta.",
+        variant: "destructive"
+      });
+    }
   };
 
   const unreadCount = alerts.filter(alert => !alert.read).length;
 
   const displayedAlerts = alerts.slice(0, Math.floor(maxDisplayedAlerts));
   const hasMoreAlerts = alerts.length > displayedAlerts.length;
+
+  if (isLoading) {
+    return (
+      <Card className="shadow-md animate-fade-up">
+        <CardHeader className="p-4 border-b">
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-md animate-fade-up" style={{ animationDelay: '200ms' }}>
@@ -145,7 +199,7 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
         </div>
         {unreadCount > 0 && (
           <Badge variant="secondary" className="bg-red-100 text-red-800 animate-pulse">
-            {unreadCount} novos
+            {unreadCount} novo{unreadCount !== 1 ? 's' : ''}
           </Badge>
         )}
       </CardHeader>

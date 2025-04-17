@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +63,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
         
         setGuarnicoes(formattedGuarnicoes);
 
-        // Fetch viaturas - now using the vehicles from the VehicleContext
+        // Fetch viaturas - prioritize using vehicles from the VehicleContext
         if (vehicles && vehicles.length > 0) {
           const formattedViaturas = vehicles.map(vehicle => ({
             id: vehicle.id.toString(),
@@ -72,14 +73,29 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
           console.log("Using vehicles from context:", formattedViaturas);
           setViaturas(formattedViaturas);
         } else {
-          // Fallback to fetching from viaturas table if VehicleContext is empty
-          const { data: viaturasData, error: viaturasError } = await supabase
-            .from('viaturas')
-            .select('id, codigo, modelo');
+          // First try to get vehicles from the vehicles table
+          const { data: vehiclesData, error: vehiclesError } = await supabase
+            .from('vehicles')
+            .select('id, placa, modelo');
+            
+          if (!vehiclesError && vehiclesData && vehiclesData.length > 0) {
+            const formattedVehicles = vehiclesData.map(vehicle => ({
+              id: vehicle.id.toString(),
+              codigo: vehicle.placa,
+              modelo: vehicle.modelo
+            }));
+            console.log("Fetched vehicles from vehicles table:", formattedVehicles);
+            setViaturas(formattedVehicles);
+          } else {
+            // Fallback to the viaturas table
+            const { data: viaturasData, error: viaturasError } = await supabase
+              .from('viaturas')
+              .select('id, codigo, modelo');
 
-          if (viaturasError) throw viaturasError;
-          console.log("Fetched viaturas:", viaturasData);
-          setViaturas(viaturasData);
+            if (viaturasError) throw viaturasError;
+            console.log("Fetched viaturas from viaturas table:", viaturasData);
+            setViaturas(viaturasData);
+          }
         }
 
         // Fetch rotas

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,17 +44,33 @@ const EscalaTrabalho: React.FC = () => {
         });
         setGuarnicaoNames(guarnicoes);
         
-        const { data: viaturasData, error: viaturasError } = await supabase
-          .from('viaturas')
-          .select('id, codigo, modelo');
+        // First try to fetch from vehicles table (which has real data)
+        const { data: vehiclesData, error: vehiclesError } = await supabase
+          .from('vehicles')
+          .select('id, placa, modelo');
+          
+        if (!vehiclesError && vehiclesData && vehiclesData.length > 0) {
+          // Map vehicles data to the format expected by the viatura codes
+          const viaturas: {[key: string]: string} = {};
+          vehiclesData.forEach(item => {
+            // Convert vehicle id to string since our components expect string ids
+            viaturas[String(item.id)] = `${item.placa} (${item.modelo})`;
+          });
+          setViaturaCodes(viaturas);
+        } else {
+          // Fallback to viaturas table if vehicles table query fails or returns empty
+          const { data: viaturasData, error: viaturasError } = await supabase
+            .from('viaturas')
+            .select('id, codigo, modelo');
 
-        if (viaturasError) throw viaturasError;
-        
-        const viaturas: {[key: string]: string} = {};
-        viaturasData.forEach(item => {
-          viaturas[item.id] = `${item.codigo} (${item.modelo})`;
-        });
-        setViaturaCodes(viaturas);
+          if (viaturasError) throw viaturasError;
+          
+          const viaturas: {[key: string]: string} = {};
+          viaturasData.forEach(item => {
+            viaturas[item.id] = `${item.codigo} (${item.modelo})`;
+          });
+          setViaturaCodes(viaturas);
+        }
         
         const { data: rotasData, error: rotasError } = await supabase
           .from('rotas')

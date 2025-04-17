@@ -40,7 +40,7 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
     if (selectedGuarnicaoId) {
       const selectedGuarnicao = guarnicoes.find(g => g.id === selectedGuarnicaoId);
       if (selectedGuarnicao) {
-        setSupervisor(selectedGuarnicao.supervisor);
+        setSupervisor(selectedGuarnicao.supervisor || '');
       }
     }
   }, [selectedGuarnicaoId, guarnicoes, setSupervisor]);
@@ -82,7 +82,7 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma guarnição" />
                 </SelectTrigger>
-                <SelectContent className="bg-background">
+                <SelectContent className="bg-popover">
                   {guarnicoes.map(guarnicao => (
                     <SelectItem key={guarnicao.id} value={guarnicao.id}>
                       {guarnicao.nome}
@@ -123,7 +123,7 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma viatura" />
                 </SelectTrigger>
-                <SelectContent className="bg-background">
+                <SelectContent className="bg-popover">
                   {viaturas.map(viatura => (
                     <SelectItem key={viatura.id} value={viatura.id}>
                       {viatura.codigo} ({viatura.modelo})
@@ -151,7 +151,7 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma rota" />
                 </SelectTrigger>
-                <SelectContent className="bg-background">
+                <SelectContent className="bg-popover">
                   {rotas.map(rota => (
                     <SelectItem key={rota.id} value={rota.id}>
                       {rota.nome}

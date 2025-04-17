@@ -83,10 +83,15 @@ const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota, rota
           .select());
       } else {
         // Modo de criação - inserir nova rota
-        rotaData.ultimopatrulhamento = null;
+        // Criar um novo objeto que inclui ultimopatrulhamento
+        const newRotaData = {
+          ...rotaData,
+          ultimopatrulhamento: null
+        };
+        
         ({ data, error } = await supabase
           .from('rotas')
-          .insert([rotaData])
+          .insert([newRotaData])
           .select());
       }
       

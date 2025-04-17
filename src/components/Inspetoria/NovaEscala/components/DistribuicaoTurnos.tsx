@@ -64,6 +64,7 @@ const DistribuicaoTurnos: React.FC<DistribuicaoTurnosProps> = ({
             onClick={handleSortSchedule} 
             className="w-full"
             disabled={!selectedGuarnicao}
+            type="button"
           >
             <Shuffle className="mr-2 h-4 w-4" />
             Sortear Escala

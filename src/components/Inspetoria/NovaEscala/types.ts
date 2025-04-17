@@ -64,6 +64,11 @@ export interface GuarnicaoOption {
   id: string;
   nome: string;
   supervisor: string;
+  membros?: {
+    id: string;
+    nome: string;
+    funcao: string;
+  }[];
 }
 
 export interface RotaOption {

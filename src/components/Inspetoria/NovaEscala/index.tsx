@@ -39,6 +39,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
 
   // Fetch options from database
   useEffect(() => {
+    console.log("Fetching options from database");
     const fetchOptions = async () => {
       setIsLoading(true);
       try {
@@ -48,6 +49,8 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
           .select('id, nome, supervisor, membros_guarnicao(id, nome, funcao)');
 
         if (guarnicoesError) throw guarnicoesError;
+        
+        console.log("Fetched guarnicoes:", guarnicoesData);
         
         // Format to include membros as a nested property
         const formattedGuarnicoes = guarnicoesData.map(g => ({
@@ -63,6 +66,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
           .select('id, codigo, modelo');
 
         if (viaturasError) throw viaturasError;
+        console.log("Fetched viaturas:", viaturasData);
         setViaturas(viaturasData);
 
         // Fetch rotas
@@ -71,6 +75,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
           .select('id, nome');
 
         if (rotasError) throw rotasError;
+        console.log("Fetched rotas:", rotasData);
         setRotas(rotasData);
       } catch (error: any) {
         console.error("Erro ao carregar opções:", error);
@@ -89,8 +94,10 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
 
   // Get selected guarnicao object when ID changes
   useEffect(() => {
+    console.log("Selected guarnicao ID changed to:", selectedGuarnicaoId);
     if (selectedGuarnicaoId) {
       const guarnicao = guarnicoes.find(g => g.id === selectedGuarnicaoId);
+      console.log("Found guarnicao:", guarnicao);
       setSelectedGuarnicao(guarnicao);
     } else {
       setSelectedGuarnicao(null);
@@ -99,14 +106,17 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
 
   // Initialize schedule with empty data when guarnicao or dates change
   useEffect(() => {
+    console.log("Selected guarnicao or dates changed, initializing schedule");
     if (selectedGuarnicao) {
       const durationInDays = parseInt(periodoDuration, 10);
       const newSchedule = createEmptySchedule(selectedGuarnicao, startDate, durationInDays);
+      console.log("Created new empty schedule:", newSchedule);
       setScheduleData(newSchedule);
     }
   }, [selectedGuarnicao, startDate, periodoDuration]);
 
   const handleSortSchedule = () => {
+    console.log("Sorting schedule...");
     if (!selectedGuarnicao) {
       toast({
         title: "Selecione uma guarnição",
@@ -117,7 +127,13 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     }
 
     const durationInDays = parseInt(periodoDuration, 10);
+    console.log("Current schedule data:", scheduleData);
+    console.log("Selected guarnicao:", selectedGuarnicao);
+    console.log("Start date:", startDate);
+    console.log("Duration:", durationInDays);
+    
     const newSchedule = generateSortedSchedule(scheduleData, selectedGuarnicao, startDate, durationInDays);
+    console.log("Generated new sorted schedule:", newSchedule);
     setScheduleData(newSchedule);
     
     toast({
@@ -127,6 +143,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
   };
 
   const changeAgentShift = (agentId: string, date: Date, newShift: "24h" | "Folga") => {
+    console.log("Changing agent shift:", { agentId, date, newShift });
     setScheduleData(prev => 
       prev.map(entry => {
         if (entry.agentId === agentId && 
@@ -159,6 +176,11 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
   // Calculate days to display (based on selected period duration)
   const numDaysToDisplay = parseInt(periodoDuration, 10) > 7 ? 7 : parseInt(periodoDuration, 10);
   const daysToDisplay = generateDaysFromDate(startDate, numDaysToDisplay);
+
+  // For debugging
+  useEffect(() => {
+    console.log("Current Schedule Data:", scheduleData);
+  }, [scheduleData]);
 
   return (
     <div className="space-y-8">

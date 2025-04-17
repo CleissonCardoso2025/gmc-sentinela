@@ -6,7 +6,7 @@ import { ScheduleEntry } from "./types";
 export const generateDaysFromDate = (startDate: Date, durationInDays: number) => {
   const days = [];
   for (let i = 0; i < durationInDays; i++) {
-    days.push(addDays(startDate, i));
+    days.push(addDays(new Date(startDate), i));
   }
   return days;
 };
@@ -39,7 +39,7 @@ export const createEmptySchedule = (selectedGuarnicao: any, startDate: Date, dur
   selectedGuarnicao.membros.forEach((membro: any) => {
     days.forEach(day => {
       newSchedule.push({
-        date: day,
+        date: new Date(day),
         agentId: membro.id,
         shift: "Folga",
         supervisor: membro.funcao === "Supervisor"
@@ -56,7 +56,7 @@ export const generateSortedSchedule = (
   startDate: Date,
   durationInDays: number
 ) => {
-  if (!selectedGuarnicao) return [];
+  if (!selectedGuarnicao) return scheduleData;
 
   const newSchedule = [...scheduleData];
   const days = generateDaysFromDate(startDate, durationInDays);
@@ -75,16 +75,14 @@ export const generateSortedSchedule = (
     for (let i = startOffset; i < durationInDays; i += 4) {
       const day = days[i];
       
-      // Find entry for this agent and day
-      const entryIndex = newSchedule.findIndex(
-        entry => entry.agentId === agent.id && 
-                entry.date.getDate() === day.getDate() &&
-                entry.date.getMonth() === day.getMonth()
-      );
-      
-      if (entryIndex !== -1) {
-        newSchedule[entryIndex].shift = "24h";
-      }
+      // Find entries for this agent and day
+      newSchedule.forEach(entry => {
+        if (entry.agentId === agent.id && 
+            entry.date.getDate() === day.getDate() &&
+            entry.date.getMonth() === day.getMonth()) {
+          entry.shift = "24h";
+        }
+      });
     }
   });
   

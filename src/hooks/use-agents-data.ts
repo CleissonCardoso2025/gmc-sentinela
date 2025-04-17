@@ -17,14 +17,22 @@ export const useAgentsData = () => {
     const fetchAgents = async () => {
       setIsLoading(true);
       try {
+        // Modified query to avoid using 'as' alias syntax directly
         const { data, error } = await supabase
           .from('users')
-          .select('id, nome, perfil as patente')
+          .select('id, nome, perfil')
           .order('nome', { ascending: true });
         
         if (error) throw error;
         
-        setAgents(data || []);
+        // Transform the data to match the Agent interface
+        const formattedAgents = data?.map(user => ({
+          id: user.id,
+          nome: user.nome,
+          patente: user.perfil
+        })) || [];
+        
+        setAgents(formattedAgents);
       } catch (error: any) {
         console.error('Error fetching agents:', error);
         setError(error.message || 'Falha ao carregar usuários');

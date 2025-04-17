@@ -23,7 +23,60 @@ const EscalaTrabalho: React.FC = () => {
   const [isCreatingEscala, setIsCreatingEscala] = useState(false);
   const [selectedEscalaItem, setSelectedEscalaItem] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [guarnicaoNames, setGuarnicaoNames] = useState<{[key: string]: string}>({});
+  const [viaturaCodes, setViaturaCodes] = useState<{[key: string]: string}>({});
+  const [rotaNames, setRotaNames] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
+
+  // Fetch lookup data for guarnicoes, viaturas, and rotas
+  useEffect(() => {
+    const fetchLookupData = async () => {
+      try {
+        // Fetch guarnicoes
+        const { data: guarnicoesData, error: guarnicoesError } = await supabase
+          .from('guarnicoes')
+          .select('id, nome');
+
+        if (guarnicoesError) throw guarnicoesError;
+        
+        const guarnicoes: {[key: string]: string} = {};
+        guarnicoesData.forEach(item => {
+          guarnicoes[item.id] = item.nome;
+        });
+        setGuarnicaoNames(guarnicoes);
+        
+        // Fetch viaturas
+        const { data: viaturasData, error: viaturasError } = await supabase
+          .from('viaturas')
+          .select('id, codigo, modelo');
+
+        if (viaturasError) throw viaturasError;
+        
+        const viaturas: {[key: string]: string} = {};
+        viaturasData.forEach(item => {
+          viaturas[item.id] = `${item.codigo} (${item.modelo})`;
+        });
+        setViaturaCodes(viaturas);
+        
+        // Fetch rotas
+        const { data: rotasData, error: rotasError } = await supabase
+          .from('rotas')
+          .select('id, nome');
+
+        if (rotasError) throw rotasError;
+        
+        const rotas: {[key: string]: string} = {};
+        rotasData.forEach(item => {
+          rotas[item.id] = item.nome;
+        });
+        setRotaNames(rotas);
+      } catch (error) {
+        console.error("Error fetching lookup data:", error);
+      }
+    };
+
+    fetchLookupData();
+  }, []);
 
   // Fetch escala items
   useEffect(() => {
@@ -128,8 +181,14 @@ const EscalaTrabalho: React.FC = () => {
 
   // Get display name for external IDs
   const getDisplayName = (type: 'guarnicao' | 'rota' | 'viatura', id: string): string => {
-    // This would typically involve a lookup to get the actual name
-    return id; // For now just return the ID
+    if (type === 'guarnicao') {
+      return guarnicaoNames[id] || id;
+    } else if (type === 'rota') {
+      return rotaNames[id] || id;
+    } else if (type === 'viatura') {
+      return viaturaCodes[id] || id;
+    }
+    return id;
   };
 
   return (
@@ -172,7 +231,7 @@ const EscalaTrabalho: React.FC = () => {
                         <TableCell>{escalaItem.supervisor}</TableCell>
                         <TableCell>{getDisplayName('rota', escalaItem.rota)}</TableCell>
                         <TableCell>{getDisplayName('viatura', escalaItem.viatura)}</TableCell>
-                        <TableCell>{escalaItem.periodo}</TableCell>
+                        <TableCell>{escalaItem.periodo} dias</TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button variant="secondary" size="sm" onClick={() => handleEdit(escalaItem.id)}>
                             Editar

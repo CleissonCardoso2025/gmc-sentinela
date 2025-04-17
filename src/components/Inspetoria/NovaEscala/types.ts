@@ -52,6 +52,9 @@ export interface EscalaPreviewProps {
   changeAgentShift: (agentId: string, date: Date, newShift: "24h" | "Folga") => void;
   getShiftColor: (shift: string) => string;
   getAgentSchedule: () => any[];
+  showFullPeriod: boolean;
+  setShowFullPeriod: Dispatch<SetStateAction<boolean>>;
+  swapShiftsBetweenAgents: (sourceAgentId: string, targetAgentId: string, date: Date) => void;
 }
 
 export interface ActionsProps {

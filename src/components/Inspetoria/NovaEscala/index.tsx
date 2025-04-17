@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
   
   const [scheduleData, setScheduleData] = useState<ScheduleEntry[]>([]);
   const [startDateOpen, setStartDateOpen] = useState(false);
+  const [showFullPeriod, setShowFullPeriod] = useState(false);
   
   const [guarnicoes, setGuarnicoes] = useState<GuarnicaoOption[]>([]);
   const [viaturas, setViaturas] = useState<ViaturaOption[]>([]);
@@ -193,6 +195,60 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     );
   };
 
+  // New function to swap shifts between agents
+  const swapShiftsBetweenAgents = (sourceAgentId: string, targetAgentId: string, date: Date) => {
+    console.log("Swapping shifts between agents:", { sourceAgentId, targetAgentId, date });
+    
+    // Find entries for both agents on the selected date
+    const dateStr = date.toDateString();
+    
+    // Create a copy of scheduleData to modify
+    const updatedSchedule = [...scheduleData];
+    let sourceEntry = null;
+    let targetEntry = null;
+    let sourceIndex = -1;
+    let targetIndex = -1;
+    
+    // Find indices and entries
+    updatedSchedule.forEach((entry, index) => {
+      const entryDate = new Date(entry.date);
+      
+      if (entryDate.toDateString() === dateStr) {
+        if (entry.agentId === sourceAgentId) {
+          sourceEntry = entry;
+          sourceIndex = index;
+        } else if (entry.agentId === targetAgentId) {
+          targetEntry = entry;
+          targetIndex = index;
+        }
+      }
+    });
+    
+    // If both entries found, swap their shifts
+    if (sourceEntry && targetEntry && sourceIndex !== -1 && targetIndex !== -1) {
+      const sourceShift = sourceEntry.shift;
+      const targetShift = targetEntry.shift;
+      
+      // Update the entries with swapped shifts
+      updatedSchedule[sourceIndex] = { ...sourceEntry, shift: targetShift };
+      updatedSchedule[targetIndex] = { ...targetEntry, shift: sourceShift };
+      
+      // Update state
+      setScheduleData(updatedSchedule);
+      
+      toast({
+        title: "Plantões trocados",
+        description: "Os plantões entre os agentes foram trocados com sucesso."
+      });
+    } else {
+      toast({
+        title: "Erro na troca",
+        description: "Não foi possível encontrar os plantões para trocar.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Save the escala data
   const handleSave = async () => {
     if (!selectedGuarnicao || !selectedViaturaId || !selectedRotaId) {
@@ -206,6 +262,10 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
 
     try {
       setIsLoading(true);
+      
+      // Get viatura and rota details for display
+      const viatura = viaturas.find(v => v.id === selectedViaturaId);
+      const rota = rotas.find(r => r.id === selectedRotaId);
       
       // Format data for saving
       const escalaData = {
@@ -283,7 +343,7 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
   };
 
   // Calculate days to display (based on selected period duration)
-  const numDaysToDisplay = parseInt(periodoDuration, 10) > 7 ? 7 : parseInt(periodoDuration, 10);
+  const numDaysToDisplay = parseInt(periodoDuration, 10);
   const daysToDisplay = generateDaysFromDate(startDate, numDaysToDisplay);
 
   // For debugging
@@ -334,6 +394,9 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
           changeAgentShift={changeAgentShift}
           getShiftColor={getShiftColor}
           getAgentSchedule={getAgentSchedule}
+          showFullPeriod={showFullPeriod}
+          setShowFullPeriod={setShowFullPeriod}
+          swapShiftsBetweenAgents={swapShiftsBetweenAgents}
         />
       )}
 

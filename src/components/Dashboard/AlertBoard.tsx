@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Megaphone, Package, BookOpen, ClipboardList, CheckCircle, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -241,7 +240,7 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
                       <div className="flex justify-between items-center mt-auto pt-3 text-xs text-gray-500">
                         <div>
                           <p>Por: {alert.author}</p>
-                          <p className="mt-1">{formatDate(alert.createdAt)}</p>
+                          <p className="mt-1">{formatDate(alert.created_at)}</p>
                         </div>
                         <div className="flex gap-2">
                           {!alert.read && (

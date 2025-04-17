@@ -6,7 +6,7 @@ export interface Alert {
   title: string;
   description: string;
   type: 'urgente' | 'ordem' | 'diligencia' | 'procedimento' | 'administrativo';
-  created_at: string;
+  created_at: string;  // Changed from createdAt
   author: string;
   status: 'ativo' | 'resolvido';
   read: boolean;

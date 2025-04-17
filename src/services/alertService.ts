@@ -6,15 +6,15 @@ export interface Alert {
   title: string;
   description: string;
   type: 'urgente' | 'ordem' | 'diligencia' | 'procedimento' | 'administrativo';
-  createdAt: string;
+  created_at: string;
   author: string;
   status: 'ativo' | 'resolvido';
   read: boolean;
   target: string;
-  targetDetail?: string;
-  scheduleDate?: string;
+  target_detail?: string;
+  schedule_date?: string;
   recurring: boolean;
-  recurrencePattern?: string;
+  recurrence_pattern?: string;
 }
 
 export interface AlertFormValues {
@@ -36,15 +36,14 @@ export const createAlert = async (alertData: AlertFormValues, author: string = "
     title: alertData.title,
     description: alertData.description,
     type: alertData.type,
-    createdAt: now,
     author: author,
     status: 'ativo',
     read: false,
     target: alertData.target,
-    targetDetail: alertData.targetDetail || null,
-    scheduleDate: alertData.scheduleType === 'agendado' ? alertData.scheduleDate : now,
+    target_detail: alertData.targetDetail || null,
+    schedule_date: alertData.scheduleType === 'agendado' ? alertData.scheduleDate : now,
     recurring: alertData.recurring,
-    recurrencePattern: alertData.recurring ? alertData.recurrencePattern : null
+    recurrence_pattern: alertData.recurring ? alertData.recurrencePattern : null
   };
   
   const { data, error } = await supabase
@@ -60,7 +59,7 @@ export const getAlerts = async () => {
   const { data, error } = await supabase
     .from('alerts')
     .select('*')
-    .order('createdAt', { ascending: false });
+    .order('created_at', { ascending: false });
     
   if (error) throw error;
   return data || [];

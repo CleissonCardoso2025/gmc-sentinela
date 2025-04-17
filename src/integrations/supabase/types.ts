@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      alerts: {
+        Row: {
+          author: string
+          created_at: string
+          description: string
+          id: string
+          read: boolean
+          recurrence_pattern: string | null
+          recurring: boolean
+          schedule_date: string | null
+          status: string
+          target: string
+          target_detail: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          author: string
+          created_at?: string
+          description: string
+          id?: string
+          read?: boolean
+          recurrence_pattern?: string | null
+          recurring?: boolean
+          schedule_date?: string | null
+          status: string
+          target: string
+          target_detail?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          author?: string
+          created_at?: string
+          description?: string
+          id?: string
+          read?: boolean
+          recurrence_pattern?: string | null
+          recurring?: boolean
+          schedule_date?: string | null
+          status?: string
+          target?: string
+          target_detail?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       escala_items: {
         Row: {
           agent: string

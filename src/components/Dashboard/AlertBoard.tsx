@@ -28,7 +28,7 @@ export const AlertBoard: React.FC<AlertBoardProps> = ({ maxDisplayedAlerts = 5 }
     setIsLoading(true);
     try {
       const data = await getAlerts();
-      setAlerts(data);
+      setAlerts(data as Alert[]);
     } catch (err: any) {
       console.error("Error fetching alerts:", err);
       setError(err.message || "Failed to load alerts");

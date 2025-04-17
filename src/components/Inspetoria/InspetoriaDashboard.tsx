@@ -210,7 +210,7 @@ const InspetoriaDashboard: React.FC = () => {
                 <Skeleton className="h-20 w-full" />
               </div>
             ) : alerts.length > 0 ? (
-              <AlertBoard maxDisplayedAlerts={5} showViewAll={false} />
+              <AlertBoard maxDisplayedAlerts={5} />
             ) : (
               <EmptyState
                 title="Sem alertas"

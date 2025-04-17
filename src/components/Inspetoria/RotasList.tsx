@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import RotaForm from './RotaForm';
 
 interface Rota {
   id: string;
@@ -126,11 +127,19 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
   const handleEditRota = (rota: Rota) => {
     setSelectedRota(rota);
     setIsEditDialogOpen(true);
-    // In a real implementation, this would navigate to the edit form or open an edit dialog
+  };
+
+  const handleEditSave = () => {
+    setIsEditDialogOpen(false);
+    fetchRotas(); // Refresh the list after edit
     toast({
-      title: "Editar rota",
-      description: `Funcionalidade de edição para "${rota.nome}" será implementada em breve.`,
+      title: "Rota atualizada",
+      description: "A rota foi atualizada com sucesso.",
     });
+  };
+
+  const handleEditCancel = () => {
+    setIsEditDialogOpen(false);
   };
 
   const filteredRotas = rotas.filter(rota => 
@@ -323,6 +332,34 @@ const RotasList: React.FC<RotasListProps> = ({ onCreateNew }) => {
                 <span className="col-span-3">{selectedRota.ultimopatrulhamento || "Nunca patrulhada"}</span>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Editar Rota</DialogTitle>
+            <DialogDescription>
+              Atualize as informações da rota.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRota && (
+            <RotaForm 
+              onSave={handleEditSave}
+              onCancel={handleEditCancel}
+              editingRota={{
+                nome: selectedRota.nome,
+                descricao: selectedRota.descricao || '',
+                bairros: selectedRota.bairros || '',
+                pontoInicial: selectedRota.pontoinicial || '',
+                pontoFinal: selectedRota.pontofinal || '',
+                tempoPrevisto: selectedRota.tempoprevisto || '',
+                prioridade: selectedRota.prioridade || 'Normal',
+              }}
+              rotaId={selectedRota.id}
+            />
           )}
         </DialogContent>
       </Dialog>

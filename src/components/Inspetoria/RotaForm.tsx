@@ -35,9 +35,10 @@ interface RotaFormProps {
   onSave: () => void;
   onCancel: () => void;
   editingRota?: RotaFormValues;
+  rotaId?: string;
 }
 
-const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota }) => {
+const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota, rotaId }) => {
   const { toast } = useToast();
   const form = useForm<RotaFormValues>({
     resolver: zodResolver(formSchema),
@@ -55,7 +56,7 @@ const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota }) =>
   const onSubmit = async (values: RotaFormValues) => {
     try {
       // Adicionar informações de debug
-      console.log('Rota form submitted:', values);
+      console.log('Rota form submitted:', values, 'Editing:', !!rotaId, 'Rota ID:', rotaId);
       
       // Preparar dados para o Supabase
       // Importante: use o nome dos campos exatamente como estão no banco de dados
@@ -67,16 +68,27 @@ const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota }) =>
         pontofinal: values.pontoFinal, // camelCase para snake_case
         tempoprevisto: values.tempoPrevisto, // camelCase para snake_case
         prioridade: values.prioridade,
-        ultimopatrulhamento: null // camelCase para snake_case
       };
       
       console.log('Dados preparados para salvar:', rotaData);
       
-      // Salvar no banco de dados
-      const { data, error } = await supabase
-        .from('rotas')
-        .insert([rotaData])
-        .select();
+      let data, error;
+      
+      if (rotaId) {
+        // Modo de edição - atualizar rota existente
+        ({ data, error } = await supabase
+          .from('rotas')
+          .update(rotaData)
+          .eq('id', rotaId)
+          .select());
+      } else {
+        // Modo de criação - inserir nova rota
+        rotaData.ultimopatrulhamento = null;
+        ({ data, error } = await supabase
+          .from('rotas')
+          .insert([rotaData])
+          .select());
+      }
       
       if (error) {
         console.error('Erro ao salvar rota:', error);
@@ -86,8 +98,8 @@ const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota }) =>
       console.log('Rota salva com sucesso:', data);
       
       toast({
-        title: editingRota ? "Rota atualizada" : "Rota cadastrada",
-        description: `A rota ${values.nome} foi ${editingRota ? 'atualizada' : 'cadastrada'} com sucesso.`,
+        title: rotaId ? "Rota atualizada" : "Rota cadastrada",
+        description: `A rota ${values.nome} foi ${rotaId ? 'atualizada' : 'cadastrada'} com sucesso.`,
       });
       
       onSave();
@@ -240,7 +252,7 @@ const RotaForm: React.FC<RotaFormProps> = ({ onSave, onCancel, editingRota }) =>
 
         <div className="flex justify-end space-x-4 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-          <Button type="submit">Salvar Rota</Button>
+          <Button type="submit">{rotaId ? 'Salvar Alterações' : 'Salvar Rota'}</Button>
         </div>
       </form>
     </Form>

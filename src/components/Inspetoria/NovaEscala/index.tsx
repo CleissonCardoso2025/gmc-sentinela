@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +91,42 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     fetchOptions();
   }, [toast]);
 
+  // Load existing escala data if editing
+  useEffect(() => {
+    if (editingId) {
+      const fetchEscalaData = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('escala_items')
+            .select('*')
+            .eq('id', editingId)
+            .single();
+
+          if (error) throw error;
+          
+          if (data) {
+            // Set form values
+            setSelectedGuarnicaoId(data.guarnicao);
+            setSelectedRotaId(data.rota);
+            setSelectedViaturaId(data.viatura);
+            setSupervisor(data.supervisor);
+            setPeriodoDuration(data.periodo);
+            // Other fields as needed
+          }
+        } catch (error) {
+          console.error("Error fetching escala data:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os dados da escala.",
+            variant: "destructive"
+          });
+        }
+      };
+
+      fetchEscalaData();
+    }
+  }, [editingId, toast]);
+
   // Get selected guarnicao object when ID changes
   useEffect(() => {
     console.log("Selected guarnicao ID changed to:", selectedGuarnicaoId);
@@ -146,9 +181,11 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     console.log("Changing agent shift:", { agentId, date, newShift });
     setScheduleData(prev => 
       prev.map(entry => {
+        const entryDate = new Date(entry.date);
         if (entry.agentId === agentId && 
-            entry.date.getDate() === date.getDate() &&
-            entry.date.getMonth() === date.getMonth()) {
+            entryDate.getDate() === date.getDate() &&
+            entryDate.getMonth() === date.getMonth() &&
+            entryDate.getFullYear() === date.getFullYear()) {
           return { ...entry, shift: newShift };
         }
         return entry;
@@ -156,9 +193,81 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     );
   };
 
+  // Save the escala data
+  const handleSave = async () => {
+    if (!selectedGuarnicao || !selectedViaturaId || !selectedRotaId) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Format data for saving
+      const escalaData = {
+        id: editingId || undefined,
+        guarnicao: selectedGuarnicaoId,
+        supervisor: supervisor,
+        rota: selectedRotaId,
+        viatura: selectedViaturaId,
+        periodo: periodoDuration,
+        agent: selectedGuarnicao.nome || "",
+        role: "Guarnição",
+        schedule: scheduleData.map(entry => ({
+          date: entry.date.toISOString(),
+          agentId: entry.agentId,
+          shift: entry.shift,
+          supervisor: entry.supervisor
+        }))
+      };
+      
+      if (editingId) {
+        // Update existing escala
+        const { error } = await supabase
+          .from('escala_items')
+          .update(escalaData)
+          .eq('id', editingId);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Escala atualizada",
+          description: "A escala foi atualizada com sucesso.",
+        });
+      } else {
+        // Create new escala
+        const { error } = await supabase
+          .from('escala_items')
+          .insert(escalaData);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Escala criada",
+          description: "A escala foi criada com sucesso.",
+        });
+      }
+      
+      onSave();
+    } catch (error) {
+      console.error("Error saving escala:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a escala.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Group schedule data by agent for display
   const getAgentSchedule = () => {
-    if (!selectedGuarnicao) return [];
+    if (!selectedGuarnicao || !selectedGuarnicao.membros) return [];
     
     const result = [];
     for (const membro of selectedGuarnicao.membros) {
@@ -230,8 +339,8 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
 
       <Actions
         onCancel={onCancel}
-        onSave={onSave}
-        isDisabled={!selectedGuarnicao || !selectedViaturaId || !selectedRotaId}
+        onSave={handleSave}
+        isDisabled={!selectedGuarnicao || !selectedViaturaId || !selectedRotaId || isLoading}
       />
     </div>
   );

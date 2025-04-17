@@ -13,6 +13,7 @@ export const generateDaysFromDate = (startDate: Date, durationInDays: number) =>
 
 export const getAgentById = (guarnicoes: any[], id: string) => {
   for (const guarnicao of guarnicoes) {
+    if (!guarnicao.membros) continue;
     const agent = guarnicao.membros.find((m: any) => m.id === id);
     if (agent) return agent;
   }
@@ -31,7 +32,7 @@ export const getShiftColor = (shift: string) => {
 };
 
 export const createEmptySchedule = (selectedGuarnicao: any, startDate: Date, durationInDays: number) => {
-  if (!selectedGuarnicao) return [];
+  if (!selectedGuarnicao || !selectedGuarnicao.membros) return [];
   
   const newSchedule: ScheduleEntry[] = [];
   const days = generateDaysFromDate(startDate, durationInDays);
@@ -56,11 +57,23 @@ export const generateSortedSchedule = (
   startDate: Date,
   durationInDays: number
 ) => {
-  if (!selectedGuarnicao) return scheduleData;
+  console.log("Generating sorted schedule with parameters:", {
+    scheduleDataLength: scheduleData.length,
+    selectedGuarnicao,
+    startDate: startDate.toISOString(),
+    durationInDays
+  });
+
+  if (!selectedGuarnicao || !selectedGuarnicao.membros) {
+    console.log("No selected guarnicao or no members, returning original schedule");
+    return scheduleData;
+  }
 
   const newSchedule = [...scheduleData];
   const days = generateDaysFromDate(startDate, durationInDays);
   const agents = selectedGuarnicao.membros;
+  
+  console.log(`Found ${agents.length} agents to schedule`);
   
   // Reset all to folga first
   newSchedule.forEach(entry => {
@@ -72,19 +85,28 @@ export const generateSortedSchedule = (
     // Each agent starts at a different day (offset by agentIndex)
     const startOffset = agentIndex % 4;
     
+    console.log(`Agent ${agent.nome} (index ${agentIndex}) starts at offset ${startOffset}`);
+    
     for (let i = startOffset; i < durationInDays; i += 4) {
       const day = days[i];
       
+      console.log(`Assigning 24h shift for ${agent.nome} on ${format(day, 'yyyy-MM-dd')}`);
+      
       // Find entries for this agent and day
       newSchedule.forEach(entry => {
+        const entryDate = new Date(entry.date);
+        
         if (entry.agentId === agent.id && 
-            entry.date.getDate() === day.getDate() &&
-            entry.date.getMonth() === day.getMonth()) {
+            entryDate.getDate() === day.getDate() &&
+            entryDate.getMonth() === day.getMonth() &&
+            entryDate.getFullYear() === day.getFullYear()) {
           entry.shift = "24h";
+          console.log(`Successfully assigned shift for ${agent.id} on ${entryDate.toISOString()}`);
         }
       });
     }
   });
   
+  console.log(`Generated schedule with ${newSchedule.length} entries`);
   return newSchedule;
 };

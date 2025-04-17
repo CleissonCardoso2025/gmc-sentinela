@@ -18,6 +18,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecursosSelectionProps } from '../types';
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const RecursosSelection: React.FC<RecursosSelectionProps> = ({
   selectedGuarnicaoId,
@@ -72,21 +74,30 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="guarnicao">Guarnição</Label>
-            <Select 
-              value={selectedGuarnicaoId}
-              onValueChange={setSelectedGuarnicaoId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma guarnição" />
-              </SelectTrigger>
-              <SelectContent>
-                {guarnicoes.map(guarnicao => (
-                  <SelectItem key={guarnicao.id} value={guarnicao.id}>
-                    {guarnicao.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {guarnicoes.length > 0 ? (
+              <Select 
+                value={selectedGuarnicaoId}
+                onValueChange={setSelectedGuarnicaoId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma guarnição" />
+                </SelectTrigger>
+                <SelectContent>
+                  {guarnicoes.map(guarnicao => (
+                    <SelectItem key={guarnicao.id} value={guarnicao.id}>
+                      {guarnicao.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Nenhuma guarnição encontrada. Cadastre guarnições primeiro.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -104,40 +115,58 @@ const RecursosSelection: React.FC<RecursosSelectionProps> = ({
 
           <div className="grid gap-2">
             <Label htmlFor="viatura">Viatura</Label>
-            <Select 
-              value={selectedViaturaId}
-              onValueChange={setSelectedViaturaId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma viatura" />
-              </SelectTrigger>
-              <SelectContent>
-                {viaturas.map(viatura => (
-                  <SelectItem key={viatura.id} value={viatura.id}>
-                    {viatura.codigo} ({viatura.modelo})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {viaturas.length > 0 ? (
+              <Select 
+                value={selectedViaturaId}
+                onValueChange={setSelectedViaturaId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma viatura" />
+                </SelectTrigger>
+                <SelectContent>
+                  {viaturas.map(viatura => (
+                    <SelectItem key={viatura.id} value={viatura.id}>
+                      {viatura.codigo} ({viatura.modelo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Nenhuma viatura encontrada. Cadastre viaturas primeiro.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="rota">Rota de Patrulhamento</Label>
-            <Select 
-              value={selectedRotaId}
-              onValueChange={setSelectedRotaId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma rota" />
-              </SelectTrigger>
-              <SelectContent>
-                {rotas.map(rota => (
-                  <SelectItem key={rota.id} value={rota.id}>
-                    {rota.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {rotas.length > 0 ? (
+              <Select 
+                value={selectedRotaId}
+                onValueChange={setSelectedRotaId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma rota" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rotas.map(rota => (
+                    <SelectItem key={rota.id} value={rota.id}>
+                      {rota.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Nenhuma rota encontrada. Cadastre rotas primeiro.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </div>
       </CardContent>

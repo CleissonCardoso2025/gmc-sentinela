@@ -19,8 +19,10 @@ import {
   ArrowLeftRight, 
   Calendar, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  AlertCircle
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const EscalaPreview: React.FC<EscalaPreviewProps> = ({
   selectedGuarnicao,
@@ -38,9 +40,7 @@ const EscalaPreview: React.FC<EscalaPreviewProps> = ({
   const pageSize = 7;
   
   // Calculate total number of days in the schedule
-  const totalDays = scheduleData.length > 0 
-    ? new Set(scheduleData.map(entry => entry.date.toDateString())).size 
-    : 0;
+  const totalDays = daysToDisplay.length;
   
   // Calculate total number of pages
   const totalPages = Math.ceil(totalDays / pageSize);
@@ -68,6 +68,17 @@ const EscalaPreview: React.FC<EscalaPreviewProps> = ({
   };
 
   const agentSchedule = getAgentSchedule();
+  
+  if (agentSchedule.length === 0) {
+    return (
+      <Alert className="mt-8">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Não há agentes na guarnição selecionada. Selecione uma guarnição com agentes para visualizar a escala.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="mt-8 animate-fade-in">
@@ -130,47 +141,49 @@ const EscalaPreview: React.FC<EscalaPreviewProps> = ({
               <TableRow key={agent.agentId} className="hover:bg-muted/30 transition-colors">
                 <TableCell className="font-medium">{agent.agentName}</TableCell>
                 <TableCell>{agent.role}</TableCell>
-                {agent.schedule
-                  .filter(day => 
-                    showFullPeriod || 
-                    currentDaysToDisplay.some(d => 
-                      d.getDate() === day.date.getDate() && 
-                      d.getMonth() === day.date.getMonth() && 
-                      d.getFullYear() === day.date.getFullYear()
-                    )
-                  )
-                  .map((day: any, index: number) => {
-                    const isSelected = selectedShift && 
-                                      selectedShift.agentId === agent.agentId && 
-                                      selectedShift.date.toDateString() === day.date.toDateString();
-                    
-                    return (
-                      <TableCell key={index} className="text-center">
+                {currentDaysToDisplay.map((day, dayIndex) => {
+                  // Find schedule entry for this agent and day
+                  const entry = agent.schedule.find(entry => 
+                    entry.date.getDate() === day.getDate() &&
+                    entry.date.getMonth() === day.getMonth() &&
+                    entry.date.getFullYear() === day.getFullYear()
+                  );
+                  
+                  const isSelected = selectedShift && 
+                                   selectedShift.agentId === agent.agentId && 
+                                   selectedShift.date.toDateString() === day.toDateString();
+                  
+                  return (
+                    <TableCell key={dayIndex} className="text-center">
+                      {entry ? (
                         <div className="flex flex-col items-center gap-1">
                           <Badge 
-                            className={`cursor-pointer hover:opacity-80 transition-opacity ${getShiftColor(day.shift)} ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                            className={`cursor-pointer hover:opacity-80 transition-opacity ${getShiftColor(entry.shift)} ${isSelected ? 'ring-2 ring-primary' : ''}`}
                             onClick={() => changeAgentShift(
                               agent.agentId, 
-                              day.date, 
-                              day.shift === "24h" ? "Folga" : "24h"
+                              day, 
+                              entry.shift === "24h" ? "Folga" : "24h"
                             )}
                           >
-                            {day.shift}
+                            {entry.shift}
                           </Badge>
                           
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             className="h-6 w-6 rounded-full"
-                            onClick={() => handleSwapShift(agent.agentId, day.date)}
+                            onClick={() => handleSwapShift(agent.agentId, day)}
                             title="Selecionar para troca de plantão"
                           >
                             <ArrowLeftRight className="h-3 w-3" />
                           </Button>
                         </div>
-                      </TableCell>
-                    );
-                  })}
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))}
           </TableBody>

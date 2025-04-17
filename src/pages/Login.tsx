@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import InstallBanner from "@/components/pwa/InstallBanner";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -176,6 +178,9 @@ const Login = () => {
       <div className="mt-6 text-center text-gray-500 text-sm">
         © {new Date().getFullYear()} Sentinela. Todos os direitos reservados.
       </div>
+
+      {/* PWA Install Banner */}
+      <InstallBanner />
     </LoginBackground>
   );
 };

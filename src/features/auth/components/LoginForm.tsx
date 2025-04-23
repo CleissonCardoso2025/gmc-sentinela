@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -19,15 +18,13 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="username"
-            render={({ field, fieldState }) => (
+            render={() => (
               <FormItem>
                 <FormControl>
                   <UsernameField 
-                    value={field.value || ''} 
-                    onChange={field.onChange} 
-                    onBlur={field.onBlur} 
-                    error={fieldState.error?.message}
-                    disabled={isLoading} 
+                    control={form.control}
+                    name="username"
+                    disabled={isLoading}
                   />
                 </FormControl>
               </FormItem>

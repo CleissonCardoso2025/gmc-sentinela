@@ -19,12 +19,12 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="username"
-            render={({ field }) => (
+            render={() => (
               <FormItem>
                 <FormControl>
                   <UsernameField 
-                    control={form.control}
                     name="username"
+                    control={form.control}
                     disabled={isLoading}
                   />
                 </FormControl>

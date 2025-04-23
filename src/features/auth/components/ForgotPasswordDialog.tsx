@@ -44,23 +44,40 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
     setIsLoading(true);
     
     try {
-      // Call Supabase to send password reset email
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Obter a URL completa para garantir o redirecionamento correto
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/reset-password`;
+      
+      console.log("Enviando solicitação de redefinição para:", email.trim());
+      console.log("URL de redirecionamento:", redirectTo);
+      
+      // Call Supabase to send password reset email with explicit redirectTo
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: redirectTo,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro detalhado da API:", error);
+        throw error;
+      }
+
+      console.log("Resposta da API de redefinição:", data);
       
       // Show success
+      toast({
+        title: "Email enviado com sucesso",
+        description: "Verifique sua caixa de entrada para redefinir sua senha",
+      });
+      
       setIsSubmitted(true);
       
     } catch (error: any) {
-      console.error("Error requesting password reset:", error);
+      console.error("Erro ao solicitar recuperação de senha:", error);
       
       // Show error message to user
       toast({
         title: "Erro ao solicitar recuperação de senha",
-        description: "Verifique seu email e tente novamente.",
+        description: error.message || "Verifique seu email e tente novamente.",
         variant: "destructive",
       });
     } finally {

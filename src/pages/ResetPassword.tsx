@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, AlertTriangle } from "lucide-react";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -19,22 +19,41 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{password?: string; confirm?: string}>({});
   const [isComplete, setIsComplete] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Extract the token and hash from the URL
   useEffect(() => {
-    // Supabase will handle the hash parsing, we don't need to extract it manually
+    // Log the current URL to help debugging
+    console.log("URL atual:", window.location.href);
+    
+    // Check if we have the necessary recovery token in the URL
+    const hash = window.location.hash;
+    if (!hash || !hash.includes("type=recovery")) {
+      console.warn("URL não contém parâmetros de recuperação esperados");
+      setErrorMessage("Link de recuperação inválido ou expirado. Por favor, solicite um novo link.");
+      return;
+    }
+
+    // Supabase will handle the hash parsing from window.location.hash
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      // If there's already a session, redirect to dashboard
-      if (session && !error) {
-        const userProfile = session.user.user_metadata?.role || "Agente";
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-          navigate("/index", { replace: true });
-        } else {
-          navigate("/dashboard", { replace: true });
+        console.log("Verificação de sessão:", session ? "Sessão ativa" : "Sem sessão");
+        
+        // If there's already a session, redirect to dashboard
+        if (session && !error) {
+          console.log("Usuário já autenticado, redirecionando...");
+          const userProfile = session.user.user_metadata?.role || "Agente";
+          
+          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+            navigate("/index", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
         }
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
       }
     };
     
@@ -79,11 +98,17 @@ const ResetPassword = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.updateUser({ 
+      console.log("Tentando atualizar senha...");
+      const { data, error } = await supabase.auth.updateUser({ 
         password: password 
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao redefinir senha:", error);
+        throw error;
+      }
+      
+      console.log("Senha atualizada com sucesso:", data);
       
       // Show success
       setIsComplete(true);
@@ -99,13 +124,24 @@ const ResetPassword = () => {
       }, 3000);
       
     } catch (error: any) {
-      console.error("Error resetting password:", error);
+      console.error("Erro detalhado ao redefinir senha:", error);
+      
+      let errorMsg = "Ocorreu um erro ao redefinir sua senha. Tente novamente.";
+      
+      // Mensagens de erro mais específicas
+      if (error.message && error.message.includes("JWT")) {
+        errorMsg = "O link de redefinição expirou. Por favor, solicite um novo.";
+      } else if (error.message && error.message.includes("User not found")) {
+        errorMsg = "Usuário não encontrado. Verifique seu email.";
+      }
       
       toast({
         title: "Erro ao redefinir senha",
-        description: error.message || "Ocorreu um erro. Tente novamente.",
+        description: errorMsg,
         variant: "destructive",
       });
+      
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +162,23 @@ const ResetPassword = () => {
       <div className="bg-black/40 backdrop-blur-md p-8 rounded-xl border border-gray-800 shadow-lg">
         <h1 className="text-2xl font-bold text-white mb-6 text-center">Redefinir Senha</h1>
         
-        {isComplete ? (
+        {errorMessage ? (
+          <div className="space-y-4">
+            <div className="bg-red-900/20 border border-red-800 rounded-md p-4 text-red-300">
+              <p className="flex items-start">
+                <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </p>
+            </div>
+            <Button 
+              type="button" 
+              onClick={() => navigate("/login", { replace: true })}
+              className="w-full"
+            >
+              Voltar para Login
+            </Button>
+          </div>
+        ) : isComplete ? (
           <div className="space-y-4">
             <div className="bg-green-900/20 border border-green-800 rounded-md p-4 text-green-300">
               <p>

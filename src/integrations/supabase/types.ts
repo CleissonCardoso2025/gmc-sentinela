@@ -14,7 +14,9 @@ export type Database = {
           author: string
           created_at: string
           description: string
+          destinatario_user_id: string | null
           id: string
+          para_todos_role_1: boolean | null
           read: boolean
           recurrence_pattern: string | null
           recurring: boolean
@@ -29,7 +31,9 @@ export type Database = {
           author: string
           created_at?: string
           description: string
+          destinatario_user_id?: string | null
           id?: string
+          para_todos_role_1?: boolean | null
           read?: boolean
           recurrence_pattern?: string | null
           recurring?: boolean
@@ -44,7 +48,9 @@ export type Database = {
           author?: string
           created_at?: string
           description?: string
+          destinatario_user_id?: string | null
           id?: string
+          para_todos_role_1?: boolean | null
           read?: boolean
           recurrence_pattern?: string | null
           recurring?: boolean
@@ -355,6 +361,7 @@ export type Database = {
           matricula: string | null
           nome: string
           perfil: string
+          role: string | null
           status: boolean | null
           updated_at: string | null
         }
@@ -366,6 +373,7 @@ export type Database = {
           matricula?: string | null
           nome: string
           perfil: string
+          role?: string | null
           status?: boolean | null
           updated_at?: string | null
         }
@@ -377,6 +385,7 @@ export type Database = {
           matricula?: string | null
           nome?: string
           perfil?: string
+          role?: string | null
           status?: boolean | null
           updated_at?: string | null
         }
@@ -500,20 +509,22 @@ export type Database = {
       get_all_user_roles: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
+          user_id: string
           role: string
         }[]
       }
       get_latest_vehicle_locations: {
         Args: Record<PropertyKey, never>
         Returns: {
-          vehicle_id: number
+          user_id: string
           latitude: number
           longitude: number
           recorded_at: string
-          location_name: string
         }[]
+      }
+      set_user_role: {
+        Args: { uid: string; new_role: string }
+        Returns: undefined
       }
     }
     Enums: {

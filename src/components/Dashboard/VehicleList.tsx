@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { Vehicle } from '@/hooks/use-vehicle-locations';
+import { VehicleData } from '@/hooks/use-vehicle-locations';
 import { formatDateBR } from '@/utils/maps-utils';
 
 interface VehicleListProps {
-  vehicles: Vehicle[];
+  vehicles: VehicleData[];
 }
 
 const VehicleList: React.FC<VehicleListProps> = ({ vehicles }) => {

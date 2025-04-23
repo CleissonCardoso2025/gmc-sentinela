@@ -4,12 +4,33 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Define the interface for the vehicle data coming from the database
+interface DatabaseVehicle {
+  id: number;
+  placa: string;
+  marca: string;
+  modelo: string;
+  ano?: string;
+  tipo?: string;
+  status?: string;
+  observacoes?: string;
+  quilometragem?: number;
+  ultimamanutencao?: string;
+  proximamanutencao?: string;
+  user_id?: string;
+}
+
 // Define the interface for the vehicle location data
 export interface VehicleData {
   id: number;
   plate: string;
   status: string;
   type: string;
+  marca?: string;
+  modelo?: string;
+  placa: string;
+  condutor?: string;
+  lastUpdate?: string;
   marker_color: string;
   last_location?: {
     latitude: number;
@@ -49,7 +70,20 @@ export const useVehicleLocations = () => {
         .select("*")
         .order("id");
       
-      return { data, error } as VehicleQueryResponse;
+      // Map database vehicles to the expected VehicleData format
+      const mappedData: VehicleData[] = (data || []).map((vehicle: DatabaseVehicle) => ({
+        id: vehicle.id,
+        plate: vehicle.placa,
+        placa: vehicle.placa,
+        status: vehicle.status || "Desconhecido",
+        type: vehicle.tipo || "Padrão",
+        marca: vehicle.marca,
+        modelo: vehicle.modelo,
+        condutor: "Não designado",
+        marker_color: getMarkerColor(vehicle.status || ""),
+      }));
+      
+      return { data: mappedData, error } as VehicleQueryResponse;
     },
   });
 
@@ -93,6 +127,7 @@ export const useVehicleLocations = () => {
         if (location) {
           return {
             ...vehicle,
+            lastUpdate: location.recorded_at,
             last_location: {
               latitude: location.latitude,
               longitude: location.longitude,
@@ -114,6 +149,23 @@ export const useVehicleLocations = () => {
       setIsLoading(false);
     }
   }, [vehicleData, locationData, vehiclesLoading, locationsLoading]);
+
+  // Helper function to determine marker color based on vehicle status
+  function getMarkerColor(status: string): string {
+    switch (status.toLowerCase()) {
+      case 'em serviço':
+      case 'ativo':
+      case 'disponível':
+        return "#22c55e"; // Green
+      case 'manutenção':
+        return "#eab308"; // Yellow
+      case 'indisponível':
+      case 'baixada':
+        return "#ef4444"; // Red
+      default:
+        return "#94a3b8"; // Gray
+    }
+  }
 
   return {
     vehicles,

@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { Car, CheckCircle, AlertCircle, Clock, Wrench, Eye } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
-import { useVehicleLocations } from '@/hooks/use-vehicle-locations';
+import { useVehicleLocations, VehicleData } from '@/hooks/use-vehicle-locations';
 import EmptyState from './EmptyState';
 
 interface VehicleTableProps {
-  vehicles?: Array<any>;
+  vehicles?: VehicleData[];
   maintenances?: Array<any>;
 }
 

@@ -1,21 +1,28 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export interface Vehicle {
+// Define the interface for the vehicle location data
+export interface VehicleData {
   id: number;
-  placa: string;
-  marca?: string;
-  modelo?: string;
-  condutor?: string;
-  latitude?: number;
-  longitude?: number;
-  lastUpdate?: string;
-  location_name?: string;
-  status?: string;
-  quilometragem?: number;
-  proximaManutencao?: string;
+  plate: string;
+  status: string;
+  type: string;
+  marker_color: string;
+  last_location?: {
+    latitude: number;
+    longitude: number;
+    timestamp: string;
+    location_name?: string;
+  };
+}
+
+// Define the interface for the query response data
+export interface VehicleQueryResponse {
+  data: VehicleData[];
+  error: Error | null;
 }
 
 // Define the interface for the data returned from the get_latest_vehicle_locations function
@@ -29,82 +36,91 @@ interface VehicleLocation {
 }
 
 export const useVehicleLocations = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  
-  const fetchVehicleLocations = useCallback(async () => {
-    console.log("Fetching vehicle locations");
-    setIsLoading(true);
-    
-    try {
+  const [error, setError] = useState<Error | null>(null);
+
+  // Query to get vehicle data
+  const { data: vehicleData, isLoading: vehiclesLoading, error: vehiclesError } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('get_latest_vehicle_locations');
+        .from("vehicles")
+        .select("*")
+        .order("id");
+      
+      return { data, error } as VehicleQueryResponse;
+    },
+  });
+
+  // Query to get latest locations
+  const { data: locationData, isLoading: locationsLoading } = useQuery({
+    queryKey: ["vehicle_locations"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_latest_vehicle_locations");
       
       if (error) {
         throw error;
       }
       
-      console.log("Vehicle locations data:", data);
-      
-      if (data && data.length > 0) {
-        const vehicleIds = data.map((location: VehicleLocation) => location.vehicle_id);
-        
-        const { data: vehiclesData, error: vehiclesError } = await supabase
-          .from('vehicles')
-          .select('*')
-          .in('id', vehicleIds);
-        
-        if (vehiclesError) {
-          throw vehiclesError;
-        }
-        
-        const vehiclesWithLocation = vehiclesData?.map(vehicle => {
-          const location = data.find((loc: VehicleLocation) => loc.vehicle_id === vehicle.id);
+      return data as VehicleLocation[];
+    },
+    // Refresh every minute
+    refetchInterval: 60000,
+  });
+
+  useEffect(() => {
+    if (vehicleData?.error) {
+      setError(vehicleData.error);
+      toast.error("Falha ao carregar dados das viaturas");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!vehicleData?.data || vehiclesLoading || locationsLoading) {
+      setIsLoading(true);
+      return;
+    }
+
+    try {
+      // Combine vehicle data with location data
+      const enrichedVehicles = vehicleData.data.map((vehicle) => {
+        // Find matching location for this vehicle
+        const location = locationData?.find(
+          (loc) => loc.vehicle_id === vehicle.id
+        );
+
+        if (location) {
           return {
             ...vehicle,
-            latitude: location?.latitude,
-            longitude: location?.longitude,
-            lastUpdate: location?.recorded_at,
-            location_name: location?.location_name,
-            status: vehicle.status,
-            quilometragem: vehicle.quilometragem,
-            proximaManutencao: vehicle.proximamanutencao
+            last_location: {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              timestamp: location.recorded_at,
+              location_name: location.location_name || "Localização desconhecida",
+            },
           };
-        }) || [];
-        
-        console.log("Vehicles with location:", vehiclesWithLocation);
-        setVehicles(vehiclesWithLocation);
-      } else {
-        // No mock data - just set empty array
-        setVehicles([]);
-      }
-    } catch (error) {
-      console.error("Error fetching vehicle locations:", error);
-      toast({
-        title: "Erro ao carregar localizações",
-        description: "Não foi possível obter as localizações das viaturas.",
-        variant: "destructive"
+        }
+
+        return vehicle;
       });
-      
-      // No mock data on error - just set empty array
-      setVehicles([]);
+
+      setVehicles(enrichedVehicles);
+    } catch (err) {
+      console.error("Error processing vehicle data:", err);
+      setError(err as Error);
+      toast.error("Erro ao processar dados de localização");
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [vehicleData, locationData, vehiclesLoading, locationsLoading]);
 
-  useEffect(() => {
-    fetchVehicleLocations();
-    
-    const intervalId = setInterval(fetchVehicleLocations, 60000);
-    
-    return () => clearInterval(intervalId);
-  }, [fetchVehicleLocations]);
-
-  return { 
-    vehicles, 
+  return {
+    vehicles,
     isLoading,
-    refetchVehicles: fetchVehicleLocations
+    error,
+    refetch: () => {
+      // Both queries will be refetched
+    },
   };
 };

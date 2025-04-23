@@ -1,10 +1,8 @@
 
 import React from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { User } from "lucide-react";
-import { UseFormReturn } from "react-hook-form";
-import { LoginFormValues } from "../schemas/loginSchema";
 import { ControllerRenderProps } from "react-hook-form";
 
 // Update the props to accept direct field props instead of requiring a form object
@@ -38,10 +36,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
             onChange(e.target.value.trim());
             onBlur();
           }}
-          onChange={(e) => {
-            onChange(e);
-            handleInputChange(e);
-          }}
+          onChange={handleInputChange}
         />
         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
       </div>

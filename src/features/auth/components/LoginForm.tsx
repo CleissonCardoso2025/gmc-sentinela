@@ -15,14 +15,14 @@ export const LoginForm = () => {
   return (
     <>
       <Form {...form}>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
             name="username"
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <UsernameField {...field} />
+                  <UsernameField {...field} disabled={isLoading} />
                 </FormControl>
               </FormItem>
             )}
@@ -38,6 +38,7 @@ export const LoginForm = () => {
                     {...field}
                     showPassword={showPassword}
                     toggleVisibility={togglePasswordVisibility}
+                    disabled={isLoading}
                   />
                 </FormControl>
               </FormItem>

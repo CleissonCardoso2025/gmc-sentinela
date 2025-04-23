@@ -16,6 +16,14 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   control,
   disabled,
 }) => {
+  // Validate required props
+  if (!control) {
+    throw new Error("UsernameField: 'control' prop is required");
+  }
+  if (!name) {
+    throw new Error("UsernameField: 'name' prop is required");
+  }
+
   const {
     field,
     fieldState: { error },

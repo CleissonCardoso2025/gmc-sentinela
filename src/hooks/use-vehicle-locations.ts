@@ -18,6 +18,16 @@ export interface Vehicle {
   proximaManutencao?: string;
 }
 
+// Define the interface for the data returned from the get_latest_vehicle_locations function
+interface VehicleLocation {
+  user_id: string;
+  vehicle_id: number; // Add missing property
+  latitude: number;
+  longitude: number;
+  recorded_at: string;
+  location_name?: string; // Add missing property
+}
+
 export const useVehicleLocations = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +48,7 @@ export const useVehicleLocations = () => {
       console.log("Vehicle locations data:", data);
       
       if (data && data.length > 0) {
-        const vehicleIds = data.map(location => location.vehicle_id);
+        const vehicleIds = data.map((location: VehicleLocation) => location.vehicle_id);
         
         const { data: vehiclesData, error: vehiclesError } = await supabase
           .from('vehicles')
@@ -50,7 +60,7 @@ export const useVehicleLocations = () => {
         }
         
         const vehiclesWithLocation = vehiclesData?.map(vehicle => {
-          const location = data.find(loc => loc.vehicle_id === vehicle.id);
+          const location = data.find((loc: VehicleLocation) => loc.vehicle_id === vehicle.id);
           return {
             ...vehicle,
             latitude: location?.latitude,

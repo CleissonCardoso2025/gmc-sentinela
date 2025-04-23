@@ -8,14 +8,14 @@ import { fetchPageAccess, savePageAccessSettings, getAllRoles } from '@/services
 const getDefaultPageAccessSettings = (): PageAccess[] => {
   // Default settings if nothing is stored - starting with empty allowedProfiles
   return [
-    { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: [] },
-    { id: 'viaturas', name: 'Viaturas', path: '/viaturas', allowedProfiles: [] },
-    { id: 'inspetoria', name: 'Inspetoria', path: '/inspetoria', allowedProfiles: [] },
-    { id: 'ocorrencias', name: 'Ocorrências', path: '/ocorrencias', allowedProfiles: [] },
-    { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: [] },
-    { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: [] },
-    { id: 'perfil', name: 'Perfil', path: '/perfil', allowedProfiles: [] },
-    { id: 'index', name: 'Centro de Comando', path: '/index', allowedProfiles: [] },
+    { id: 'dashboard', name: 'Dashboard', path: '/dashboard', allowedProfiles: ['Inspetor'] },
+    { id: 'viaturas', name: 'Viaturas', path: '/viaturas', allowedProfiles: ['Inspetor'] },
+    { id: 'inspetoria', name: 'Inspetoria', path: '/inspetoria', allowedProfiles: ['Inspetor'] },
+    { id: 'ocorrencias', name: 'Ocorrências', path: '/ocorrencias', allowedProfiles: ['Inspetor'] },
+    { id: 'corregedoria', name: 'Corregedoria', path: '/corregedoria', allowedProfiles: ['Inspetor'] },
+    { id: 'configuracoes', name: 'Configurações', path: '/configuracoes', allowedProfiles: ['Inspetor'] },
+    { id: 'perfil', name: 'Perfil', path: '/perfil', allowedProfiles: ['Inspetor'] },
+    { id: 'index', name: 'Centro de Comando', path: '/index', allowedProfiles: ['Inspetor', 'Subinspetor'] },
   ];
 };
 
@@ -161,7 +161,7 @@ export const useAuthorization = (userProfile: string) => {
       return true;
     }
     
-    // If user's effective profile is Inspetor, allow access to all pages
+    // If user's effective profile is Inspetor, allow access to all pages - including user management
     if (effectiveProfile === 'Inspetor') {
       return true;
     }
@@ -212,6 +212,26 @@ export const useAuthorization = (userProfile: string) => {
     );
   };
   
+  // Check if a user has specific permissions for user management
+  const hasUserManagementPermission = (permission: 'view' | 'create' | 'update' | 'delete'): boolean => {
+    // Inspetor always has full permissions
+    if (effectiveProfile === 'Inspetor') {
+      return true;
+    }
+    
+    // Special users with Inspetor privileges
+    if (currentUserId && SPECIAL_USERS.find(u => u.userId === currentUserId)?.specificProfile === 'Inspetor') {
+      return true;
+    }
+    
+    if (currentUserEmail && EMAIL_USERS.find(u => u.email === currentUserEmail)?.specificProfile === 'Inspetor') {
+      return true;
+    }
+    
+    // For other profiles, not allowed by default
+    return false;
+  };
+  
   // Save updated page access settings
   const updatePageAccess = async (pages: PageAccess[]): Promise<boolean> => {
     try {
@@ -248,6 +268,7 @@ export const useAuthorization = (userProfile: string) => {
     updatePageAccess,
     pageAccessSettings,
     isLoading,
-    availableRoles
+    availableRoles,
+    hasUserManagementPermission
   };
 };

@@ -37,12 +37,13 @@ const UserManagement = () => {
   const userProfile = localStorage.getItem('userProfile') || '';
   const userEmail = localStorage.getItem('userEmail') || '';
   
-  // Check if the user has Inspetor permissions (either by profile or by special access)
-  const hasAccess = userProfile === 'Inspetor' || 
-                    userEmail === 'gcmribeiradopombal@hotmail.com' ||
-                    localStorage.getItem('currentUserId') === 'e632890d-208e-489b-93a3-eae0dd0a9a08';
+  // Use the authorization hook to check permissions
+  const { hasUserManagementPermission } = useAuthorization(userProfile);
+  
+  // Check if the user has permission to view and manage users
+  const canViewUsers = hasUserManagementPermission('view');
 
-  if (!hasAccess) {
+  if (!canViewUsers) {
     return (
       <div className="p-4 bg-yellow-50 text-yellow-800 rounded-md">
         <h3 className="font-semibold text-lg">Acesso Restrito</h3>

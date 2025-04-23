@@ -8,6 +8,7 @@ interface UsernameFieldProps {
   value: string;
   onChange: (value: string) => void;
   onBlur: () => void;
+  error?: string;
   disabled?: boolean;
 }
 
@@ -15,6 +16,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   value, 
   onChange, 
   onBlur, 
+  error,
   disabled 
 }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,14 +34,12 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
           className="pl-10 bg-gray-900/60 border-gray-700 text-white" 
           placeholder="Digite seu usuário"
           disabled={disabled}
-          onBlur={() => {
-            onBlur();
-          }}
+          onBlur={onBlur}
           onChange={handleInputChange}
         />
         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
       </div>
-      <FormMessage className="text-red-400" />
+      {error && <FormMessage className="text-red-400">{error}</FormMessage>}
     </div>
   );
 };

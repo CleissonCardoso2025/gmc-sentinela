@@ -21,11 +21,11 @@ export interface Vehicle {
 // Define the interface for the data returned from the get_latest_vehicle_locations function
 interface VehicleLocation {
   user_id: string;
-  vehicle_id: number; // Add missing property
+  vehicle_id: number; 
   latitude: number;
   longitude: number;
   recorded_at: string;
-  location_name?: string; // Add missing property
+  location_name?: string;
 }
 
 export const useVehicleLocations = () => {

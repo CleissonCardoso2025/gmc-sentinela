@@ -8,6 +8,7 @@ interface PasswordFieldProps {
   value: string;
   onChange: (value: string) => void;
   onBlur: () => void;
+  error?: string;
   showPassword: boolean;
   toggleVisibility: () => void;
   disabled?: boolean;
@@ -17,6 +18,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   value, 
   onChange, 
   onBlur, 
+  error,
   showPassword, 
   toggleVisibility,
   disabled 
@@ -51,7 +53,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
           }
         </button>
       </div>
-      <FormMessage className="text-red-400" />
+      {error && <FormMessage className="text-red-400">{error}</FormMessage>}
     </div>
   );
 };

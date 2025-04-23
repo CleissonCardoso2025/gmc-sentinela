@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="username"
-            render={() => (
+            render={({ field }) => (
               <FormItem>
                 <FormControl>
                   <UsernameField 

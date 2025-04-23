@@ -90,7 +90,7 @@ export function useLoginForm() {
     };
   }, [navigate, location]);
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const handleSubmit = async (data: LoginFormValues) => {
     if (isCheckingSession) return; // Don't allow login attempts while checking session
     
     setIsLoading(true);
@@ -188,6 +188,6 @@ export function useLoginForm() {
     isCheckingSession,
     showPassword,
     togglePasswordVisibility,
-    onSubmit: form.handleSubmit(onSubmit),
+    onSubmit: handleSubmit,
   };
 }

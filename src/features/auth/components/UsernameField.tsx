@@ -3,10 +3,11 @@ import React from "react";
 import { FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { User } from "lucide-react";
-import { ControllerRenderProps } from "react-hook-form";
 
-// Update the props to accept direct field props instead of requiring a form object
-interface UsernameFieldProps extends Omit<ControllerRenderProps, 'ref'> {
+interface UsernameFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
   disabled?: boolean;
 }
 
@@ -18,8 +19,8 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
 }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Limpar espaços e caracteres especiais no final do email durante a digitação
-    const value = e.target.value.trim();
-    onChange(value);
+    const newValue = e.target.value.trim();
+    onChange(newValue);
   };
 
   return (
@@ -27,13 +28,11 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
       <FormLabel className="text-gray-300">Usuário</FormLabel>
       <div className="relative">
         <Input 
-          value={value} 
+          value={value || ''} 
           className="pl-10 bg-gray-900/60 border-gray-700 text-white" 
           placeholder="Digite seu usuário"
           disabled={disabled}
-          onBlur={(e) => {
-            // Garantir que o valor está limpo ao perder o foco
-            onChange(e.target.value.trim());
+          onBlur={() => {
             onBlur();
           }}
           onChange={handleInputChange}

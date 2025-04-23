@@ -3,9 +3,11 @@ import React from "react";
 import { FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Lock } from "lucide-react";
-import { ControllerRenderProps } from "react-hook-form";
 
-interface PasswordFieldProps extends Omit<ControllerRenderProps, 'ref'> {
+interface PasswordFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
   showPassword: boolean;
   toggleVisibility: () => void;
   disabled?: boolean;
@@ -19,13 +21,17 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   toggleVisibility,
   disabled 
 }) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+  };
+  
   return (
     <div className="space-y-2">
       <FormLabel className="text-gray-300">Senha</FormLabel>
       <div className="relative">
         <Input 
-          value={value}
-          onChange={onChange}
+          value={value || ''}
+          onChange={handleChange}
           onBlur={onBlur}
           type={showPassword ? "text" : "password"} 
           className="pl-10 pr-10 bg-gray-900/60 border-gray-700 text-white" 

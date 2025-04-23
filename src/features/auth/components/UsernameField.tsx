@@ -18,10 +18,13 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
 }) => {
   // Validate required props
   if (!control) {
-    throw new Error("UsernameField: 'control' prop is required");
+    console.error("UsernameField: 'control' prop is required");
+    return <div className="text-red-500">Error: Failed to render username field (missing control)</div>;
   }
+  
   if (!name) {
-    throw new Error("UsernameField: 'name' prop is required");
+    console.error("UsernameField: 'name' prop is required");
+    return <div className="text-red-500">Error: Failed to render username field (missing name)</div>;
   }
 
   const {

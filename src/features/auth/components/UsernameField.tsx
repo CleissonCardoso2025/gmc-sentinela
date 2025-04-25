@@ -11,15 +11,25 @@ interface UsernameFieldProps {
   disabled?: boolean;
 }
 
-export const UsernameField: React.FC<UsernameFieldProps> = ({
-  name,
-  control,
-  disabled,
-}) => {
-  if (!control) {
-    console.error("UsernameField: 'control' prop is required");
-    return <div className="text-red-500">Error: Campo de usuário não pôde ser renderizado</div>;
+export const UsernameField: React.FC<UsernameFieldProps> = (props) => {
+  // Validate control before destructuring
+  if (!props.control) {
+    const errorMessage = `UsernameField: 'control' prop is required for field "${props.name || 'unknown'}"`;
+    console.error(errorMessage);
+    return (
+      <div className="space-y-2">
+        <FormLabel className="text-gray-300">Usuário</FormLabel>
+        <div className="relative">
+          <div className="text-red-500 p-2 border border-red-500 rounded bg-red-500/10">
+            Error: Campo de usuário não pôde ser renderizado
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // Safe to destructure after validation
+  const { name, control, disabled } = props;
 
   const {
     field,

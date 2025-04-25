@@ -27,28 +27,33 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
     return <div className="text-red-500">Error: Failed to render username field (missing name)</div>;
   }
 
-  const {
-    field,
-    fieldState: { error },
-  } = useController({
-    name,
-    control,
-    defaultValue: "",
-  });
+  try {
+    const {
+      field,
+      fieldState: { error },
+    } = useController({
+      name,
+      control,
+      defaultValue: "",
+    });
 
-  return (
-    <div className="space-y-2">
-      <FormLabel className="text-gray-300">Usuário</FormLabel>
-      <div className="relative">
-        <Input
-          {...field}
-          className="pl-10 bg-gray-900/60 border-gray-700 text-white"
-          placeholder="Digite seu usuário"
-          disabled={disabled}
-        />
-        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+    return (
+      <div className="space-y-2">
+        <FormLabel className="text-gray-300">Usuário</FormLabel>
+        <div className="relative">
+          <Input
+            {...field}
+            className="pl-10 bg-gray-900/60 border-gray-700 text-white"
+            placeholder="Digite seu usuário"
+            disabled={disabled}
+          />
+          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        </div>
+        {error && <FormMessage className="text-red-400">{error.message}</FormMessage>}
       </div>
-      {error && <FormMessage className="text-red-400">{error.message}</FormMessage>}
-    </div>
-  );
+    );
+  } catch (e) {
+    console.error("Error in UsernameField:", e);
+    return <div className="text-red-500">Error: Failed to render username field</div>;
+  }
 };

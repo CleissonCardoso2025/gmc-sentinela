@@ -14,15 +14,26 @@ interface PasswordFieldProps {
   disabled?: boolean;
 }
 
-export const PasswordField: React.FC<PasswordFieldProps> = ({ 
-  value, 
-  onChange, 
-  onBlur, 
-  error,
-  showPassword, 
-  toggleVisibility,
-  disabled 
-}) => {
+export const PasswordField: React.FC<PasswordFieldProps> = (props) => {
+  // Check for required props
+  if (!props.onChange || props.value === undefined) {
+    const errorMessage = "PasswordField: 'value' and 'onChange' props are required";
+    console.error(errorMessage);
+    return (
+      <div className="space-y-2">
+        <FormLabel className="text-gray-300">Senha</FormLabel>
+        <div className="relative">
+          <div className="text-red-500 p-2 border border-red-500 rounded bg-red-500/10">
+            Error: Campo de senha não pôde ser renderizado
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Safe to destructure after validation
+  const { value, onChange, onBlur, error, showPassword, toggleVisibility, disabled } = props;
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
   };
@@ -32,7 +43,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
       <FormLabel className="text-gray-300">Senha</FormLabel>
       <div className="relative">
         <Input 
-          value={value || ''}
+          value={value}
           onChange={handleChange}
           onBlur={onBlur}
           type={showPassword ? "text" : "password"} 

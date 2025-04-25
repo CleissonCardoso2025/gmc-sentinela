@@ -23,7 +23,7 @@ export const LoginForm = () => {
               <FormItem>
                 <FormControl>
                   <UsernameField 
-                    name={field.name}
+                    name="username"
                     control={form.control}
                     disabled={isLoading}
                   />
@@ -35,14 +35,14 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="password"
-            render={({ field, fieldState }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormControl>
                   <PasswordField
                     value={field.value || ''}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    error={fieldState.error?.message}
+                    error={field.fieldState?.error?.message}
                     showPassword={showPassword}
                     toggleVisibility={togglePasswordVisibility}
                     disabled={isLoading}

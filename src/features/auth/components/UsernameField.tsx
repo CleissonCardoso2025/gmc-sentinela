@@ -16,6 +16,11 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   control,
   disabled,
 }) => {
+  if (!control) {
+    console.error("UsernameField: 'control' prop is required");
+    return <div className="text-red-500">Error: Campo de usuário não pôde ser renderizado</div>;
+  }
+
   const {
     field,
     fieldState: { error },

@@ -1,163 +1,70 @@
-
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 import InstallBanner from "@/components/pwa/InstallBanner";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const sessionCheckCompletedRef = useRef(false);
-  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
-  const isMountedRef = useRef(true);
-  
-  // Check for existing session and redirect if found
+
+  // Verificação de sessão simples - sem tela de carregamento
   useEffect(() => {
-    isMountedRef.current = true;
-    
-    const checkAndRedirect = async () => {
+    // Verificar se o usuário acabou de fazer logout
+    const justSignedOut = location.state?.signedOut === true;
+    if (justSignedOut) {
+      console.log("Usuário acabou de sair, permanecendo na página de login");
+      // Limpar o estado para evitar loops
+      window.history.replaceState({}, document.title);
+      return;
+    }
+
+    // Verificação de sessão rápida e simples
+    const checkSession = async () => {
       try {
-        // Skip if we've already completed a session check on this component instance
-        if (sessionCheckCompletedRef.current) return;
+        // Verificar se já existe uma sessão
+        const { data, error } = await supabase.auth.getSession();
         
-        setIsCheckingSession(true);
-        
-        // First set up the auth state listener to handle changes
-        const { data } = await supabase.auth.onAuthStateChange((event, session) => {
-          // Skip updates if component is unmounted
-          if (!isMountedRef.current) return;
-          
-          console.log("Auth state changed on login page:", event);
-          
-          // Make sure we handle SIGNED_OUT event properly (clear redirect logic)
-          if (event === 'SIGNED_OUT') {
-            console.log("User signed out, staying on login page");
-            setIsCheckingSession(false);
-            return;
-          }
-          
-          // Don't proceed with redirect logic inside the listener itself
-          // to avoid potential race conditions
-          if (session && event !== 'INITIAL_SESSION') {
-            // Defer the redirect logic slightly to avoid React state update conflicts
-            setTimeout(() => {
-              if (!isMountedRef.current) return;
-              
-              // Get user profile from user_metadata
-              const userProfile = session.user.user_metadata?.role || "Agente";
-              
-              // Store the user profile in localStorage for compatibility with existing code
-              localStorage.setItem("isAuthenticated", "true");
-              localStorage.setItem("userProfile", userProfile);
-              localStorage.setItem("userName", session.user.email || "");
-              localStorage.setItem("userId", session.user.id);
-              localStorage.setItem("userEmail", session.user.email || "");
-              
-              // Redirect based on user profile
-              if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-                navigate("/index", { replace: true });
-              } else {
-                navigate("/dashboard", { replace: true });
-              }
-            }, 100);
-          }
-        });
-        
-        // Store the subscription for cleanup
-        authSubscriptionRef.current = data.subscription;
-        
-        // Get existing session - this should happen just once
-        const { data: sessionData, error } = await supabase.auth.getSession();
-        
-        // Mark the session check as completed to avoid duplicate checks
-        sessionCheckCompletedRef.current = true;
-        
-        if (error) {
-          console.error("Error checking session:", error);
-          throw error;
-        }
-        
-        // If no session or the user just signed out (check URL), stay on login page
-        const justSignedOut = location.state?.signedOut === true;
-        
-        if (!sessionData.session || justSignedOut) {
-          console.log("No session found or user just signed out, staying on login page");
-          setIsCheckingSession(false);
+        if (error || !data.session) {
+          console.log("Nenhuma sessão válida encontrada, permanecendo na tela de login");
           return;
         }
         
-        if (isMountedRef.current && sessionData.session) {
-          console.log("Existing session found, redirecting...");
-          console.log("Session expires at:", 
-            sessionData.session.expires_at ? new Date(sessionData.session.expires_at * 1000).toISOString() : "unknown");
-          
-          // Get user profile from user_metadata
-          const userProfile = sessionData.session.user.user_metadata?.role || "Agente";
-          
-          // Store the user profile in localStorage for compatibility with existing code
-          localStorage.setItem("isAuthenticated", "true");
-          localStorage.setItem("userProfile", userProfile);
-          localStorage.setItem("userName", sessionData.session.user.email || "");
-          localStorage.setItem("userId", sessionData.session.user.id);
-          localStorage.setItem("userEmail", sessionData.session.user.email || "");
-          
-          // Redirect based on user profile
-          setTimeout(() => {
-            if (!isMountedRef.current) return;
-            
-            if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-              navigate("/index", { replace: true });
-            } else {
-              navigate("/dashboard", { replace: true });
-            }
-          }, 100);
+        // Se há sessão, configurar dados do usuário e redirecionar
+        console.log("Sessão encontrada, redirecionando...");
+        
+        // Definir perfil do usuário - forçar para "Inspetor" para o usuário cleissoncardoso@gmail.com
+        let userProfile = data.session.user.user_metadata?.role || "Agente";
+        if (data.session.user.email === "cleissoncardoso@gmail.com") {
+          userProfile = "Inspetor";
+        }
+        
+        // Armazenar dados do usuário no localStorage
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("userProfile", userProfile);
+        localStorage.setItem("userName", data.session.user.email || "");
+        localStorage.setItem("userId", data.session.user.id);
+        localStorage.setItem("userEmail", data.session.user.email || "");
+        
+        // Redirecionamento simples com navigate
+        if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+          navigate("/index", { replace: true });
+        } else if (userProfile === "Agente" || userProfile === "Corregedor") {
+          navigate("/perfil", { replace: true });
         } else {
-          setIsCheckingSession(false);
+          navigate("/dashboard", { replace: true });
         }
       } catch (error) {
-        console.error("Session checking failed:", error);
-        if (isMountedRef.current) {
-          setIsCheckingSession(false);
-        }
+        console.error("Falha na verificação de sessão:", error);
       }
     };
     
-    checkAndRedirect();
-    
-    return () => {
-      isMountedRef.current = false;
-      
-      // Use the stored subscription for cleanup
-      if (authSubscriptionRef.current) {
-        authSubscriptionRef.current.unsubscribe();
-        authSubscriptionRef.current = null;
-      }
-    };
+    // Iniciar a verificação de sessão imediatamente
+    checkSession();
   }, [navigate, location]);
   
-  // Show loading indicator while checking session
-  if (isCheckingSession) {
-    return (
-      <LoginBackground>
-        <div className="flex flex-col items-center justify-center">
-          <img 
-            src="/lovable-uploads/83b69061-6005-432b-8d81-e2ab0d07dc10.png" 
-            alt="Sentinela" 
-            className="w-[240px] mb-8" 
-          />
-          <div className="bg-black/40 backdrop-blur-md p-8 rounded-xl border border-gray-800 shadow-lg flex flex-col items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
-            <p className="text-white">Verificando sessão...</p>
-          </div>
-        </div>
-      </LoginBackground>
-    );
-  }
-
+  // Mostrar tela de login
   return (
     <LoginBackground>
       {/* Logo */}

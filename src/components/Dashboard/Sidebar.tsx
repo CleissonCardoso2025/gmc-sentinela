@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Car, AlertTriangle, Settings, Shield, UserCog, ChevronLeft, ChevronRight, GavelIcon, Home, Command } from "lucide-react";
+import { Car, AlertTriangle, Settings, Shield, UserCog, ChevronLeft, ChevronRight, GavelIcon, Home, Command, FileText } from "lucide-react";
 import { useAuthorization } from '@/hooks/use-authorization';
 
 interface SidebarProps {
@@ -24,54 +23,43 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const userProfile = localStorage.getItem('userProfile') || 'Inspetor';
+  const userProfile = localStorage.getItem('userProfile') || '';
+  const isInspetor = userProfile === 'Inspetor';
   const { hasAccessToPage, pageAccessSettings } = useAuthorization(userProfile);
   
   // Log to see what page access settings are available
   console.log("Sidebar pageAccessSettings:", pageAccessSettings);
   
-  const menuItems: MenuItem[] = [
-    {
-      icon: <Home className="h-5 w-5" />,
-      text: 'Dashboard',
-      path: '/dashboard'
-    }, 
-    {
-      icon: <Command className="h-5 w-5" />,
-      text: 'Centro de Comando',
-      path: '/index',
-      roles: ['Inspetor', 'Subinspetor']
-    },
-    {
-      icon: <Car className="h-5 w-5" />,
-      text: 'Viaturas',
-      path: '/viaturas'
-    }, 
-    {
-      icon: <AlertTriangle className="h-5 w-5" />,
-      text: 'Ocorrências',
-      path: '/ocorrencias'
-    }, 
-    {
-      icon: <GavelIcon className="h-5 w-5" />,
-      text: 'Corregedoria',
-      path: '/corregedoria'
-    }, 
-    {
-      icon: <Shield className="h-5 w-5" />,
-      text: 'Inspetoria Geral',
-      path: '/inspetoria'
-    }, 
-    {
-      icon: <Settings className="h-5 w-5" />,
-      text: 'Configurações',
-      path: '/configuracoes'
-    }
+  // Verificar os perfis de usuário
+  const isAgente = userProfile === 'Agente';
+  const isCorregedor = userProfile === 'Corregedor';
+  
+  // Menu com restrições baseadas no perfil
+  const menuItems = [
+    // Dashboard - visível para todos exceto Agentes e Corregedores
+    ...(!isAgente && !isCorregedor ? [{ path: '/index', icon: <Home className="h-5 w-5" />, label: 'Dashboard' }] : []),
+    
+    // Ocorrências - visível para todos
+    { path: '/ocorrencias', icon: <FileText className="h-5 w-5" />, label: 'Ocorrências' },
+    
+    // Perfil - visível para todos
+    { path: '/perfil', icon: <UserCog className="h-5 w-5" />, label: 'Perfil' },
+    
+    // Corregedoria - visível para Inspetores e Corregedores
+    ...(isInspetor || isCorregedor ? [{ path: '/corregedoria', icon: <GavelIcon className="h-5 w-5" />, label: 'Corregedoria' }] : []),
+    
+    // Itens visíveis para todos exceto Agentes e Corregedores
+    ...(!isAgente && !isCorregedor ? [
+      { path: '/viaturas', icon: <Car className="h-5 w-5" />, label: 'Viaturas' },
+      { path: '/configuracoes', icon: <Settings className="h-5 w-5" />, label: 'Configurações' }
+    ] : []),
+    
+    // Inspetoria - visível apenas para Inspetores
+    ...(isInspetor ? [{ path: '/inspetoria', icon: <Shield className="h-5 w-5" />, label: 'Inspetoria' }] : [])
   ];
   
   const isActive = (path: string) => {
-    if (path === '/dashboard' && (location.pathname === '/dashboard' || location.pathname === '/')) return true;
-    if (path === '/index' && location.pathname === '/index') return true;
+    if (path === '/index' && (location.pathname === '/index' || location.pathname === '/')) return true;
     return location.pathname.startsWith(path);
   };
   
@@ -79,17 +67,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     console.log("Navegando para:", path);
     navigate(path);
   };
-
-  // Filter menu items based on user profile and access permissions
-  const filteredMenuItems = menuItems.filter(item => {
-    // First check if the item has specific roles
-    if (item.roles && !item.roles.includes(userProfile)) {
-      return false;
-    }
-    
-    // Then check if the user has access to the page according to the access control settings
-    return hasAccessToPage(item.path);
-  });
 
   return (
     <aside className={cn("fixed h-full bg-gcm-600 transition-all duration-300 ease-in-out z-40", collapsed ? "w-20" : "w-64")}>
@@ -112,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         <div className="p-4 overflow-y-auto h-full bg-zinc-950">
           <nav className="flex flex-col space-y-2">
-            {filteredMenuItems.map((item, index) => (
+            {menuItems.map((item, index) => (
               <Button 
                 key={index} 
                 variant="ghost" 
@@ -125,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               >
                 <span className={cn("flex items-center", collapsed ? "justify-center" : "")}>
                   {item.icon}
-                  {!collapsed && <span className="ml-3 font-medium">{item.text}</span>}
+                  {!collapsed && <span className="ml-3 font-medium">{item.label}</span>}
                 </span>
               </Button>
             ))}

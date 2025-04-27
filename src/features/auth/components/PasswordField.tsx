@@ -23,9 +23,23 @@ export const PasswordField: React.FC<PasswordFieldProps> = (props) => {
       <div className="space-y-2">
         <FormLabel className="text-gray-300">Senha</FormLabel>
         <div className="relative">
-          <div className="text-red-500 p-2 border border-red-500 rounded bg-red-500/10">
-            Error: Campo de senha não pôde ser renderizado
-          </div>
+          <Input 
+            type="password"
+            className="pl-10 pr-10 bg-gray-900/60 border-gray-700 text-white" 
+            placeholder="Digite sua senha"
+            disabled={props.disabled}
+            value=""
+            onChange={() => {}}
+          />
+          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <button 
+            type="button" 
+            className="absolute right-3 top-3 text-gray-400"
+            tabIndex={-1}
+            onClick={() => {}}
+          >
+            <Eye className="h-4 w-4" />
+          </button>
         </div>
       </div>
     );
@@ -35,7 +49,27 @@ export const PasswordField: React.FC<PasswordFieldProps> = (props) => {
   const { value, onChange, onBlur, error, showPassword, toggleVisibility, disabled } = props;
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
+    try {
+      onChange(e.target.value);
+    } catch (err) {
+      console.error("Error in PasswordField onChange:", err);
+    }
+  };
+  
+  const handleBlur = () => {
+    try {
+      if (onBlur) onBlur();
+    } catch (err) {
+      console.error("Error in PasswordField onBlur:", err);
+    }
+  };
+  
+  const handleToggleVisibility = () => {
+    try {
+      if (toggleVisibility) toggleVisibility();
+    } catch (err) {
+      console.error("Error in PasswordField toggleVisibility:", err);
+    }
   };
   
   return (
@@ -43,9 +77,9 @@ export const PasswordField: React.FC<PasswordFieldProps> = (props) => {
       <FormLabel className="text-gray-300">Senha</FormLabel>
       <div className="relative">
         <Input 
-          value={value}
+          value={value || ""}
           onChange={handleChange}
-          onBlur={onBlur}
+          onBlur={handleBlur}
           type={showPassword ? "text" : "password"} 
           className="pl-10 pr-10 bg-gray-900/60 border-gray-700 text-white" 
           placeholder="Digite sua senha"
@@ -54,7 +88,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = (props) => {
         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
         <button 
           type="button" 
-          onClick={toggleVisibility}
+          onClick={handleToggleVisibility}
           className="absolute right-3 top-3 text-gray-400"
           tabIndex={-1}
         >

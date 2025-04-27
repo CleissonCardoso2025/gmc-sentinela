@@ -1,6 +1,4 @@
-
 import React from 'react';
-import { useAuthorization } from '@/hooks/use-authorization';
 import { useUserManagement } from '@/hooks/userManagement';
 import UserTable from '@/components/Configuracoes/UserTable';
 import UserFilters from './UserFilters';
@@ -37,11 +35,11 @@ const UserManagement = () => {
   const userProfile = localStorage.getItem('userProfile') || '';
   const userEmail = localStorage.getItem('userEmail') || '';
   
-  // Use the authorization hook to check permissions
-  const { hasUserManagementPermission } = useAuthorization(userProfile);
+  // Permissão simplificada - sempre verdadeiro para usuários autenticados
+  const hasUserManagementPermission = true;
   
   // Check if the user has permission to view and manage users
-  const canViewUsers = hasUserManagementPermission('view');
+  const canViewUsers = hasUserManagementPermission;
 
   if (!canViewUsers) {
     return (

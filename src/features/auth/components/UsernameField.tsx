@@ -11,11 +11,10 @@ interface UsernameFieldProps {
   disabled?: boolean;
 }
 
-export const UsernameField: React.FC<UsernameFieldProps> = (props) => {
-  // Validate control before destructuring
-  if (!props.control) {
-    const errorMessage = `UsernameField: 'control' prop is required for field "${props.name || 'unknown'}"`;
-    console.error(errorMessage);
+export const UsernameField: React.FC<UsernameFieldProps> = ({ name, control, disabled }) => {
+  // Verificar se o controle existe antes de usar
+  if (!control) {
+    console.error(`UsernameField: 'control' prop is required for field "${name || 'unknown'}"`);
     return (
       <div className="space-y-2">
         <FormLabel className="text-gray-300">Usuário</FormLabel>
@@ -23,7 +22,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = (props) => {
           <Input
             className="pl-10 bg-gray-900/60 border-gray-700 text-white"
             placeholder="Digite seu usuário"
-            disabled={props.disabled}
+            disabled={true}
             value=""
             onChange={() => {}}
           />
@@ -32,9 +31,6 @@ export const UsernameField: React.FC<UsernameFieldProps> = (props) => {
       </div>
     );
   }
-
-  // Safe to destructure after validation
-  const { name, control, disabled } = props;
 
   try {
     const {
@@ -53,7 +49,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = (props) => {
           <Input
             {...field}
             className="pl-10 bg-gray-900/60 border-gray-700 text-white"
-            placeholder="Digite seu usuário"
+            placeholder="Digite seu email"
             disabled={disabled}
           />
           <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -69,7 +65,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = (props) => {
         <div className="relative">
           <Input
             className="pl-10 bg-gray-900/60 border-gray-700 text-white"
-            placeholder="Digite seu usuário"
+            placeholder="Digite seu email"
             disabled={disabled}
             value=""
             onChange={() => {}}

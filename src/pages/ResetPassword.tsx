@@ -1,17 +1,16 @@
 
 import React, { useState, useEffect } from "react";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { Loader2, Eye, EyeOff, AlertTriangle, Check } from "lucide-react";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,45 +19,67 @@ const ResetPassword = () => {
   const [errors, setErrors] = useState<{password?: string; confirm?: string}>({});
   const [isComplete, setIsComplete] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isProcessingHash, setIsProcessingHash] = useState(true);
 
-  // Extract the token and hash from the URL
+  // Verificar a sessão e token na URL
   useEffect(() => {
-    // Log the current URL to help debugging
-    console.log("URL atual:", window.location.href);
-    
-    // Check if we have the necessary recovery token in the URL
-    const hash = window.location.hash;
-    if (!hash || !hash.includes("type=recovery")) {
-      console.warn("URL não contém parâmetros de recuperação esperados");
-      setErrorMessage("Link de recuperação inválido ou expirado. Por favor, solicite um novo link.");
-      return;
-    }
-
-    // Supabase will handle the hash parsing from window.location.hash
-    const checkSession = async () => {
+    const processHashParams = async () => {
+      setIsProcessingHash(true);
+      
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Log da URL para depuração
+        console.log("URL completa:", window.location.href);
+        console.log("Hash:", window.location.hash);
         
-        console.log("Verificação de sessão:", session ? "Sessão ativa" : "Sem sessão");
+        const hashParams = window.location.hash;
         
-        // If there's already a session, redirect to dashboard
-        if (session && !error) {
-          console.log("Usuário já autenticado, redirecionando...");
-          const userProfile = session.user.user_metadata?.role || "Agente";
-          
-          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-            navigate("/index", { replace: true });
-          } else {
-            navigate("/dashboard", { replace: true });
-          }
+        // Verificar se temos hash de recuperação
+        if (!hashParams || !hashParams.includes("type=recovery")) {
+          console.warn("URL não contém parâmetros de recuperação");
+          setErrorMessage("Link de recuperação inválido ou expirado. Por favor, solicite um novo link.");
+          setIsProcessingHash(false);
+          return;
         }
-      } catch (error) {
-        console.error("Erro ao verificar sessão:", error);
+        
+        // Extrair e processar o token diretamente do hash
+        const { data, error } = await supabase.auth.exchangeCodeForSession(hashParams.substring(1));
+        
+        if (error) {
+          console.error("Erro ao processar token:", error);
+          throw error;
+        }
+        
+        console.log("Token processado com sucesso:", data);
+        
+        // Verificamos se já existe uma sessão (usuário já logado)
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (sessionData.session) {
+          console.log("Usuário já autenticado:", sessionData.session.user);
+        }
+        
+      } catch (error: any) {
+        console.error("Erro ao processar parâmetros de URL:", error);
+        
+        let errorMsg = "Link de redefinição inválido ou expirado. Por favor, solicite um novo.";
+        if (error.message && error.message.includes("expired")) {
+          errorMsg = "O link de redefinição expirou. Por favor, solicite um novo link.";
+        }
+        
+        setErrorMessage(errorMsg);
+        
+        toast({
+          title: "Erro ao processar link de recuperação",
+          description: errorMsg,
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessingHash(false);
       }
     };
     
-    checkSession();
-  }, [navigate]);
+    processHashParams();
+  }, [toast]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -110,7 +131,7 @@ const ResetPassword = () => {
       
       console.log("Senha atualizada com sucesso:", data);
       
-      // Show success
+      // Mostrar mensagem de sucesso
       setIsComplete(true);
       
       toast({
@@ -118,7 +139,7 @@ const ResetPassword = () => {
         description: "Você será redirecionado para a página de login.",
       });
       
-      // Redirect to login after a delay
+      // Redirecionar para login após um breve atraso
       setTimeout(() => {
         navigate("/login", { replace: true });
       }, 3000);
@@ -126,13 +147,17 @@ const ResetPassword = () => {
     } catch (error: any) {
       console.error("Erro detalhado ao redefinir senha:", error);
       
+      // Mensagem de erro personalizada baseada no tipo
       let errorMsg = "Ocorreu um erro ao redefinir sua senha. Tente novamente.";
       
-      // Mensagens de erro mais específicas
-      if (error.message && error.message.includes("JWT")) {
-        errorMsg = "O link de redefinição expirou. Por favor, solicite um novo.";
-      } else if (error.message && error.message.includes("User not found")) {
-        errorMsg = "Usuário não encontrado. Verifique seu email.";
+      if (error.message) {
+        if (error.message.includes("session")) {
+          errorMsg = "Sessão de autenticação expirada ou inválida. Por favor, solicite um novo link de recuperação.";
+        } else if (error.message.includes("JWT")) {
+          errorMsg = "O link de redefinição expirou. Por favor, solicite um novo.";
+        } else if (error.message.includes("User not found")) {
+          errorMsg = "Usuário não encontrado. Verifique seu email.";
+        }
       }
       
       toast({
@@ -162,7 +187,12 @@ const ResetPassword = () => {
       <div className="bg-black/40 backdrop-blur-md p-8 rounded-xl border border-gray-800 shadow-lg">
         <h1 className="text-2xl font-bold text-white mb-6 text-center">Redefinir Senha</h1>
         
-        {errorMessage ? (
+        {isProcessingHash ? (
+          <div className="flex flex-col items-center justify-center py-4">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-400 mb-4" />
+            <p className="text-gray-300">Verificando link de recuperação...</p>
+          </div>
+        ) : errorMessage ? (
           <div className="space-y-4">
             <div className="bg-red-900/20 border border-red-800 rounded-md p-4 text-red-300">
               <p className="flex items-start">
@@ -181,8 +211,11 @@ const ResetPassword = () => {
         ) : isComplete ? (
           <div className="space-y-4">
             <div className="bg-green-900/20 border border-green-800 rounded-md p-4 text-green-300">
-              <p>
-                Sua senha foi atualizada com sucesso. Você será redirecionado para a página de login.
+              <p className="flex items-start">
+                <Check className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                <span>
+                  Sua senha foi atualizada com sucesso. Você será redirecionado para a página de login.
+                </span>
               </p>
             </div>
             <Button 

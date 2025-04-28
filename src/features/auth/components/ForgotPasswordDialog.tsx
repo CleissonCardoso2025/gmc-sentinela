@@ -52,7 +52,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       console.log("URL de redirecionamento:", redirectTo);
       
       // Call Supabase to send password reset email with explicit redirectTo
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: redirectTo,
       });
       
@@ -60,8 +60,6 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
         console.error("Erro detalhado da API:", error);
         throw error;
       }
-
-      console.log("Resposta da API de redefinição:", data);
       
       // Show success
       toast({

@@ -9,8 +9,22 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Verificação de sessão simples - sem tela de carregamento
   useEffect(() => {
+    // Guard clause: já autenticado, não monta login
+    if (localStorage.getItem("isAuthenticated") === "true") {
+      const userProfile = localStorage.getItem("userProfile");
+      if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+        navigate("/index", { replace: true });
+      } else if (userProfile === "Agente" || userProfile === "Corregedor") {
+        navigate("/perfil", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+      return;
+    }
+
+    let isMounted = true; // Cancellation pattern
+
     // Verificar se o usuário acabou de fazer logout
     const justSignedOut = location.state?.signedOut === true;
     if (justSignedOut) {
@@ -25,28 +39,29 @@ const Login = () => {
       try {
         // Verificar se já existe uma sessão
         const { data, error } = await supabase.auth.getSession();
-        
+        if (!isMounted) return;
+
         if (error || !data.session) {
           console.log("Nenhuma sessão válida encontrada, permanecendo na tela de login");
           return;
         }
-        
+
         // Se há sessão, configurar dados do usuário e redirecionar
         console.log("Sessão encontrada, redirecionando...");
-        
+
         // Definir perfil do usuário - forçar para "Inspetor" para o usuário cleissoncardoso@gmail.com
         let userProfile = data.session.user.user_metadata?.role || "Agente";
         if (data.session.user.email === "cleissoncardoso@gmail.com") {
           userProfile = "Inspetor";
         }
-        
+
         // Armazenar dados do usuário no localStorage
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("userProfile", userProfile);
         localStorage.setItem("userName", data.session.user.email || "");
         localStorage.setItem("userId", data.session.user.id);
         localStorage.setItem("userEmail", data.session.user.email || "");
-        
+
         // Redirecionamento simples com navigate
         if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
           navigate("/index", { replace: true });
@@ -56,14 +71,20 @@ const Login = () => {
           navigate("/dashboard", { replace: true });
         }
       } catch (error) {
-        console.error("Falha na verificação de sessão:", error);
+        if (isMounted) {
+          console.error("Falha na verificação de sessão:", error);
+        }
       }
     };
-    
+
     // Iniciar a verificação de sessão imediatamente
     checkSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, [navigate, location]);
-  
+
   // Mostrar tela de login
   return (
     <LoginBackground>

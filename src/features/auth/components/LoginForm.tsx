@@ -24,7 +24,9 @@ export const LoginForm = () => {
               <FormItem>
                 <FormControl>
                   <UsernameField 
-                    {...field}
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
                     disabled={isLoading}
                   />
                 </FormControl>

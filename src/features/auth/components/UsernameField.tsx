@@ -10,13 +10,15 @@ interface UsernameFieldProps {
   onBlur?: () => void;
   name?: string;
   disabled?: boolean;
+  error?: string;
 }
 
 export const UsernameField: React.FC<UsernameFieldProps> = ({ 
   value, 
   onChange, 
   onBlur, 
-  disabled 
+  disabled,
+  error
 }) => {
   return (
     <div className="space-y-2">
@@ -32,7 +34,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
         />
         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
       </div>
-      <FormMessage />
+      {error && <FormMessage>{error}</FormMessage>}
     </div>
   );
 };

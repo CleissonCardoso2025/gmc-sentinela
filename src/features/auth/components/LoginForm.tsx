@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { useLoginForm } from "@/features/auth/hooks/useLoginForm";
 import { UsernameField } from "./UsernameField";
@@ -16,41 +16,22 @@ export const LoginForm = () => {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <UsernameField 
-                    value={field.value || ''}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    disabled={isLoading}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+          <UsernameField 
+            value={form.watch("username") || ''}
+            onChange={(value) => form.setValue("username", value)}
+            onBlur={() => form.trigger("username")}
+            disabled={isLoading}
+            error={form.formState.errors.username?.message}
           />
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <FormControl>
-                  <PasswordField
-                    value={field.value || ''}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    error={fieldState?.error?.message}
-                    showPassword={showPassword}
-                    toggleVisibility={togglePasswordVisibility}
-                    disabled={isLoading}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+          <PasswordField
+            value={form.watch("password") || ''}
+            onChange={(value) => form.setValue("password", value)}
+            onBlur={() => form.trigger("password")}
+            error={form.formState.errors.password?.message}
+            showPassword={showPassword}
+            toggleVisibility={togglePasswordVisibility}
+            disabled={isLoading}
           />
 
           <div className="flex justify-end">

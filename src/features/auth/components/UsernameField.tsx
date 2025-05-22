@@ -32,6 +32,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
         />
         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
       </div>
+      <FormMessage />
     </div>
   );
 };

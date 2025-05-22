@@ -16,7 +16,6 @@ export const LoginForm = () => {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Use FormField with proper field rendering */}
           <FormField
             control={form.control}
             name="username"

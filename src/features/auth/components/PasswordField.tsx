@@ -1,8 +1,8 @@
 
 import React from "react";
-import { FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Lock } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface PasswordFieldProps {
   value: string;
@@ -19,7 +19,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = (props) => {
   
   return (
     <div className="space-y-2">
-      <FormLabel className="text-gray-300">Senha</FormLabel>
+      <Label className="text-gray-300">Senha</Label>
       <div className="relative">
         <Input 
           value={value || ""}
@@ -43,7 +43,9 @@ export const PasswordField: React.FC<PasswordFieldProps> = (props) => {
           }
         </button>
       </div>
-      {error && <FormMessage>{error}</FormMessage>}
+      {error && (
+        <p className="text-sm font-medium text-destructive">{error}</p>
+      )}
     </div>
   );
 };

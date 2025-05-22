@@ -1,8 +1,8 @@
 
 import React from "react";
-import { FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { User } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface UsernameFieldProps {
   value: string;
@@ -22,7 +22,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
 }) => {
   return (
     <div className="space-y-2">
-      <FormLabel className="text-gray-300">Usuário</FormLabel>
+      <Label className="text-gray-300">Usuário</Label>
       <div className="relative">
         <Input
           value={value}
@@ -34,7 +34,9 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
         />
         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
       </div>
-      {error && <FormMessage>{error}</FormMessage>}
+      {error && (
+        <p className="text-sm font-medium text-destructive">{error}</p>
+      )}
     </div>
   );
 };

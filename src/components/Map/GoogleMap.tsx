@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapMarker } from '@/types/maps';
@@ -275,7 +276,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   );
 };
 
-// Add this to ensure that typescript works with the global callback
+// Define global window interface to include the callback
 declare global {
   interface Window {
     googleMapsCallback: () => void;

@@ -21,7 +21,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({ name, control, dis
         <div className="relative">
           <Input
             className="pl-10 bg-gray-900/60 border-gray-700 text-white"
-            placeholder="Digite seu usuário"
+            placeholder="Digite seu email"
             disabled={true}
             value=""
             onChange={() => {}}

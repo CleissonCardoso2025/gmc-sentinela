@@ -1,9 +1,11 @@
+
 import React, { useEffect } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import InstallBanner from "@/components/pwa/InstallBanner";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -41,7 +43,13 @@ const Login = () => {
         const { data, error } = await supabase.auth.getSession();
         if (!isMounted) return;
 
-        if (error || !data.session) {
+        if (error) {
+          console.error("Erro ao verificar sessão:", error);
+          toast.error("Erro ao verificar sessão");
+          return;
+        }
+
+        if (!data.session) {
           console.log("Nenhuma sessão válida encontrada, permanecendo na tela de login");
           return;
         }
@@ -62,6 +70,8 @@ const Login = () => {
         localStorage.setItem("userId", data.session.user.id);
         localStorage.setItem("userEmail", data.session.user.email || "");
 
+        toast.success("Login realizado com sucesso");
+
         // Redirecionamento simples com navigate
         if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
           navigate("/index", { replace: true });
@@ -73,6 +83,7 @@ const Login = () => {
       } catch (error) {
         if (isMounted) {
           console.error("Falha na verificação de sessão:", error);
+          toast.error("Falha na verificação de sessão");
         }
       }
     };

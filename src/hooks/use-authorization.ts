@@ -13,8 +13,21 @@ export const useAuthorization = (userProfile: string) => {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [effectiveProfile, setEffectiveProfile] = useState<string>(userProfile);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
+    // Check if the user is authenticated
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+      
+      if (!data.session) {
+        console.warn('User is not authenticated. Some features may be restricted.');
+      }
+    };
+    
+    checkAuth();
+    
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -45,7 +58,7 @@ export const useAuthorization = (userProfile: string) => {
   }, []);
 
   useEffect(() => {
-    const userId = localStorage.getItem('currentUserId');
+    const userId = localStorage.getItem('userId');
     const userEmail = localStorage.getItem('userEmail');
     
     setCurrentUserId(userId);
@@ -61,10 +74,19 @@ export const useAuthorization = (userProfile: string) => {
   }, [userProfile]);
 
   const hasAccessToPage = (path: string): boolean => {
+    if (!isAuthenticated) {
+      // Allow access to login and reset password pages even when not authenticated
+      if (path === '/login' || path === '/reset-password') {
+        return true;
+      }
+      return false;
+    }
     return checkPathAccess(path, effectiveProfile, pageAccessSettings);
   };
 
   const getAccessiblePages = (): PageAccess[] => {
+    if (!isAuthenticated) return [];
+    
     if (effectiveProfile === 'Inspetor') {
       return pageAccessSettings;
     }
@@ -72,10 +94,16 @@ export const useAuthorization = (userProfile: string) => {
   };
 
   const hasUserManagementPermission = (permission: 'view' | 'create' | 'update' | 'delete'): boolean => {
+    if (!isAuthenticated) return false;
     return effectiveProfile === 'Inspetor';
   };
 
   const updatePageAccess = async (pages: PageAccess[]): Promise<boolean> => {
+    if (!isAuthenticated) {
+      toast.error("Você precisa estar autenticado para esta ação");
+      return false;
+    }
+    
     try {
       setIsLoading(true);
       setPageAccessSettings(pages);
@@ -107,6 +135,7 @@ export const useAuthorization = (userProfile: string) => {
     pageAccessSettings,
     isLoading,
     availableRoles,
-    hasUserManagementPermission
+    hasUserManagementPermission,
+    isAuthenticated
   };
 };

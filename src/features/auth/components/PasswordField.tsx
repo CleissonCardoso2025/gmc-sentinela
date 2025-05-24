@@ -34,7 +34,15 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 }) => {
   console.log("PasswordField: Rendering with field:", !!field, "disabled:", disabled);
   
-  const formContext = useFormContext();
+  // Safely get form context - might be undefined
+  let formContext;
+  try {
+    formContext = useFormContext();
+  } catch (error) {
+    console.warn("PasswordField: No form context available:", error);
+    formContext = null;
+  }
+  
   const fieldError = formContext?.formState?.errors?.password;
   const errorMessage = getErrorMessage(fieldError);
   

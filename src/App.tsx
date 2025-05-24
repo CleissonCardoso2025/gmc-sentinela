@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,6 +8,20 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { VehicleProvider } from "./contexts/VehicleContext";
+
+// Import all page components
+import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
+import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
+import UserProfile from "./pages/UserProfile";
+import Viaturas from "./pages/Viaturas";
+import Inspetoria from "./pages/Inspetoria";
+import Ocorrencias from "./pages/Ocorrencias";
+import OccurrenceDetails from "./pages/OccurrenceDetails";
+import Corregedoria from "./pages/Corregedoria";
+import Configuracoes from "./pages/Configuracoes";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {

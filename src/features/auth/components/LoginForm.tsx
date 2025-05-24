@@ -26,12 +26,13 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="username"
-            render={({ field }) => {
-              console.log("LoginForm: Rendering username field with:", !!field);
+            render={({ field, fieldState }) => {
+              console.log("LoginForm: Rendering username field with field:", !!field, "error:", fieldState.error);
               return (
                 <UsernameField 
                   field={field}
                   disabled={isLoading}
+                  error={fieldState.error?.message}
                 />
               );
             }}
@@ -40,14 +41,15 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="password"
-            render={({ field }) => {
-              console.log("LoginForm: Rendering password field with:", !!field);
+            render={({ field, fieldState }) => {
+              console.log("LoginForm: Rendering password field with field:", !!field, "error:", fieldState.error);
               return (
                 <PasswordField
                   field={field}
                   showPassword={showPassword}
                   toggleVisibility={togglePasswordVisibility}
                   disabled={isLoading}
+                  error={fieldState.error?.message}
                 />
               );
             }}

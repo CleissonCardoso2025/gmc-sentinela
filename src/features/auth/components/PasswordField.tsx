@@ -4,47 +4,23 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ControllerRenderProps } from "react-hook-form";
-import { useFormContext } from "react-hook-form";
 
 interface PasswordFieldProps {
   field: ControllerRenderProps<any, any>;
   showPassword: boolean;
   toggleVisibility: () => void;
   disabled?: boolean;
+  error?: string;
 }
-
-// Helper function to safely extract error message
-const getErrorMessage = (error: any): string | null => {
-  if (!error) return null;
-  
-  if (typeof error === 'string') return error;
-  
-  if (error && typeof error === 'object' && 'message' in error) {
-    return typeof error.message === 'string' ? error.message : String(error.message);
-  }
-  
-  return String(error);
-};
 
 export const PasswordField: React.FC<PasswordFieldProps> = ({
   field,
   showPassword,
   toggleVisibility,
-  disabled = false
+  disabled = false,
+  error
 }) => {
   console.log("PasswordField: Rendering with field:", !!field, "disabled:", disabled);
-  
-  // Safely get form context - might be undefined
-  let formContext;
-  try {
-    formContext = useFormContext();
-  } catch (error) {
-    console.warn("PasswordField: No form context available:", error);
-    formContext = null;
-  }
-  
-  const fieldError = formContext?.formState?.errors?.password;
-  const errorMessage = getErrorMessage(fieldError);
   
   if (!field) {
     console.error("PasswordField: field prop is undefined");
@@ -79,9 +55,9 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
           }
         </button>
       </div>
-      {errorMessage && (
+      {error && (
         <p className="text-sm font-medium text-destructive">
-          {errorMessage}
+          {error}
         </p>
       )}
     </div>

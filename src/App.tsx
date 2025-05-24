@@ -2,7 +2,6 @@
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -45,67 +44,68 @@ const App = () => {
     }
   }, []);
 
+  console.log("App component rendering, React:", typeof React);
+  console.log("useState available:", typeof useState);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/index" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/perfil" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <UserProfile />
-              </ProtectedRoute>
-            } />
-            <Route path="/viaturas" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <VehicleProvider>
-                  <Viaturas />
-                </VehicleProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/inspetoria" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <Inspetoria />
-              </ProtectedRoute>
-            } />
-            <Route path="/ocorrencias" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <Ocorrencias />
-              </ProtectedRoute>
-            } />
-            <Route path="/ocorrencias/:id" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <OccurrenceDetails />
-              </ProtectedRoute>
-            } />
-            <Route path="/corregedoria" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <Corregedoria />
-              </ProtectedRoute>
-            } />
-            <Route path="/configuracoes" element={
-              <ProtectedRoute userProfile={userProfile}>
-                <Configuracoes />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/index" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <Index />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/perfil" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <UserProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/viaturas" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <VehicleProvider>
+                <Viaturas />
+              </VehicleProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/inspetoria" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <Inspetoria />
+            </ProtectedRoute>
+          } />
+          <Route path="/ocorrencias" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <Ocorrencias />
+            </ProtectedRoute>
+          } />
+          <Route path="/ocorrencias/:id" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <OccurrenceDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/corregedoria" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <Corregedoria />
+            </ProtectedRoute>
+          } />
+          <Route path="/configuracoes" element={
+            <ProtectedRoute userProfile={userProfile}>
+              <Configuracoes />
+            </ProtectedRoute>
+          } />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };

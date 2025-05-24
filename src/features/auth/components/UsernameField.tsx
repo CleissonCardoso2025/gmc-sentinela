@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { User } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ControllerRenderProps } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 
 interface UsernameFieldProps {
   field: ControllerRenderProps<any, any>;
@@ -15,6 +16,9 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   disabled = false
 }) => {
   console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled);
+  
+  const formContext = useFormContext();
+  const fieldError = formContext?.formState?.errors?.username;
   
   if (!field) {
     console.error("UsernameField: field prop is undefined");
@@ -37,9 +41,9 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
         />
         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
       </div>
-      {field.error && (
+      {fieldError && (
         <p className="text-sm font-medium text-destructive">
-          {field.error.message}
+          {fieldError.message}
         </p>
       )}
     </div>

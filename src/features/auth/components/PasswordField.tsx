@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ControllerRenderProps } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 
 interface PasswordFieldProps {
   field: ControllerRenderProps<any, any>;
@@ -19,6 +20,9 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   disabled = false
 }) => {
   console.log("PasswordField: Rendering with field:", !!field, "disabled:", disabled);
+  
+  const formContext = useFormContext();
+  const fieldError = formContext?.formState?.errors?.password;
   
   if (!field) {
     console.error("PasswordField: field prop is undefined");
@@ -53,9 +57,9 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
           }
         </button>
       </div>
-      {field.error && (
+      {fieldError && (
         <p className="text-sm font-medium text-destructive">
-          {field.error.message}
+          {fieldError.message}
         </p>
       )}
     </div>

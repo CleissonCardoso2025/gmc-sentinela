@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -21,16 +20,18 @@ export function useLoginForm() {
       username: "",
       password: "",
     },
-    mode: "onChange" // Add mode for better validation
+    mode: "onChange"
   });
 
-  // Debug logging for form initialization
+  // Debug logging para inicialização do formulário
   useEffect(() => {
     console.log("useLoginForm: Form initialized", {
       formExists: !!form,
       control: !!form?.control,
       formState: !!form?.formState,
-      defaultValues: form?.getValues()
+      register: !!form?.register,
+      defaultValues: form?.getValues(),
+      errors: form?.formState?.errors
     });
   }, [form]);
 

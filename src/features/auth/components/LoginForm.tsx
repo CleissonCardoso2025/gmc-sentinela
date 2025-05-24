@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Form } from "@/components/ui/form";
+import { Form, FormField } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { useLoginForm } from "@/features/auth/hooks/useLoginForm";
 import { UsernameField } from "./UsernameField";
@@ -12,18 +12,20 @@ export const LoginForm = () => {
   const { form, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 
-  // Debug logging for form state
+  // Debug logging para o estado do formulário
   console.log("LoginForm render:", {
     formExists: !!form,
     isLoading,
     showPassword,
-    formValues: {
-      username: form?.watch("username"),
-      password: form?.watch("password") ? "***" : "empty"
-    }
+    formMethods: form ? {
+      control: !!form.control,
+      register: !!form.register,
+      formState: !!form.formState,
+      handleSubmit: !!form.handleSubmit
+    } : null
   });
 
-  // Safety check for form object
+  // Safety check para o objeto form
   if (!form) {
     console.error("LoginForm: form object is undefined");
     return <div className="text-red-500">Erro: Formulário não inicializado</div>;
@@ -33,28 +35,28 @@ export const LoginForm = () => {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <UsernameField 
-            value={form.watch("username") || ''}
-            onChange={(value) => {
-              console.log("LoginForm: Setting username to:", value);
-              form.setValue("username", value);
-            }}
-            onBlur={() => form.trigger("username")}
-            disabled={isLoading}
-            error={form.formState.errors.username?.message}
+          <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+              <UsernameField 
+                name="username"
+                disabled={isLoading}
+              />
+            )}
           />
 
-          <PasswordField
-            value={form.watch("password") || ''}
-            onChange={(value) => {
-              console.log("LoginForm: Setting password");
-              form.setValue("password", value);
-            }}
-            onBlur={() => form.trigger("password")}
-            error={form.formState.errors.password?.message}
-            showPassword={showPassword}
-            toggleVisibility={togglePasswordVisibility}
-            disabled={isLoading}
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <PasswordField
+                name="password"
+                showPassword={showPassword}
+                toggleVisibility={togglePasswordVisibility}
+                disabled={isLoading}
+              />
+            )}
           />
 
           <div className="flex justify-end">

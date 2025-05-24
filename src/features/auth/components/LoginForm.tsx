@@ -12,20 +12,6 @@ export const LoginForm = () => {
   const { form, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 
-  // Debug logging para o estado do formulário
-  console.log("LoginForm render:", {
-    formExists: !!form,
-    isLoading,
-    showPassword,
-    formMethods: form ? {
-      control: !!form.control,
-      register: !!form.register,
-      formState: !!form.formState,
-      handleSubmit: !!form.handleSubmit
-    } : null
-  });
-
-  // Safety check para o objeto form
   if (!form) {
     console.error("LoginForm: form object is undefined");
     return <div className="text-red-500">Erro: Formulário não inicializado</div>;
@@ -40,7 +26,7 @@ export const LoginForm = () => {
             name="username"
             render={({ field }) => (
               <UsernameField 
-                name="username"
+                field={field}
                 disabled={isLoading}
               />
             )}
@@ -51,7 +37,7 @@ export const LoginForm = () => {
             name="password"
             render={({ field }) => (
               <PasswordField
-                name="password"
+                field={field}
                 showPassword={showPassword}
                 toggleVisibility={togglePasswordVisibility}
                 disabled={isLoading}

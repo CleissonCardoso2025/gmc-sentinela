@@ -13,6 +13,19 @@ interface PasswordFieldProps {
   disabled?: boolean;
 }
 
+// Helper function to safely extract error message
+const getErrorMessage = (error: any): string | null => {
+  if (!error) return null;
+  
+  if (typeof error === 'string') return error;
+  
+  if (error && typeof error === 'object' && 'message' in error) {
+    return typeof error.message === 'string' ? error.message : String(error.message);
+  }
+  
+  return String(error);
+};
+
 export const PasswordField: React.FC<PasswordFieldProps> = ({
   field,
   showPassword,
@@ -23,6 +36,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   
   const formContext = useFormContext();
   const fieldError = formContext?.formState?.errors?.password;
+  const errorMessage = getErrorMessage(fieldError);
   
   if (!field) {
     console.error("PasswordField: field prop is undefined");
@@ -57,9 +71,9 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
           }
         </button>
       </div>
-      {fieldError && (
+      {errorMessage && (
         <p className="text-sm font-medium text-destructive">
-          {fieldError.message}
+          {errorMessage}
         </p>
       )}
     </div>

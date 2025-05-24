@@ -11,6 +11,19 @@ interface UsernameFieldProps {
   disabled?: boolean;
 }
 
+// Helper function to safely extract error message
+const getErrorMessage = (error: any): string | null => {
+  if (!error) return null;
+  
+  if (typeof error === 'string') return error;
+  
+  if (error && typeof error === 'object' && 'message' in error) {
+    return typeof error.message === 'string' ? error.message : String(error.message);
+  }
+  
+  return String(error);
+};
+
 export const UsernameField: React.FC<UsernameFieldProps> = ({ 
   field,
   disabled = false
@@ -19,6 +32,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   
   const formContext = useFormContext();
   const fieldError = formContext?.formState?.errors?.username;
+  const errorMessage = getErrorMessage(fieldError);
   
   if (!field) {
     console.error("UsernameField: field prop is undefined");
@@ -41,9 +55,9 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
         />
         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
       </div>
-      {fieldError && (
+      {errorMessage && (
         <p className="text-sm font-medium text-destructive">
-          {fieldError.message}
+          {errorMessage}
         </p>
       )}
     </div>

@@ -12,13 +12,33 @@ export const LoginForm = () => {
   const { form, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 
+  // Debug logging for form state
+  console.log("LoginForm render:", {
+    formExists: !!form,
+    isLoading,
+    showPassword,
+    formValues: {
+      username: form?.watch("username"),
+      password: form?.watch("password") ? "***" : "empty"
+    }
+  });
+
+  // Safety check for form object
+  if (!form) {
+    console.error("LoginForm: form object is undefined");
+    return <div className="text-red-500">Erro: Formulário não inicializado</div>;
+  }
+
   return (
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <UsernameField 
             value={form.watch("username") || ''}
-            onChange={(value) => form.setValue("username", value)}
+            onChange={(value) => {
+              console.log("LoginForm: Setting username to:", value);
+              form.setValue("username", value);
+            }}
             onBlur={() => form.trigger("username")}
             disabled={isLoading}
             error={form.formState.errors.username?.message}
@@ -26,7 +46,10 @@ export const LoginForm = () => {
 
           <PasswordField
             value={form.watch("password") || ''}
-            onChange={(value) => form.setValue("password", value)}
+            onChange={(value) => {
+              console.log("LoginForm: Setting password");
+              form.setValue("password", value);
+            }}
             onBlur={() => form.trigger("password")}
             error={form.formState.errors.password?.message}
             showPassword={showPassword}

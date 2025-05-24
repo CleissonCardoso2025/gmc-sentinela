@@ -13,7 +13,7 @@ export function useLoginForm() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(false); // Iniciar como false para evitar atrasos
+  const [isCheckingSession, setIsCheckingSession] = useState(false);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -21,12 +21,25 @@ export function useLoginForm() {
       username: "",
       password: "",
     },
+    mode: "onChange" // Add mode for better validation
   });
 
-  // Remover a verificação de sessão duplicada no hook useLoginForm
-  // para evitar conflitos com o componente Login.tsx
+  // Debug logging for form initialization
+  useEffect(() => {
+    console.log("useLoginForm: Form initialized", {
+      formExists: !!form,
+      control: !!form?.control,
+      formState: !!form?.formState,
+      defaultValues: form?.getValues()
+    });
+  }, [form]);
 
   const handleSubmit = async (data: LoginFormValues) => {
+    console.log("useLoginForm: handleSubmit called with data:", {
+      username: data.username,
+      password: data.password ? "***" : "empty"
+    });
+
     setIsLoading(true);
     
     try {
@@ -61,7 +74,7 @@ export function useLoginForm() {
           description: errorMessage,
           variant: "destructive",
         });
-        setIsLoading(false); // Importante: desativar o estado de carregamento em caso de erro
+        setIsLoading(false);
         return;
       }
       
@@ -74,7 +87,7 @@ export function useLoginForm() {
           description: "Não foi possível estabelecer uma sessão",
           variant: "destructive",
         });
-        setIsLoading(false); // Importante: desativar o estado de carregamento em caso de erro
+        setIsLoading(false);
         return;
       }
       
@@ -95,24 +108,21 @@ export function useLoginForm() {
       toast({
         title: "Login realizado",
         description: `Bem-vindo, ${userProfile}. Você será redirecionado.`,
-        duration: 2000, // Reduzido para 2 segundos
+        duration: 2000,
       });
       
-      // IMPORTANTE: Não desativar o estado de carregamento aqui para evitar que o formulário seja limpo
-      
-      // Redirecionar com base no perfil - sem atrasos para Inspetores
       console.log(`Redirecionando usuário com perfil ${userProfile}`);
       
       // Redirecionamento simples com window.location após um pequeno atraso
       setTimeout(() => {
         if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-          window.location.href = "/index"; // Usar window.location para forçar uma navegação completa
+          window.location.href = "/index";
         } else if (userProfile === "Agente" || userProfile === "Corregedor") {
           window.location.href = "/perfil";
         } else {
           window.location.href = "/dashboard";
         }
-      }, 500); // Atraso de 500ms para garantir que o localStorage seja atualizado
+      }, 500);
     } catch (error) {
       console.error("Erro de login:", error);
       toast({
@@ -120,13 +130,16 @@ export function useLoginForm() {
         description: "Ocorreu um erro inesperado. Tente novamente mais tarde.",
         variant: "destructive",
       });
-      setIsLoading(false); // Desativar o estado de carregamento apenas em caso de erro
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const togglePasswordVisibility = () => {
+    console.log("useLoginForm: togglePasswordVisibility called, current state:", showPassword);
+    setShowPassword(!showPassword);
+  };
 
   return {
     form,

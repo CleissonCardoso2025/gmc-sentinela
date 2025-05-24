@@ -15,6 +15,17 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   field,
   disabled = false
 }) => {
+  console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled);
+  
+  if (!field) {
+    console.error("UsernameField: field prop is undefined");
+    return (
+      <div className="text-red-500 text-sm">
+        Erro: Campo de usuário não foi inicializado corretamente
+      </div>
+    );
+  }
+
   return (
     <FormItem>
       <Label className="text-gray-300">Usuário</Label>

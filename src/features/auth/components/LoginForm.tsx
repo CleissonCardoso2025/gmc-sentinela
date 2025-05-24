@@ -12,6 +12,8 @@ export const LoginForm = () => {
   const { form, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 
+  console.log("LoginForm: Rendering with form:", !!form, "isLoading:", isLoading);
+
   if (!form) {
     console.error("LoginForm: form object is undefined");
     return <div className="text-red-500">Erro: Formulário não inicializado</div>;
@@ -24,25 +26,31 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="username"
-            render={({ field }) => (
-              <UsernameField 
-                field={field}
-                disabled={isLoading}
-              />
-            )}
+            render={({ field }) => {
+              console.log("LoginForm: Rendering username field with:", !!field);
+              return (
+                <UsernameField 
+                  field={field}
+                  disabled={isLoading}
+                />
+              );
+            }}
           />
 
           <FormField
             control={form.control}
             name="password"
-            render={({ field }) => (
-              <PasswordField
-                field={field}
-                showPassword={showPassword}
-                toggleVisibility={togglePasswordVisibility}
-                disabled={isLoading}
-              />
-            )}
+            render={({ field }) => {
+              console.log("LoginForm: Rendering password field with:", !!field);
+              return (
+                <PasswordField
+                  field={field}
+                  showPassword={showPassword}
+                  toggleVisibility={togglePasswordVisibility}
+                  disabled={isLoading}
+                />
+              );
+            }}
           />
 
           <div className="flex justify-end">

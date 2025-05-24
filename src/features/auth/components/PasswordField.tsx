@@ -19,6 +19,17 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   toggleVisibility,
   disabled = false
 }) => {
+  console.log("PasswordField: Rendering with field:", !!field, "disabled:", disabled);
+  
+  if (!field) {
+    console.error("PasswordField: field prop is undefined");
+    return (
+      <div className="text-red-500 text-sm">
+        Erro: Campo de senha não foi inicializado corretamente
+      </div>
+    );
+  }
+
   return (
     <FormItem>
       <Label className="text-gray-300">Senha</Label>
@@ -35,7 +46,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
           <button 
             type="button" 
             onClick={toggleVisibility}
-            className="absolute right-3 top-3 text-gray-400"
+            className="absolute right-3 top-3 text-gray-400 hover:text-gray-200"
             tabIndex={-1}
           >
             {showPassword ? 

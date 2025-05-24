@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -12,7 +13,6 @@ export function useLoginForm() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(false);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -75,7 +75,6 @@ export function useLoginForm() {
           description: errorMessage,
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
       
@@ -88,7 +87,6 @@ export function useLoginForm() {
           description: "Não foi possível estabelecer uma sessão",
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
       
@@ -98,7 +96,7 @@ export function useLoginForm() {
         userProfile = "Inspetor";
       }
       
-      // Armazenar dados no localStorage ANTES do redirecionamento
+      // Armazenar dados no localStorage
       localStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("userProfile", userProfile);
       localStorage.setItem("userName", user.email || "");
@@ -108,22 +106,20 @@ export function useLoginForm() {
       // Notificação de sucesso
       toast({
         title: "Login realizado",
-        description: `Bem-vindo, ${userProfile}. Você será redirecionado.`,
+        description: `Bem-vindo, ${userProfile}!`,
         duration: 2000,
       });
       
       console.log(`Redirecionando usuário com perfil ${userProfile}`);
       
-      // Redirecionamento simples com window.location após um pequeno atraso
-      setTimeout(() => {
-        if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-          window.location.href = "/index";
-        } else if (userProfile === "Agente" || userProfile === "Corregedor") {
-          window.location.href = "/perfil";
-        } else {
-          window.location.href = "/dashboard";
-        }
-      }, 500);
+      // Redirecionamento direto sem delay
+      if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+        navigate("/index", { replace: true });
+      } else if (userProfile === "Agente" || userProfile === "Corregedor") {
+        navigate("/perfil", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (error) {
       console.error("Erro de login:", error);
       toast({
@@ -131,7 +127,6 @@ export function useLoginForm() {
         description: "Ocorreu um erro inesperado. Tente novamente mais tarde.",
         variant: "destructive",
       });
-      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +140,6 @@ export function useLoginForm() {
   return {
     form,
     isLoading,
-    isCheckingSession,
     showPassword,
     togglePasswordVisibility,
     onSubmit: handleSubmit,

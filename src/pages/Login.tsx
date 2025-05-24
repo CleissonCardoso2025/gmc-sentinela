@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { LoginBackground } from "@/features/auth/components/LoginBackground";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -10,91 +10,105 @@ import { toast } from "sonner";
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Guard clause: já autenticado, não monta login
-    if (localStorage.getItem("isAuthenticated") === "true") {
-      const userProfile = localStorage.getItem("userProfile");
-      if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-        navigate("/index", { replace: true });
-      } else if (userProfile === "Agente" || userProfile === "Corregedor") {
-        navigate("/perfil", { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
-      return;
-    }
+    let isMounted = true;
 
-    let isMounted = true; // Cancellation pattern
-
-    // Verificar se o usuário acabou de fazer logout
-    const justSignedOut = location.state?.signedOut === true;
-    if (justSignedOut) {
-      console.log("Usuário acabou de sair, permanecendo na página de login");
-      // Limpar o estado para evitar loops
-      window.history.replaceState({}, document.title);
-      return;
-    }
-
-    // Verificação de sessão rápida e simples
-    const checkSession = async () => {
+    const checkAuthStatus = async () => {
       try {
-        // Verificar se já existe uma sessão
+        // Verificar se o usuário acabou de fazer logout
+        const justSignedOut = location.state?.signedOut === true;
+        if (justSignedOut) {
+          console.log("Usuário acabou de sair, permanecendo na página de login");
+          // Limpar o estado para evitar loops
+          window.history.replaceState({}, document.title);
+          setIsChecking(false);
+          return;
+        }
+
+        // Verificar localStorage primeiro (mais rápido)
+        const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+        if (isAuthenticated) {
+          const userProfile = localStorage.getItem("userProfile");
+          console.log("Usuário autenticado encontrado no localStorage, redirecionando...");
+          
+          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+            navigate("/index", { replace: true });
+          } else if (userProfile === "Agente" || userProfile === "Corregedor") {
+            navigate("/perfil", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
+          return;
+        }
+
+        // Verificar sessão no Supabase apenas se não houver dados no localStorage
         const { data, error } = await supabase.auth.getSession();
+        
         if (!isMounted) return;
 
         if (error) {
           console.error("Erro ao verificar sessão:", error);
-          toast.error("Erro ao verificar sessão");
+          setIsChecking(false);
           return;
         }
 
-        if (!data.session) {
-          console.log("Nenhuma sessão válida encontrada, permanecendo na tela de login");
-          return;
-        }
+        if (data.session) {
+          console.log("Sessão válida encontrada no Supabase");
+          
+          // Definir perfil do usuário
+          let userProfile = data.session.user.user_metadata?.role || "Agente";
+          if (data.session.user.email === "cleissoncardoso@gmail.com") {
+            userProfile = "Inspetor";
+          }
 
-        // Se há sessão, configurar dados do usuário e redirecionar
-        console.log("Sessão encontrada, redirecionando...");
+          // Armazenar dados no localStorage
+          localStorage.setItem("isAuthenticated", "true");
+          localStorage.setItem("userProfile", userProfile);
+          localStorage.setItem("userName", data.session.user.email || "");
+          localStorage.setItem("userId", data.session.user.id);
+          localStorage.setItem("userEmail", data.session.user.email || "");
 
-        // Definir perfil do usuário - forçar para "Inspetor" para o usuário cleissoncardoso@gmail.com
-        let userProfile = data.session.user.user_metadata?.role || "Agente";
-        if (data.session.user.email === "cleissoncardoso@gmail.com") {
-          userProfile = "Inspetor";
-        }
+          toast.success("Login realizado com sucesso");
 
-        // Armazenar dados do usuário no localStorage
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userProfile", userProfile);
-        localStorage.setItem("userName", data.session.user.email || "");
-        localStorage.setItem("userId", data.session.user.id);
-        localStorage.setItem("userEmail", data.session.user.email || "");
-
-        toast.success("Login realizado com sucesso");
-
-        // Redirecionamento simples com navigate
-        if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-          navigate("/index", { replace: true });
-        } else if (userProfile === "Agente" || userProfile === "Corregedor") {
-          navigate("/perfil", { replace: true });
+          // Redirecionamento
+          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
+            navigate("/index", { replace: true });
+          } else if (userProfile === "Agente" || userProfile === "Corregedor") {
+            navigate("/perfil", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
         } else {
-          navigate("/dashboard", { replace: true });
+          console.log("Nenhuma sessão encontrada, exibindo tela de login");
+          setIsChecking(false);
         }
       } catch (error) {
         if (isMounted) {
-          console.error("Falha na verificação de sessão:", error);
-          toast.error("Falha na verificação de sessão");
+          console.error("Erro na verificação de autenticação:", error);
+          setIsChecking(false);
         }
       }
     };
 
-    // Iniciar a verificação de sessão imediatamente
-    checkSession();
+    checkAuthStatus();
 
     return () => {
       isMounted = false;
     };
-  }, [navigate, location]);
+  }, [navigate, location.state?.signedOut]);
+
+  // Mostrar loading enquanto verifica autenticação
+  if (isChecking) {
+    return (
+      <LoginBackground>
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-white text-lg">Verificando autenticação...</div>
+        </div>
+      </LoginBackground>
+    );
+  }
 
   // Mostrar tela de login
   return (

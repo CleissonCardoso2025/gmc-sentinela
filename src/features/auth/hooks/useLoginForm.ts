@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginFormValues, loginFormSchema } from "../schemas/loginSchema";
@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function useLoginForm() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +95,7 @@ export function useLoginForm() {
         userProfile = "Inspetor";
       }
       
-      // Armazenar dados no localStorage
+      // Armazenar dados no localStorage de forma consistente
       localStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("userProfile", userProfile);
       localStorage.setItem("userName", user.email || "");
@@ -110,9 +109,9 @@ export function useLoginForm() {
         duration: 2000,
       });
       
-      console.log(`Redirecionando usuário com perfil ${userProfile}`);
+      console.log(`Login bem-sucedido, redirecionando usuário com perfil ${userProfile}`);
       
-      // Redirecionamento direto sem delay
+      // Redirecionamento baseado no perfil
       if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
         navigate("/index", { replace: true });
       } else if (userProfile === "Agente" || userProfile === "Corregedor") {

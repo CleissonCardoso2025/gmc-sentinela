@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
   userProfile: string;
@@ -8,36 +9,53 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }) => {
-  const { isAuthenticated } = useAdminAuth();
   const location = useLocation();
   const currentPath = location.pathname;
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
   useEffect(() => {
-    // Verificar permissões apenas quando o componente montar ou o caminho mudar
-    // Isso evita loops de redirecionamento
-    const checkAccess = () => {
-      // Se não autenticado, redireciona para login
-      if (!isAuthenticated) {
-        setRedirectPath('/login');
-        return;
-      }
+    let isMounted = true;
 
+    const checkAuthentication = async () => {
+      try {
+        // Verificar sessão do Supabase
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+
+        if (error || !data.session) {
+          console.log("Usuário não autenticado, redirecionando para login");
+          setIsAuthenticated(false);
+          setRedirectPath('/login');
+          return;
+        }
+
+        // Usuário autenticado
+        setIsAuthenticated(true);
+
+        // Verificar permissões de acesso
+        checkAccess();
+        
+      } catch (error) {
+        if (isMounted) {
+          console.error("Erro na verificação de autenticação:", error);
+          setIsAuthenticated(false);
+          setRedirectPath('/login');
+        }
+      }
+    };
+
+    const checkAccess = () => {
       // Inspetor e Subinspetor têm acesso total
       if (userProfile === 'Inspetor' || userProfile === 'Subinspetor') {
-        setRedirectPath(null); // Sem redirecionamento
+        setRedirectPath(null);
         return;
       }
 
       // Usuários com perfil "Agente" têm acesso restrito
       if (userProfile === 'Agente') {
-        // Lista de caminhos permitidos para Agentes
-        const allowedPaths = [
-          '/ocorrencias', 
-          '/perfil'
-        ];
-        
-        // Verifica se o caminho atual começa com algum dos caminhos permitidos
+        const allowedPaths = ['/ocorrencias', '/perfil'];
         const isAllowed = allowedPaths.some(path => 
           currentPath === path || currentPath.startsWith(`${path}/`)
         );
@@ -50,14 +68,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
       
       // Usuários com perfil "Corregedor" têm acesso restrito
       if (userProfile === 'Corregedor') {
-        // Lista de caminhos permitidos para Corregedores
-        const allowedPaths = [
-          '/ocorrencias', 
-          '/corregedoria',
-          '/perfil'
-        ];
-        
-        // Verifica se o caminho atual começa com algum dos caminhos permitidos
+        const allowedPaths = ['/ocorrencias', '/corregedoria', '/perfil'];
         const isAllowed = allowedPaths.some(path => 
           currentPath === path || currentPath.startsWith(`${path}/`)
         );
@@ -72,8 +83,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ userProfile, children }
       setRedirectPath(null);
     };
 
-    checkAccess();
-  }, [isAuthenticated, userProfile, currentPath]);
+    checkAuthentication();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userProfile, currentPath]);
+
+  // Mostrar loading enquanto verifica
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg">Verificando permissões...</div>
+      </div>
+    );
+  }
 
   // Redirecionamento se necessário
   if (redirectPath) {

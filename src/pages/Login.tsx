@@ -5,7 +5,6 @@ import { LoginBackground } from "@/features/auth/components/LoginBackground";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import InstallBanner from "@/components/pwa/InstallBanner";
-import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -23,39 +22,26 @@ const Login = () => {
           console.log("Usuário acabou de sair, permanecendo na página de login");
           // Limpar o estado para evitar loops
           window.history.replaceState({}, document.title);
-          setIsChecking(false);
+          if (isMounted) setIsChecking(false);
           return;
         }
 
-        // Verificar localStorage primeiro (mais rápido)
-        const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-        if (isAuthenticated) {
-          const userProfile = localStorage.getItem("userProfile");
-          console.log("Usuário autenticado encontrado no localStorage, redirecionando...");
-          
-          if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-            navigate("/index", { replace: true });
-          } else if (userProfile === "Agente" || userProfile === "Corregedor") {
-            navigate("/perfil", { replace: true });
-          } else {
-            navigate("/dashboard", { replace: true });
-          }
-          return;
-        }
-
-        // Verificar sessão no Supabase apenas se não houver dados no localStorage
+        // Verificar sessão no Supabase de forma mais robusta
         const { data, error } = await supabase.auth.getSession();
         
         if (!isMounted) return;
 
         if (error) {
           console.error("Erro ao verificar sessão:", error);
+          // Limpar localStorage em caso de erro
+          localStorage.removeItem("isAuthenticated");
+          localStorage.removeItem("userProfile");
           setIsChecking(false);
           return;
         }
 
-        if (data.session) {
-          console.log("Sessão válida encontrada no Supabase");
+        if (data.session && data.session.user) {
+          console.log("Sessão válida encontrada, redirecionando...");
           
           // Definir perfil do usuário
           let userProfile = data.session.user.user_metadata?.role || "Agente";
@@ -63,16 +49,14 @@ const Login = () => {
             userProfile = "Inspetor";
           }
 
-          // Armazenar dados no localStorage
+          // Armazenar dados no localStorage de forma consistente
           localStorage.setItem("isAuthenticated", "true");
           localStorage.setItem("userProfile", userProfile);
           localStorage.setItem("userName", data.session.user.email || "");
           localStorage.setItem("userId", data.session.user.id);
           localStorage.setItem("userEmail", data.session.user.email || "");
 
-          toast.success("Login realizado com sucesso");
-
-          // Redirecionamento
+          // Redirecionamento direto baseado no perfil
           if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
             navigate("/index", { replace: true });
           } else if (userProfile === "Agente" || userProfile === "Corregedor") {
@@ -81,12 +65,18 @@ const Login = () => {
             navigate("/dashboard", { replace: true });
           }
         } else {
-          console.log("Nenhuma sessão encontrada, exibindo tela de login");
+          console.log("Nenhuma sessão encontrada, mostrando tela de login");
+          // Limpar qualquer dados antigos do localStorage
+          localStorage.removeItem("isAuthenticated");
+          localStorage.removeItem("userProfile");
           setIsChecking(false);
         }
       } catch (error) {
         if (isMounted) {
           console.error("Erro na verificação de autenticação:", error);
+          // Limpar localStorage em caso de erro
+          localStorage.removeItem("isAuthenticated");
+          localStorage.removeItem("userProfile");
           setIsChecking(false);
         }
       }

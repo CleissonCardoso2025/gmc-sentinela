@@ -18,11 +18,15 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
 }) => {
   console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled);
   
-  if (!field) {
-    console.error("UsernameField: field prop is undefined");
+  // Verificação robusta do field
+  if (!field || typeof field !== 'object') {
+    console.error("UsernameField: field prop is invalid", { field, fieldType: typeof field });
     return (
-      <div className="text-red-500 text-sm">
-        Erro: Campo de usuário não foi inicializado corretamente
+      <div className="space-y-2">
+        <Label className="text-gray-300">Usuário</Label>
+        <div className="text-red-500 text-sm p-2 bg-red-100 rounded">
+          Erro: Campo de usuário não foi inicializado corretamente
+        </div>
       </div>
     );
   }
@@ -32,10 +36,10 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
       <Label className="text-gray-300">Usuário</Label>
       <div className="relative">
         <Input
-          name={field.name}
+          name={field.name || "username"}
           value={field.value || ""}
-          onChange={field.onChange}
-          onBlur={field.onBlur}
+          onChange={field.onChange || (() => {})}
+          onBlur={field.onBlur || (() => {})}
           className="pl-10 bg-gray-900/60 border-gray-700 text-white"
           placeholder="Digite seu email"
           disabled={disabled}

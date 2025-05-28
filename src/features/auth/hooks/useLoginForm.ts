@@ -12,7 +12,7 @@ export function useLoginForm() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFormInitializing, setIsFormInitializing] = useState(true);
+  const [isFormReady, setIsFormReady] = useState(false);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -23,23 +23,45 @@ export function useLoginForm() {
     mode: "onChange"
   });
 
-  // Aguardar a inicialização completa do formulário
+  // Verificação mais robusta da inicialização do formulário
   useEffect(() => {
-    console.log("useLoginForm: Form initialization check", {
-      formExists: !!form,
-      control: !!form?.control,
-      formState: !!form?.formState,
-      register: !!form?.register,
-      defaultValues: form?.getValues(),
-      errors: form?.formState?.errors
-    });
+    const checkFormReadiness = () => {
+      const isReady = !!(
+        form && 
+        form.control && 
+        form.formState && 
+        form.register && 
+        form.handleSubmit &&
+        form.getValues &&
+        typeof form.control === 'object' &&
+        typeof form.formState === 'object'
+      );
+      
+      console.log("useLoginForm: Form readiness check", {
+        isReady,
+        hasForm: !!form,
+        hasControl: !!form?.control,
+        hasFormState: !!form?.formState,
+        hasRegister: !!form?.register,
+        hasHandleSubmit: !!form?.handleSubmit,
+        controlType: typeof form?.control,
+        formStateType: typeof form?.formState
+      });
+      
+      if (isReady && !isFormReady) {
+        console.log("useLoginForm: Form is now ready!");
+        setIsFormReady(true);
+      }
+    };
 
-    // Verificar se todos os elementos essenciais do form estão prontos
-    if (form && form.control && form.formState && form.register) {
-      console.log("useLoginForm: Form is fully initialized");
-      setIsFormInitializing(false);
-    }
-  }, [form, form.control, form.formState, form.register]);
+    // Verificar imediatamente
+    checkFormReadiness();
+    
+    // Verificar novamente após um pequeno delay para garantir inicialização completa
+    const timeoutId = setTimeout(checkFormReadiness, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [form, form.control, form.formState, form.register, form.handleSubmit, isFormReady]);
 
   const handleSubmit = async (data: LoginFormValues) => {
     console.log("useLoginForm: handleSubmit called with data:", {
@@ -143,10 +165,9 @@ export function useLoginForm() {
     setShowPassword(!showPassword);
   };
 
-  // Sempre retornar o objeto form, mas usar isFormInitializing para controlar a renderização
   return {
     form,
-    isFormInitializing,
+    isFormReady,
     isLoading,
     showPassword,
     togglePasswordVisibility,

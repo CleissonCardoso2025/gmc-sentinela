@@ -14,9 +14,14 @@ export const LoginForm = () => {
 
   console.log("LoginForm: Rendering with form:", !!form, "isLoading:", isLoading);
 
-  if (!form) {
-    console.error("LoginForm: form object is undefined");
-    return <div className="text-red-500">Erro: Formulário não inicializado</div>;
+  // Add a guard to ensure form is properly initialized
+  if (!form || !form.control) {
+    console.error("LoginForm: form or form.control is undefined");
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="text-white text-lg">Inicializando formulário...</div>
+      </div>
+    );
   }
 
   return (

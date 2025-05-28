@@ -34,6 +34,9 @@ export function useLoginForm() {
     });
   }, [form]);
 
+  // Ensure form is properly initialized before returning
+  const isFormReady = form && form.control && form.formState;
+
   const handleSubmit = async (data: LoginFormValues) => {
     console.log("useLoginForm: handleSubmit called with data:", {
       username: data.username,
@@ -136,8 +139,9 @@ export function useLoginForm() {
     setShowPassword(!showPassword);
   };
 
+  // Only return the hook values when form is properly initialized
   return {
-    form,
+    form: isFormReady ? form : null,
     isLoading,
     showPassword,
     togglePasswordVisibility,

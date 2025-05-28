@@ -97,7 +97,27 @@ const EscalaTrabalho: React.FC = () => {
       console.log("Fetching escala items from database...");
       const items = await getEscalaItems();
       console.log("Fetched escala items:", items);
-      setEscalaItems(items);
+      
+      // Convert database EscalaItem[] to component EscalaItem[]
+      const convertedItems: EscalaItem[] = items.map(item => ({
+        id: item.id,
+        guarnicao: item.guarnicao,
+        supervisor: item.supervisor,
+        rota: item.rota,
+        viatura: item.viatura,
+        periodo: item.periodo,
+        agent: item.agent,
+        role: item.role,
+        schedule: item.schedule.map(s => ({
+          day: s.day,
+          shift: s.active ? '24h' : 'Folga',
+          status: s.active ? 'Ativo' : 'Inativo'
+        })),
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+      
+      setEscalaItems(convertedItems);
     } catch (error) {
       console.error("Error fetching escala items:", error);
       toast({

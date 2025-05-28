@@ -12,6 +12,7 @@ export function useLoginForm() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFormInitializing, setIsFormInitializing] = useState(true);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -22,9 +23,9 @@ export function useLoginForm() {
     mode: "onChange"
   });
 
-  // Debug logging para inicialização do formulário
+  // Aguardar a inicialização completa do formulário
   useEffect(() => {
-    console.log("useLoginForm: Form initialized", {
+    console.log("useLoginForm: Form initialization check", {
       formExists: !!form,
       control: !!form?.control,
       formState: !!form?.formState,
@@ -32,10 +33,13 @@ export function useLoginForm() {
       defaultValues: form?.getValues(),
       errors: form?.formState?.errors
     });
-  }, [form]);
 
-  // Ensure form is properly initialized before returning
-  const isFormReady = form && form.control && form.formState;
+    // Verificar se todos os elementos essenciais do form estão prontos
+    if (form && form.control && form.formState && form.register) {
+      console.log("useLoginForm: Form is fully initialized");
+      setIsFormInitializing(false);
+    }
+  }, [form, form.control, form.formState, form.register]);
 
   const handleSubmit = async (data: LoginFormValues) => {
     console.log("useLoginForm: handleSubmit called with data:", {
@@ -139,9 +143,10 @@ export function useLoginForm() {
     setShowPassword(!showPassword);
   };
 
-  // Only return the hook values when form is properly initialized
+  // Sempre retornar o objeto form, mas usar isFormInitializing para controlar a renderização
   return {
-    form: isFormReady ? form : null,
+    form,
+    isFormInitializing,
     isLoading,
     showPassword,
     togglePasswordVisibility,

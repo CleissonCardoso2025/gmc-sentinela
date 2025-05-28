@@ -9,20 +9,25 @@ import { Loader2 } from "lucide-react";
 import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 
 export const LoginForm = () => {
-  const { form, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
+  const { form, isFormInitializing, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 
-  console.log("LoginForm: Rendering with form:", !!form, "isLoading:", isLoading);
+  console.log("LoginForm: Rendering with form:", !!form, "isFormInitializing:", isFormInitializing, "isLoading:", isLoading);
 
-  // Add a guard to ensure form is properly initialized
-  if (!form || !form.control) {
-    console.error("LoginForm: form or form.control is undefined");
+  // Mostrar loading enquanto o formulário está sendo inicializado
+  if (isFormInitializing) {
+    console.log("LoginForm: Form is still initializing, showing loading state");
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <div className="text-white text-lg">Inicializando formulário...</div>
+        <div className="flex items-center space-x-2 text-white">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-lg">Inicializando formulário...</span>
+        </div>
       </div>
     );
   }
+
+  console.log("LoginForm: Form is ready, rendering login form");
 
   return (
     <>

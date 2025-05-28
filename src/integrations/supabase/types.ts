@@ -352,6 +352,57 @@ export type Database = {
         }
         Relationships: []
       }
+      system_api_keys: {
+        Row: {
+          created_at: string | null
+          id: string
+          key_name: string
+          key_value: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key_name: string
+          key_value: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key_name?: string
+          key_value?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      system_webhooks: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          event: string
+          id: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          event: string
+          id?: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          event?: string
+          id?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
@@ -500,6 +551,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      webhook_notification_log: {
+        Row: {
+          created_at: string | null
+          event: string
+          id: string
+          response_message: string | null
+          status: boolean
+          status_code: number | null
+          webhook_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event: string
+          id?: string
+          response_message?: string | null
+          status: boolean
+          status_code?: number | null
+          webhook_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event?: string
+          id?: string
+          response_message?: string | null
+          status?: boolean
+          status_code?: number | null
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_notification_log_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "system_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

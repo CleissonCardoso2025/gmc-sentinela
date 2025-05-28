@@ -32,7 +32,10 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
       <Label className="text-gray-300">Usuário</Label>
       <div className="relative">
         <Input
-          {...field}
+          name={field.name}
+          value={field.value || ""}
+          onChange={field.onChange}
+          onBlur={field.onBlur}
           className="pl-10 bg-gray-900/60 border-gray-700 text-white"
           placeholder="Digite seu email"
           disabled={disabled}

@@ -2,6 +2,7 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ControllerRenderProps } from "react-hook-form";
 
@@ -20,7 +21,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   disabled = false,
   error
 }) => {
-  console.log("PasswordField: Rendering with field:", !!field, "disabled:", disabled);
+  console.log("PasswordField: Rendering with field:", !!field, "showPassword:", showPassword);
   
   if (!field) {
     console.error("PasswordField: field prop is undefined");
@@ -36,24 +37,30 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
       <Label className="text-gray-300">Senha</Label>
       <div className="relative">
         <Input
-          {...field}
+          name={field.name}
+          value={field.value || ""}
+          onChange={field.onChange}
+          onBlur={field.onBlur}
           type={showPassword ? "text" : "password"}
           className="pl-10 pr-10 bg-gray-900/60 border-gray-700 text-white"
           placeholder="Digite sua senha"
           disabled={disabled}
         />
         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-        <button 
-          type="button" 
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
           onClick={toggleVisibility}
-          className="absolute right-3 top-3 text-gray-400 hover:text-gray-200"
-          tabIndex={-1}
+          disabled={disabled}
         >
-          {showPassword ? 
-            <EyeOff className="h-4 w-4" /> : 
-            <Eye className="h-4 w-4" />
-          }
-        </button>
+          {showPassword ? (
+            <EyeOff className="h-4 w-4 text-gray-400" />
+          ) : (
+            <Eye className="h-4 w-4 text-gray-400" />
+          )}
+        </Button>
       </div>
       {error && (
         <p className="text-sm font-medium text-destructive">

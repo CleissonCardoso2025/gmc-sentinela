@@ -13,11 +13,10 @@ import {
 } from "@/components/ui/table";
 import { Calendar, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from 'uuid';
-import { supabase } from "@/integrations/supabase/client";
 import { EscalaItem } from './Escala/types';
 import NovaEscala from './NovaEscala';
 import { VehicleProvider } from '@/contexts/VehicleContext';
+import { getEscalaItems, deleteEscalaItem } from '@/services/escalaService/apiEscalaService';
 
 const EscalaTrabalho: React.FC = () => {
   const [escalaItems, setEscalaItems] = useState<EscalaItem[]>([]);
@@ -30,99 +29,86 @@ const EscalaTrabalho: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchLookupData = async () => {
-      try {
-        const { data: guarnicoesData, error: guarnicoesError } = await supabase
-          .from('guarnicoes')
-          .select('id, nome');
-
-        if (guarnicoesError) throw guarnicoesError;
-        
-        const guarnicoes: {[key: string]: string} = {};
-        guarnicoesData.forEach(item => {
-          guarnicoes[item.id] = item.nome;
-        });
-        setGuarnicaoNames(guarnicoes);
-        
-        // First try to fetch from vehicles table (which has real data)
-        const { data: vehiclesData, error: vehiclesError } = await supabase
-          .from('vehicles')
-          .select('id, placa, modelo');
-          
-        if (!vehiclesError && vehiclesData && vehiclesData.length > 0) {
-          // Map vehicles data to the format expected by the viatura codes
-          const viaturas: {[key: string]: string} = {};
-          vehiclesData.forEach(item => {
-            // Convert vehicle id to string since our components expect string ids
-            viaturas[String(item.id)] = `${item.placa} (${item.modelo})`;
-          });
-          setViaturaCodes(viaturas);
-        } else {
-          // Fallback to viaturas table if vehicles table query fails or returns empty
-          const { data: viaturasData, error: viaturasError } = await supabase
-            .from('viaturas')
-            .select('id, codigo, modelo');
-
-          if (viaturasError) throw viaturasError;
-          
-          const viaturas: {[key: string]: string} = {};
-          viaturasData.forEach(item => {
-            viaturas[item.id] = `${item.codigo} (${item.modelo})`;
-          });
-          setViaturaCodes(viaturas);
-        }
-        
-        const { data: rotasData, error: rotasError } = await supabase
-          .from('rotas')
-          .select('id, nome');
-
-        if (rotasError) throw rotasError;
-        
-        const rotas: {[key: string]: string} = {};
-        rotasData.forEach(item => {
-          rotas[item.id] = item.nome;
-        });
-        setRotaNames(rotas);
-      } catch (error) {
-        console.error("Error fetching lookup data:", error);
-      }
-    };
-
     fetchLookupData();
+    fetchEscalaItems();
   }, []);
 
-  useEffect(() => {
-    const fetchEscalaItems = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('escala_items')
-          .select('*');
+  const fetchLookupData = async () => {
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      const { data: guarnicoesData, error: guarnicoesError } = await supabase
+        .from('guarnicoes')
+        .select('id, nome');
 
-        if (error) throw error;
-
-        const transformedData = data.map(item => ({
-          ...item,
-          schedule: Array.isArray(item.schedule) 
-            ? item.schedule
-            : []
-        })) as EscalaItem[];
-
-        setEscalaItems(transformedData);
-      } catch (error) {
-        console.error("Error fetching escala items:", error);
-        toast({
-          title: "Erro ao carregar escalas",
-          description: "Não foi possível carregar as escalas de trabalho.",
-          variant: "destructive"
+      if (guarnicoesError) throw guarnicoesError;
+      
+      const guarnicoes: {[key: string]: string} = {};
+      guarnicoesData.forEach(item => {
+        guarnicoes[item.id] = item.nome;
+      });
+      setGuarnicaoNames(guarnicoes);
+      
+      // Try to fetch from vehicles table first
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select('id, placa, modelo');
+        
+      if (!vehiclesError && vehiclesData && vehiclesData.length > 0) {
+        const viaturas: {[key: string]: string} = {};
+        vehiclesData.forEach(item => {
+          viaturas[String(item.id)] = `${item.placa} (${item.modelo})`;
         });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+        setViaturaCodes(viaturas);
+      } else {
+        // Fallback to viaturas table
+        const { data: viaturasData, error: viaturasError } = await supabase
+          .from('viaturas')
+          .select('id, codigo, modelo');
 
-    fetchEscalaItems();
-  }, [toast]);
+        if (viaturasError) throw viaturasError;
+        
+        const viaturas: {[key: string]: string} = {};
+        viaturasData.forEach(item => {
+          viaturas[item.id] = `${item.codigo} (${item.modelo})`;
+        });
+        setViaturaCodes(viaturas);
+      }
+      
+      const { data: rotasData, error: rotasError } = await supabase
+        .from('rotas')
+        .select('id, nome');
+
+      if (rotasError) throw rotasError;
+      
+      const rotas: {[key: string]: string} = {};
+      rotasData.forEach(item => {
+        rotas[item.id] = item.nome;
+      });
+      setRotaNames(rotas);
+    } catch (error) {
+      console.error("Error fetching lookup data:", error);
+    }
+  };
+
+  const fetchEscalaItems = async () => {
+    setIsLoading(true);
+    try {
+      console.log("Fetching escala items from database...");
+      const items = await getEscalaItems();
+      console.log("Fetched escala items:", items);
+      setEscalaItems(items);
+    } catch (error) {
+      console.error("Error fetching escala items:", error);
+      toast({
+        title: "Erro ao carregar escalas",
+        description: "Não foi possível carregar as escalas de trabalho.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateNew = () => {
     setSelectedEscalaItem(null);
@@ -137,24 +123,12 @@ const EscalaTrabalho: React.FC = () => {
   const handleSave = async () => {
     toast({
       title: "Escala salva",
-      description: "A escala foi salva com sucesso.",
+      description: "A escala foi salva com sucesso na base de dados.",
     });
     setIsCreatingEscala(false);
     
-    const { data, error } = await supabase
-      .from('escala_items')
-      .select('*');
-
-    if (!error && data) {
-      const transformedData = data.map(item => ({
-        ...item,
-        schedule: Array.isArray(item.schedule) 
-          ? item.schedule
-          : []
-      })) as EscalaItem[];
-
-      setEscalaItems(transformedData);
-    }
+    // Refresh the list after saving
+    await fetchEscalaItems();
   };
 
   const handleCancel = () => {
@@ -164,19 +138,10 @@ const EscalaTrabalho: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      setIsLoading(true);
-      const { error } = await supabase
-        .from('escala_items')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setEscalaItems(escalaItems.filter(item => item.id !== id));
-      toast({
-        title: "Escala excluída",
-        description: "A escala foi excluída com sucesso.",
-      });
+      const success = await deleteEscalaItem(id);
+      if (success) {
+        await fetchEscalaItems(); // Refresh the list
+      }
     } catch (error) {
       console.error("Error deleting escala:", error);
       toast({
@@ -184,8 +149,6 @@ const EscalaTrabalho: React.FC = () => {
         description: "Não foi possível excluir a escala.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -223,7 +186,7 @@ const EscalaTrabalho: React.FC = () => {
           <Card>
             <CardContent className="p-4">
               <Table>
-                <TableCaption>Lista de escalas de trabalho.</TableCaption>
+                <TableCaption>Lista de escalas de trabalho salvas na base de dados.</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[100px]">Guarnição</TableHead>
@@ -231,6 +194,7 @@ const EscalaTrabalho: React.FC = () => {
                     <TableHead>Rota</TableHead>
                     <TableHead>Viatura</TableHead>
                     <TableHead>Período</TableHead>
+                    <TableHead>Data Criação</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -243,6 +207,12 @@ const EscalaTrabalho: React.FC = () => {
                         <TableCell>{getDisplayName('rota', escalaItem.rota)}</TableCell>
                         <TableCell>{getDisplayName('viatura', escalaItem.viatura)}</TableCell>
                         <TableCell>{escalaItem.periodo} dias</TableCell>
+                        <TableCell>
+                          {escalaItem.created_at 
+                            ? new Date(escalaItem.created_at).toLocaleDateString('pt-BR')
+                            : 'N/A'
+                          }
+                        </TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button variant="secondary" size="sm" onClick={() => handleEdit(escalaItem.id)}>
                             Editar
@@ -255,8 +225,8 @@ const EscalaTrabalho: React.FC = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                        Nenhuma escala cadastrada. Clique em "Nova Escala" para criar.
+                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                        {isLoading ? "Carregando escalas..." : "Nenhuma escala cadastrada. Clique em 'Nova Escala' para criar."}
                       </TableCell>
                     </TableRow>
                   )}

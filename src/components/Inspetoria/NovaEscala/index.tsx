@@ -10,6 +10,7 @@ import {
   generateSortedSchedule
 } from './utils';
 import { useVehicles } from '@/contexts/VehicleContext';
+import { createEscalaItem, updateEscalaItem } from '@/services/escalaService/apiEscalaService';
 
 // Component imports
 import PeriodoSelection from './components/PeriodoSelection';
@@ -291,61 +292,75 @@ const NovaEscala: React.FC<NovaEscalaProps> = ({ onSave, onCancel, editingId }) 
     try {
       setIsLoading(true);
       
-      // Get viatura and rota details for display
-      const viatura = viaturas.find(v => v.id === selectedViaturaId);
-      const rota = rotas.find(r => r.id === selectedRotaId);
+      console.log("Saving escala with data:", {
+        selectedGuarnicao,
+        selectedViaturaId,
+        selectedRotaId,
+        supervisor,
+        periodoDuration,
+        scheduleData
+      });
+      
+      // Format schedule data for the database
+      const formattedSchedule = scheduleData.map(entry => ({
+        date: entry.date.toISOString().split('T')[0],
+        day: entry.date.toLocaleDateString('pt-BR', { weekday: 'long' }),
+        agentId: entry.agentId,
+        shift: entry.shift,
+        active: entry.shift === '24h',
+        supervisor: entry.supervisor || false
+      }));
       
       // Format data for saving
       const escalaData = {
-        id: editingId || undefined,
         guarnicao: selectedGuarnicaoId,
-        supervisor: supervisor,
+        supervisor: supervisor || selectedGuarnicao.supervisor || "Não informado",
         rota: selectedRotaId,
         viatura: selectedViaturaId,
         periodo: periodoDuration,
         agent: selectedGuarnicao.nome || "",
         role: "Guarnição",
-        schedule: scheduleData.map(entry => ({
-          date: entry.date.toISOString(),
-          agentId: entry.agentId,
-          shift: entry.shift,
-          supervisor: entry.supervisor
-        }))
+        schedule: formattedSchedule
       };
+      
+      console.log("Formatted escala data for save:", escalaData);
       
       if (editingId) {
         // Update existing escala
-        const { error } = await supabase
-          .from('escala_items')
-          .update(escalaData)
-          .eq('id', editingId);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Escala atualizada",
-          description: "A escala foi atualizada com sucesso.",
+        const result = await updateEscalaItem({
+          id: editingId,
+          ...escalaData,
+          schedule: formattedSchedule.map(s => ({
+            day: s.day,
+            date: s.date,
+            active: s.active
+          }))
         });
+        
+        if (result) {
+          toast({
+            title: "Escala atualizada",
+            description: "A escala foi atualizada com sucesso.",
+          });
+          onSave();
+        }
       } else {
         // Create new escala
-        const { error } = await supabase
-          .from('escala_items')
-          .insert(escalaData);
+        const result = await createEscalaItem(escalaData);
         
-        if (error) throw error;
-        
-        toast({
-          title: "Escala criada",
-          description: "A escala foi criada com sucesso.",
-        });
+        if (result) {
+          toast({
+            title: "Escala criada",
+            description: "A escala foi criada e salva com sucesso.",
+          });
+          onSave();
+        }
       }
-      
-      onSave();
     } catch (error) {
       console.error("Error saving escala:", error);
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar a escala.",
+        description: "Não foi possível salvar a escala na base de dados.",
         variant: "destructive"
       });
     } finally {

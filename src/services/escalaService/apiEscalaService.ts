@@ -9,7 +9,8 @@ export const getEscalaItems = async (): Promise<EscalaItem[]> => {
   try {
     const { data, error } = await supabase
       .from('escala_items')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error("Error fetching escala items:", error);
@@ -26,11 +27,10 @@ export const getEscalaItems = async (): Promise<EscalaItem[]> => {
       periodo: item.periodo,
       agent: item.agent,
       role: item.role,
-      // Fix: Properly type cast the schedule data
       schedule: (item.schedule as any[] || []).map(s => ({
-        day: s.day,
-        date: s.date,
-        active: s.active
+        day: s.day || s.date || '',
+        date: s.date || s.day || '',
+        active: s.active || s.shift === '24h' || false
       })) as ScheduleDay[],
       created_at: item.created_at,
       updated_at: item.updated_at
@@ -140,11 +140,10 @@ export const getEscalaItemById = async (id: string): Promise<EscalaItem | null> 
       periodo: data.periodo,
       agent: data.agent,
       role: data.role,
-      // Fix: Properly type cast the schedule data
       schedule: (data.schedule as any[] || []).map(s => ({
-        day: s.day,
-        date: s.date,
-        active: s.active
+        day: s.day || s.date || '',
+        date: s.date || s.day || '',
+        active: s.active || s.shift === '24h' || false
       })) as ScheduleDay[],
       created_at: data.created_at,
       updated_at: data.updated_at
@@ -157,22 +156,30 @@ export const getEscalaItemById = async (id: string): Promise<EscalaItem | null> 
 };
 
 // Create new escala item
-export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Promise<EscalaItem | null> => {
+export const createEscalaItem = async (escalaData: {
+  guarnicao: string;
+  supervisor: string;
+  rota: string;
+  viatura: string;
+  periodo: string;
+  agent: string;
+  role: string;
+  schedule: any[];
+}): Promise<EscalaItem | null> => {
   try {
-    // Convert ScheduleDay[] to Json compatible format
-    const scheduleForDB = escalaItem.schedule as unknown as Json;
+    console.log("Creating escala item with data:", escalaData);
     
     const { data, error } = await supabase
       .from('escala_items')
       .insert([{
-        guarnicao: escalaItem.guarnicao,
-        supervisor: escalaItem.supervisor,
-        rota: escalaItem.rota,
-        viatura: escalaItem.viatura,
-        periodo: escalaItem.periodo,
-        agent: escalaItem.agent,
-        role: escalaItem.role,
-        schedule: scheduleForDB
+        guarnicao: escalaData.guarnicao,
+        supervisor: escalaData.supervisor,
+        rota: escalaData.rota,
+        viatura: escalaData.viatura,
+        periodo: escalaData.periodo,
+        agent: escalaData.agent,
+        role: escalaData.role,
+        schedule: escalaData.schedule as Json
       }])
       .select()
       .single();
@@ -183,7 +190,9 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
       return null;
     }
 
-    toast.success("Item de escala criado com sucesso");
+    console.log("Escala item created successfully:", data);
+    toast.success("Escala criada com sucesso");
+    
     return {
       id: data.id,
       guarnicao: data.guarnicao,
@@ -193,11 +202,10 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
       periodo: data.periodo,
       agent: data.agent,
       role: data.role,
-      // Fix: Properly type cast the schedule data
       schedule: (data.schedule as any[] || []).map(s => ({
-        day: s.day,
-        date: s.date,
-        active: s.active
+        day: s.day || s.date || '',
+        date: s.date || s.day || '',
+        active: s.active || s.shift === '24h' || false
       })) as ScheduleDay[],
       created_at: data.created_at,
       updated_at: data.updated_at
@@ -212,7 +220,6 @@ export const createEscalaItem = async (escalaItem: Omit<EscalaItem, 'id'>): Prom
 // Update escala item
 export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaItem | null> => {
   try {
-    // Convert ScheduleDay[] to Json compatible format
     const scheduleForDB = escalaItem.schedule as unknown as Json;
     
     const { data, error } = await supabase
@@ -247,11 +254,10 @@ export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaIt
       periodo: data.periodo,
       agent: data.agent,
       role: data.role,
-      // Fix: Properly type cast the schedule data
       schedule: (data.schedule as any[] || []).map(s => ({
-        day: s.day,
-        date: s.date,
-        active: s.active
+        day: s.day || s.date || '',
+        date: s.date || s.day || '',
+        active: s.active || s.shift === '24h' || false
       })) as ScheduleDay[],
       created_at: data.created_at,
       updated_at: data.updated_at

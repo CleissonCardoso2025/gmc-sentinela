@@ -14,8 +14,8 @@ export const LoginForm = () => {
 
   console.log("LoginForm: Rendering with form ready:", isFormReady, "isLoading:", isLoading);
 
-  // Verificação dupla: aguardar até que o formulário esteja completamente pronto
-  if (!isFormReady || !form || !form.control) {
+  // Don't render anything until the form is completely ready
+  if (!isFormReady || !form) {
     console.log("LoginForm: Form not ready yet, showing loading state");
     return (
       <div className="flex justify-center items-center min-h-[200px]">
@@ -36,33 +36,27 @@ export const LoginForm = () => {
           <FormField
             control={form.control}
             name="username"
-            render={({ field, fieldState }) => {
-              console.log("LoginForm: Rendering username field with field:", !!field, "error:", fieldState.error);
-              return (
-                <UsernameField 
-                  field={field}
-                  disabled={isLoading}
-                  error={fieldState.error?.message}
-                />
-              );
-            }}
+            render={({ field, fieldState }) => (
+              <UsernameField 
+                field={field}
+                disabled={isLoading}
+                error={fieldState.error?.message}
+              />
+            )}
           />
 
           <FormField
             control={form.control}
             name="password"
-            render={({ field, fieldState }) => {
-              console.log("LoginForm: Rendering password field with field:", !!field, "error:", fieldState.error);
-              return (
-                <PasswordField
-                  field={field}
-                  showPassword={showPassword}
-                  toggleVisibility={togglePasswordVisibility}
-                  disabled={isLoading}
-                  error={fieldState.error?.message}
-                />
-              );
-            }}
+            render={({ field, fieldState }) => (
+              <PasswordField
+                field={field}
+                showPassword={showPassword}
+                toggleVisibility={togglePasswordVisibility}
+                disabled={isLoading}
+                error={fieldState.error?.message}
+              />
+            )}
           />
 
           <div className="flex justify-end">

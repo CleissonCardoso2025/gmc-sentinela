@@ -18,7 +18,7 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
 }) => {
   console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled);
   
-  // Verificação robusta do field
+  // Additional safety check - this should not happen anymore with proper form initialization
   if (!field || typeof field !== 'object') {
     console.error("UsernameField: field prop is invalid", { field, fieldType: typeof field });
     return (

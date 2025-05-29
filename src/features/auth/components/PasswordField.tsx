@@ -23,7 +23,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 }) => {
   console.log("PasswordField: Rendering with field:", !!field, "showPassword:", showPassword);
   
-  // Verificação robusta do field
+  // Additional safety check - this should not happen anymore with proper form initialization
   if (!field || typeof field !== 'object') {
     console.error("PasswordField: field prop is invalid", { field, fieldType: typeof field });
     return (

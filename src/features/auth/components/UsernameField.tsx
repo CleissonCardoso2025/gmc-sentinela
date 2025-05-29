@@ -16,11 +16,21 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   disabled = false,
   error
 }) => {
-  console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled);
+  console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled, "field details:", {
+    hasName: !!field?.name,
+    hasValue: field?.value !== undefined,
+    hasOnChange: !!field?.onChange,
+    hasOnBlur: !!field?.onBlur
+  });
   
-  // Additional safety check - this should not happen anymore with proper form initialization
-  if (!field || typeof field !== 'object') {
-    console.error("UsernameField: field prop is invalid", { field, fieldType: typeof field });
+  // Enhanced safety check with more detailed validation
+  if (!field || typeof field !== 'object' || !field.name || typeof field.onChange !== 'function') {
+    console.error("UsernameField: field prop is invalid or incomplete", { 
+      field, 
+      fieldType: typeof field,
+      hasName: !!field?.name,
+      hasOnChange: typeof field?.onChange === 'function'
+    });
     return (
       <div className="space-y-2">
         <Label className="text-gray-300">Usuário</Label>
@@ -36,10 +46,10 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
       <Label className="text-gray-300">Usuário</Label>
       <div className="relative">
         <Input
-          name={field.name || "username"}
+          name={field.name}
           value={field.value || ""}
-          onChange={field.onChange || (() => {})}
-          onBlur={field.onBlur || (() => {})}
+          onChange={field.onChange}
+          onBlur={field.onBlur}
           className="pl-10 bg-gray-900/60 border-gray-700 text-white"
           placeholder="Digite seu email"
           disabled={disabled}

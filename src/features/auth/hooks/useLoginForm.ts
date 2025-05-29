@@ -23,20 +23,25 @@ export function useLoginForm() {
     mode: "onChange"
   });
 
-  // Enhanced form readiness check with multiple validation steps
+  // Enhanced form readiness check with more robust validation
   useEffect(() => {
     let isMounted = true;
     let checkCount = 0;
-    const maxChecks = 50; // Maximum attempts to prevent infinite loops
-
+    const maxChecks = 100; // Increased max checks
+    
     const checkFormReadiness = () => {
       checkCount++;
       
       if (!isMounted || checkCount > maxChecks) {
         console.log("useLoginForm: Stopping readiness check", { isMounted, checkCount });
+        if (isMounted && checkCount > maxChecks) {
+          console.warn("useLoginForm: Max checks reached, forcing form ready state");
+          setIsFormReady(true);
+        }
         return;
       }
 
+      // More comprehensive readiness check
       const isReady = !!(
         form && 
         form.control && 
@@ -44,10 +49,16 @@ export function useLoginForm() {
         form.register && 
         form.handleSubmit &&
         form.getValues &&
+        form.setValue &&
+        form.watch &&
         typeof form.control === 'object' &&
         typeof form.formState === 'object' &&
         form.control._subjects &&
-        form.control._names
+        form.control._names &&
+        form.control._fields &&
+        // Check that the form state is properly initialized
+        typeof form.formState.errors === 'object' &&
+        typeof form.formState.isValid === 'boolean'
       );
       
       console.log("useLoginForm: Form readiness check #" + checkCount, {
@@ -56,7 +67,10 @@ export function useLoginForm() {
         hasControl: !!form?.control,
         hasFormState: !!form?.formState,
         hasSubjects: !!form?.control?._subjects,
-        hasNames: !!form?.control?._names
+        hasNames: !!form?.control?._names,
+        hasFields: !!form?.control?._fields,
+        hasErrors: typeof form?.formState?.errors === 'object',
+        hasIsValid: typeof form?.formState?.isValid === 'boolean'
       });
       
       if (isReady && !isFormReady) {
@@ -64,12 +78,12 @@ export function useLoginForm() {
         setIsFormReady(true);
       } else if (!isReady) {
         // Continue checking until ready or max attempts reached
-        setTimeout(checkFormReadiness, 50);
+        setTimeout(checkFormReadiness, 25); // Reduced interval for faster checks
       }
     };
 
     // Start checking after a small delay to ensure initial render is complete
-    const timeoutId = setTimeout(checkFormReadiness, 100);
+    const timeoutId = setTimeout(checkFormReadiness, 50);
     
     return () => {
       isMounted = false;

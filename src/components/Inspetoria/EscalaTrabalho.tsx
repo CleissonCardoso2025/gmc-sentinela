@@ -18,9 +18,25 @@ import NovaEscala from './NovaEscala';
 import { VehicleProvider } from '@/contexts/VehicleContext';
 import { getEscalaItems, deleteEscalaItem } from '@/services/escalaService/apiEscalaService';
 
-const EscalaTrabalho: React.FC = () => {
+interface EscalaTrabalhoProps {
+  onCreateNew?: () => void;
+  onEdit?: (id: string) => void;
+  onSave?: () => void;
+  onCancel?: () => void;
+  isCreatingEscala?: boolean;
+  editingId?: string | null;
+}
+
+const EscalaTrabalho: React.FC<EscalaTrabalhoProps> = ({
+  onCreateNew,
+  onEdit,
+  onSave,
+  onCancel,
+  isCreatingEscala: externalIsCreatingEscala = false,
+  editingId = null
+}) => {
   const [escalaItems, setEscalaItems] = useState<EscalaItem[]>([]);
-  const [isCreatingEscala, setIsCreatingEscala] = useState(false);
+  const [internalIsCreatingEscala, setInternalIsCreatingEscala] = useState(false);
   const [selectedEscalaItem, setSelectedEscalaItem] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [guarnicaoNames, setGuarnicaoNames] = useState<{[key: string]: string}>({});
@@ -131,29 +147,39 @@ const EscalaTrabalho: React.FC = () => {
   };
 
   const handleCreateNew = () => {
-    setSelectedEscalaItem(null);
-    setIsCreatingEscala(true);
+    if (onCreateNew) {
+      onCreateNew();
+    } else {
+      setInternalIsCreatingEscala(true);
+    }
   };
 
   const handleEdit = (id: string) => {
-    setSelectedEscalaItem(id);
-    setIsCreatingEscala(true);
+    if (onEdit) {
+      onEdit(id);
+    } else {
+      setSelectedEscalaItem(id);
+      setInternalIsCreatingEscala(true);
+    }
   };
 
-  const handleSave = async () => {
-    toast({
-      title: "Escala salva",
-      description: "A escala foi salva com sucesso na base de dados.",
-    });
-    setIsCreatingEscala(false);
-    
-    // Refresh the list after saving
-    await fetchEscalaItems();
+  const handleSave = () => {
+    if (onSave) {
+      onSave();
+    } else {
+      setInternalIsCreatingEscala(false);
+      setSelectedEscalaItem(null);
+    }
+    fetchEscalaItems(); // Refresh the list
   };
 
   const handleCancel = () => {
-    setIsCreatingEscala(false);
-    setSelectedEscalaItem(null);
+    if (onCancel) {
+      onCancel();
+    } else {
+      setInternalIsCreatingEscala(false);
+      setSelectedEscalaItem(null);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -183,14 +209,17 @@ const EscalaTrabalho: React.FC = () => {
     return id;
   };
 
+  // Determine if we should show the creation form based on either external or internal state
+  const showCreationForm = externalIsCreatingEscala || internalIsCreatingEscala;
+
   return (
     <div className="space-y-4">
-      {isCreatingEscala ? (
+      {showCreationForm ? (
         <VehicleProvider>
           <NovaEscala 
             onSave={handleSave} 
             onCancel={handleCancel}
-            editingId={selectedEscalaItem}
+            editingId={editingId || selectedEscalaItem}
           />
         </VehicleProvider>
       ) : (

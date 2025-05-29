@@ -33,6 +33,8 @@ const InspetoriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isCreatingGuarnicao, setIsCreatingGuarnicao] = useState(false);
   const [isCreatingRota, setIsCreatingRota] = useState(false);
+  const [isCreatingEscala, setIsCreatingEscala] = useState(false);
+  const [escalaToEdit, setEscalaToEdit] = useState<string | null>(null);
   const [guarnicaoToEdit, setGuarnicaoToEdit] = useState<Guarnicao | null>(null);
 
   const handleEditGuarnicao = (guarnicao: Guarnicao) => {
@@ -48,6 +50,26 @@ const InspetoriaPage: React.FC = () => {
   const handleSaveGuarnicao = () => {
     setIsCreatingGuarnicao(false);
     setGuarnicaoToEdit(null);
+  };
+
+  const handleCreateEscala = () => {
+    setIsCreatingEscala(true);
+    setEscalaToEdit(null);
+  };
+
+  const handleEditEscala = (escalaId: string) => {
+    setEscalaToEdit(escalaId);
+    setIsCreatingEscala(true);
+  };
+
+  const handleSaveEscala = () => {
+    setIsCreatingEscala(false);
+    setEscalaToEdit(null);
+  };
+
+  const handleCancelEscala = () => {
+    setIsCreatingEscala(false);
+    setEscalaToEdit(null);
   };
 
   return (
@@ -146,7 +168,14 @@ const InspetoriaPage: React.FC = () => {
           <TabsContent value="escala">
             <Card className="p-4 sm:p-6 animate-fade-in">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">Escala de Trabalho</h2>
-              <EscalaTrabalho />
+              <EscalaTrabalho 
+                onCreateNew={handleCreateEscala}
+                onEdit={handleEditEscala}
+                onSave={handleSaveEscala}
+                onCancel={handleCancelEscala}
+                isCreatingEscala={isCreatingEscala}
+                editingId={escalaToEdit}
+              />
             </Card>
           </TabsContent>
 

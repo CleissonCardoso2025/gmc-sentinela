@@ -38,15 +38,38 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const [userProfile, setUserProfile] = React.useState<string>("Agente");
+  const [isReactReady, setIsReactReady] = React.useState(false);
 
   React.useEffect(() => {
     const storedProfile = localStorage.getItem("userProfile");
     if (storedProfile) {
       setUserProfile(storedProfile);
     }
+    
+    // Ensure React is fully loaded before initializing TooltipProvider
+    const checkReactReady = () => {
+      if (React && React.useState && React.useEffect) {
+        console.log("React is ready, initializing TooltipProvider");
+        setIsReactReady(true);
+      } else {
+        console.log("React not ready yet, retrying...");
+        setTimeout(checkReactReady, 10);
+      }
+    };
+    
+    checkReactReady();
   }, []);
 
-  console.log("App component rendering, userProfile:", userProfile);
+  console.log("App component rendering, userProfile:", userProfile, "isReactReady:", isReactReady);
+
+  // Don't render TooltipProvider until React is fully ready
+  if (!isReactReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

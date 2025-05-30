@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ControllerRenderProps } from "react-hook-form";
 
 interface UsernameFieldProps {
-  field: ControllerRenderProps<any, any>;
+  field?: ControllerRenderProps<any, any>;
   disabled?: boolean;
   error?: string;
 }
@@ -16,26 +16,21 @@ export const UsernameField: React.FC<UsernameFieldProps> = ({
   disabled = false,
   error
 }) => {
-  console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled, "field details:", {
-    hasName: !!field?.name,
-    hasValue: field?.value !== undefined,
-    hasOnChange: !!field?.onChange,
-    hasOnBlur: !!field?.onBlur
-  });
+  console.log("UsernameField: Rendering with field:", !!field, "disabled:", disabled);
   
-  // Enhanced safety check with more detailed validation
-  if (!field || typeof field !== 'object' || !field.name || typeof field.onChange !== 'function') {
-    console.error("UsernameField: field prop is invalid or incomplete", { 
-      field, 
-      fieldType: typeof field,
-      hasName: !!field?.name,
-      hasOnChange: typeof field?.onChange === 'function'
-    });
+  // Return early if field is not provided or invalid
+  if (!field) {
+    console.log("UsernameField: No field provided, showing placeholder");
     return (
       <div className="space-y-2">
         <Label className="text-gray-300">Usuário</Label>
-        <div className="text-red-500 text-sm p-2 bg-red-100 rounded">
-          Erro: Campo de usuário não foi inicializado corretamente
+        <div className="relative">
+          <Input
+            className="pl-10 bg-gray-900/60 border-gray-700 text-white"
+            placeholder="Aguardando inicialização..."
+            disabled={true}
+          />
+          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
         </div>
       </div>
     );

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ControllerRenderProps } from "react-hook-form";
 
 interface PasswordFieldProps {
-  field: ControllerRenderProps<any, any>;
+  field?: ControllerRenderProps<any, any>;
   showPassword: boolean;
   toggleVisibility: () => void;
   disabled?: boolean;
@@ -21,26 +21,31 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   disabled = false,
   error
 }) => {
-  console.log("PasswordField: Rendering with field:", !!field, "showPassword:", showPassword, "field details:", {
-    hasName: !!field?.name,
-    hasValue: field?.value !== undefined,
-    hasOnChange: !!field?.onChange,
-    hasOnBlur: !!field?.onBlur
-  });
+  console.log("PasswordField: Rendering with field:", !!field, "showPassword:", showPassword);
   
-  // Enhanced safety check with more detailed validation
-  if (!field || typeof field !== 'object' || !field.name || typeof field.onChange !== 'function') {
-    console.error("PasswordField: field prop is invalid or incomplete", { 
-      field, 
-      fieldType: typeof field,
-      hasName: !!field?.name,
-      hasOnChange: typeof field?.onChange === 'function'
-    });
+  // Return early if field is not provided
+  if (!field) {
+    console.log("PasswordField: No field provided, showing placeholder");
     return (
       <div className="space-y-2">
         <Label className="text-gray-300">Senha</Label>
-        <div className="text-red-500 text-sm p-2 bg-red-100 rounded">
-          Erro: Campo de senha não foi inicializado corretamente
+        <div className="relative">
+          <Input
+            type="password"
+            className="pl-10 pr-10 bg-gray-900/60 border-gray-700 text-white"
+            placeholder="Aguardando inicialização..."
+            disabled={true}
+          />
+          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+            disabled={true}
+          >
+            <Eye className="h-4 w-4 text-gray-400" />
+          </Button>
         </div>
       </div>
     );

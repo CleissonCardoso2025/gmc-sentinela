@@ -12,17 +12,11 @@ export const LoginForm = () => {
   const { form, isFormReady, isLoading, showPassword, togglePasswordVisibility, onSubmit } = useLoginForm();
   const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 
-  console.log("LoginForm: Rendering with form ready:", isFormReady, "isLoading:", isLoading, "form exists:", !!form, "form.control exists:", !!form?.control);
+  console.log("LoginForm: Rendering with form ready:", isFormReady, "isLoading:", isLoading);
 
-  // Don't render anything until the form is completely ready with all required properties
-  if (!isFormReady || !form || !form.control || !form.handleSubmit || !form.formState) {
-    console.log("LoginForm: Form not ready yet, showing loading state", {
-      isFormReady,
-      hasForm: !!form,
-      hasControl: !!form?.control,
-      hasHandleSubmit: !!form?.handleSubmit,
-      hasFormState: !!form?.formState
-    });
+  // Show loading state until form is completely ready
+  if (!isFormReady || !form) {
+    console.log("LoginForm: Form not ready, showing loading state");
     return (
       <div className="flex justify-center items-center min-h-[200px]">
         <div className="flex items-center space-x-2 text-white">
@@ -43,12 +37,12 @@ export const LoginForm = () => {
             control={form.control}
             name="username"
             render={({ field, fieldState }) => {
-              console.log("LoginForm: Rendering username field with field:", !!field, "fieldState:", !!fieldState);
+              console.log("LoginForm: Rendering username field with field:", !!field);
               return (
                 <UsernameField 
                   field={field}
                   disabled={isLoading}
-                  error={fieldState.error?.message}
+                  error={fieldState?.error?.message}
                 />
               );
             }}
@@ -58,14 +52,14 @@ export const LoginForm = () => {
             control={form.control}
             name="password"
             render={({ field, fieldState }) => {
-              console.log("LoginForm: Rendering password field with field:", !!field, "fieldState:", !!fieldState);
+              console.log("LoginForm: Rendering password field with field:", !!field);
               return (
                 <PasswordField
                   field={field}
                   showPassword={showPassword}
                   toggleVisibility={togglePasswordVisibility}
                   disabled={isLoading}
-                  error={fieldState.error?.message}
+                  error={fieldState?.error?.message}
                 />
               );
             }}

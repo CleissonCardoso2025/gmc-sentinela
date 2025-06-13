@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import UserManagement from '@/components/Configuracoes/UserManagement';
-import SystemSettings from '@/components/Configuracoes/SystemSettings';
+import ApiIntegrations from '@/components/Configuracoes/ApiIntegrations';
+import NotificationSettings from '@/components/Configuracoes/NotificationSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/layouts/Dashboard';
@@ -24,7 +25,7 @@ const Configuracoes = () => {
         <Tabs defaultValue="usuarios" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-            <TabsTrigger value="sistema">Sistema</TabsTrigger>
+            <TabsTrigger value="apis">Integrações</TabsTrigger>
             <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
           </TabsList>
 
@@ -32,21 +33,12 @@ const Configuracoes = () => {
             <UserManagement />
           </TabsContent>
 
-          <TabsContent value="sistema">
-            <SystemSettings />
+          <TabsContent value="apis">
+            <ApiIntegrations />
           </TabsContent>
 
           <TabsContent value="notificacoes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações de Notificações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Preferências de notificações serão implementadas aqui.
-                </p>
-              </CardContent>
-            </Card>
+            <NotificationSettings />
           </TabsContent>
         </Tabs>
       </div>

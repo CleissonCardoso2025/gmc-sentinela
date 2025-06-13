@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { WebhookConfig, ApiKeyConfig } from '@/types/system-config';
+import { WebhookConfig, ApiKeyConfig, EmailConfig } from '@/types/system-config';
 
 // Funções simplificadas de criptografia (temporárias até resolver o import)
 function encrypt(text: string): string {
@@ -41,11 +41,17 @@ export const getWebhookConfigs = async (): Promise<WebhookConfig[]> => {
 // Função para obter uma chave de API específica
 export const getApiKey = async (keyName: string): Promise<string | null> => {
   try {
-    // Usando supabase sem tipagem forte para acessar tabelas não reconhecidas pelo TypeScript
+    // Primeiro, verifica se a chave está disponível no .env
+    const envKey = getApiKeyFromEnv(keyName);
+    if (envKey) {
+      return envKey;
+    }
+    
+    // Se não estiver no .env, busca no banco de dados
     const { data, error } = await (supabase as any)
       .from('system_api_keys')
-      .select('key_value')
-      .eq('key_name', keyName)
+      .select('api_key')
+      .eq('provider', keyName)
       .single();
 
     if (error) {
@@ -58,10 +64,27 @@ export const getApiKey = async (keyName: string): Promise<string | null> => {
     }
 
     // Descriptografa a chave antes de retornar
-    return data?.key_value ? decrypt(data.key_value) : null;
+    return data?.api_key ? decrypt(data.api_key) : null;
   } catch (error) {
     console.error(`Erro ao buscar chave de API ${keyName}:`, error);
     return null; // Retorna null em caso de erro para evitar quebrar a UI
+  }
+};
+
+// Função auxiliar para obter chaves de API do arquivo .env
+const getApiKeyFromEnv = (keyName: string): string | null => {
+  try {
+    switch (keyName) {
+      case 'google_maps':
+        return import.meta.env.VITE_GOOGLE_MAPS_API_KEY || null;
+      case 'openai':
+        return import.meta.env.VITE_OPENAI_API_KEY || null;
+      default:
+        return null;
+    }
+  } catch (error) {
+    console.error(`Erro ao buscar chave ${keyName} do .env:`, error);
+    return null;
   }
 };
 
@@ -75,7 +98,7 @@ export const saveApiKey = async (keyName: string, keyValue: string): Promise<boo
     const { data, error: selectError } = await (supabase as any)
       .from('system_api_keys')
       .select('id')
-      .eq('key_name', keyName)
+      .eq('provider', keyName)
       .single();
 
     if (selectError && selectError.code !== 'PGRST116') {
@@ -88,8 +111,7 @@ export const saveApiKey = async (keyName: string, keyValue: string): Promise<boo
       const { error } = await (supabase as any)
         .from('system_api_keys')
         .update({ 
-          key_value: encryptedKey,
-          updated_at: new Date().toISOString()
+          api_key: encryptedKey
         })
         .eq('id', data.id);
 
@@ -102,10 +124,9 @@ export const saveApiKey = async (keyName: string, keyValue: string): Promise<boo
       const { error } = await (supabase as any)
         .from('system_api_keys')
         .insert({
-          key_name: keyName,
-          key_value: encryptedKey,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          provider: keyName,
+          api_key: encryptedKey,
+          created_at: new Date().toISOString()
         });
 
       if (error) {
@@ -114,10 +135,74 @@ export const saveApiKey = async (keyName: string, keyValue: string): Promise<boo
       }
     }
     
+    // Atualiza o arquivo .env em desenvolvimento
+    if (import.meta.env.DEV) {
+      updateEnvFile(keyName, keyValue);
+    }
+    
     return true;
   } catch (error) {
     console.error(`Erro ao salvar chave de API ${keyName}:`, error);
     return false;
+  }
+};
+
+// Função para atualizar o arquivo .env
+const updateEnvFile = async (keyName: string, keyValue: string): Promise<void> => {
+  try {
+    // Determinar o nome da variável de ambiente
+    let envVarName = '';
+    switch (keyName) {
+      case 'google_maps':
+        envVarName = 'VITE_GOOGLE_MAPS_API_KEY';
+        break;
+      case 'openai':
+        envVarName = 'VITE_OPENAI_API_KEY';
+        break;
+      default:
+        return;
+    }
+    
+    // Atualizar a variável de ambiente em tempo de execução
+    // Isso não modifica o arquivo .env, mas permite usar o novo valor
+    // até que a página seja recarregada
+    (import.meta.env as any)[envVarName] = keyValue;
+    
+    // Chamar a Edge Function para atualizar o arquivo .env no servidor
+    const edgeFunctionUrl = import.meta.env.VITE_EDGE_FUNCTION_URL || 'https://rdkugzjrvlvcorfsbdaz.supabase.co/functions/v1';
+    
+    const response = await fetch(`${edgeFunctionUrl}/update-env`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`,
+      },
+      body: JSON.stringify({ key: keyName, value: keyValue })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Falha ao atualizar arquivo .env: ${errorData.error || response.statusText}`);
+    }
+    
+    console.log(`Chave ${keyName} salva no banco de dados e solicitada atualização no arquivo .env.`);
+    console.info(`Variável ${envVarName} atualizada.`);
+  } catch (error) {
+    console.error('Erro ao tentar atualizar arquivo .env:', error);
+    // Mostrar mensagem para o usuário atualizar manualmente
+    let envVarName = '';
+    switch (keyName) {
+      case 'google_maps':
+        envVarName = 'VITE_GOOGLE_MAPS_API_KEY';
+        break;
+      case 'openai':
+        envVarName = 'VITE_OPENAI_API_KEY';
+        break;
+    }
+    
+    if (envVarName) {
+      console.info(`Para usar esta chave em desenvolvimento, atualize seu arquivo .env manualmente:\n${envVarName}=${keyValue}`);
+    }
   }
 };
 
@@ -277,6 +362,128 @@ export const testWebhook = async (event: string, url: string): Promise<boolean> 
     return response.ok;
   } catch (error) {
     console.error(`Erro ao testar webhook para evento ${event}:`, error);
+    return false;
+  }
+};
+
+// Função para obter configuração de email
+export const getEmailConfig = async (): Promise<EmailConfig | null> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from('system_email_config')
+      .select('*')
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Configuração não encontrada
+        return null;
+      }
+      console.error('Erro ao buscar configuração de email:', error);
+      return null;
+    }
+
+    // Descriptografar senha se existir
+    if (data && data.password) {
+      data.password = '••••••••••••••••'; // Não retornamos a senha real, apenas um placeholder
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar configuração de email:', error);
+    return null;
+  }
+};
+
+// Função para salvar configuração de email
+export const saveEmailConfig = async (config: EmailConfig): Promise<boolean> => {
+  try {
+    // Verificar se já existe configuração
+    const { data, error: selectError } = await (supabase as any)
+      .from('system_email_config')
+      .select('id')
+      .single();
+
+    // Criptografar senha se não for placeholder
+    const passwordToSave = config.password?.includes('•') 
+      ? undefined // Não atualiza se for placeholder
+      : encrypt(config.password || '');
+
+    if (data?.id) {
+      // Atualizar configuração existente
+      const updateData: any = {
+        provider: config.provider,
+        host: config.host,
+        port: config.port,
+        username: config.username,
+        from_email: config.from_email,
+        from_name: config.from_name,
+        secure: config.secure,
+        enabled: config.enabled,
+        updated_at: new Date().toISOString()
+      };
+
+      // Só incluir senha se não for placeholder
+      if (passwordToSave) {
+        updateData.password = passwordToSave;
+      }
+
+      const { error } = await (supabase as any)
+        .from('system_email_config')
+        .update(updateData)
+        .eq('id', data.id);
+
+      if (error) {
+        console.error('Erro ao atualizar configuração de email:', error);
+        return false;
+      }
+    } else {
+      // Inserir nova configuração
+      const { error } = await (supabase as any)
+        .from('system_email_config')
+        .insert({
+          provider: config.provider,
+          host: config.host,
+          port: config.port,
+          username: config.username,
+          password: passwordToSave,
+          from_email: config.from_email,
+          from_name: config.from_name,
+          secure: config.secure,
+          enabled: config.enabled,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Erro ao inserir configuração de email:', error);
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar configuração de email:', error);
+    return false;
+  }
+};
+
+// Função para testar configuração de email
+export const testEmailConfig = async (): Promise<boolean> => {
+  try {
+    // Chamar uma função Edge Function ou API para testar o email
+    const { data, error } = await (supabase as any).functions.invoke('test-email-config', {
+      body: { test: true }
+    });
+
+    if (error) {
+      console.error('Erro ao testar configuração de email:', error);
+      return false;
+    }
+
+    return data?.success || false;
+  } catch (error) {
+    console.error('Erro ao testar configuração de email:', error);
     return false;
   }
 };

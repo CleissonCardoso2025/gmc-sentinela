@@ -163,13 +163,7 @@ export function useLoginForm() {
       
       console.log(`Login bem-sucedido, redirecionando usuário com perfil ${userProfile}`);
       
-      if (userProfile === "Inspetor" || userProfile === "Subinspetor") {
-        navigate("/index", { replace: true });
-      } else if (userProfile === "Agente" || userProfile === "Corregedor") {
-        navigate("/perfil", { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
+      navigate("/dashboard", { replace: true });
     } catch (error) {
       console.error("Erro de login:", error);
       toast({

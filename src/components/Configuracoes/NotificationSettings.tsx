@@ -4,21 +4,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Shield, Lock, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSystemConfig } from '@/hooks/use-system-config';
 
-
-
-const SystemSettings = () => {
+const NotificationSettings = () => {
   const {
     isLoading,
     isSaving,
     isTesting,
-    mapsApiKey,
     webhooks,
     error,
-    setMapsApiKey,
     updateWebhookUrl,
     toggleWebhook,
     saveConfig,
@@ -41,17 +37,6 @@ const SystemSettings = () => {
   if (isLoading) {
     return (
       <div className="space-y-8 max-w-2xl mx-auto p-4">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-40" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardContent>
-        </Card>
-        
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-64" />
@@ -77,51 +62,15 @@ const SystemSettings = () => {
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Configurações do Sistema</h1>
-        <Shield className="h-6 w-6 text-gcm-600" />
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
-            APIs Externas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Label htmlFor="maps-api-key">Google Maps API Key</Label>
-          <div className="flex gap-2">
-            <Input
-              id="maps-api-key"
-              type="password"
-              placeholder="Digite uma nova chave para substituir a atual"
-              value={mapsApiKey}
-              onChange={e => setMapsApiKey(e.target.value)}
-              autoComplete="off"
-            />
-            <Button 
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                saveConfig({ onlyGoogleMaps: true });
-              }} 
-              disabled={isSaving || !mapsApiKey}
-              className="whitespace-nowrap"
-            >
-              {isSaving ? 'Salvando...' : 'Salvar Chave'}
-            </Button>
-          </div>
-          <small className="text-muted-foreground">
-            A chave nunca será exibida após salva. Para alterar, digite uma nova e salve.
-          </small>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Webhooks de Notificação (n8n, Zapier, etc)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          <p className="text-muted-foreground mb-4">
+            Configure webhooks para receber notificações em sistemas externos quando eventos ocorrerem no sistema.
+          </p>
+          
           {webhooks.map((wh) => (
             <div key={wh.event} className="flex flex-col gap-1 border-b pb-4 mb-4">
               <div className="flex items-center gap-2">
@@ -168,4 +117,4 @@ const SystemSettings = () => {
   );
 };
 
-export default SystemSettings;
+export default NotificationSettings;

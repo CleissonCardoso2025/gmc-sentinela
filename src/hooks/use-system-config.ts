@@ -74,8 +74,8 @@ export function useSystemConfig() {
     loadConfig();
   }, []);
 
-  // Salvar todas as configurações
-  const saveConfig = async () => {
+  // Salvar configurações
+  const saveConfig = async ({ onlyGoogleMaps = false } = {}) => {
     setIsSaving(true);
     let success = true;
     
@@ -86,21 +86,26 @@ export function useSystemConfig() {
         if (!keySuccess) {
           success = false;
           toast.error('Falha ao salvar chave da API do Google Maps');
+        } else if (onlyGoogleMaps) {
+          toast.success('Chave da API do Google Maps salva com sucesso!');
+          return;
         }
       }
       
-      // Salvar configurações de webhook
-      for (const webhook of webhooks) {
-        if (webhook.enabled && webhook.url) {
-          const webhookSuccess = await saveWebhookConfig({
-            event: webhook.event,
-            url: webhook.url,
-            enabled: webhook.enabled,
-          });
-          
-          if (!webhookSuccess) {
-            success = false;
-            toast.error(`Falha ao salvar webhook para ${webhook.label}`);
+      // Se não for apenas Google Maps, salvar configurações de webhook
+      if (!onlyGoogleMaps) {
+        for (const webhook of webhooks) {
+          if (webhook.enabled && webhook.url) {
+            const webhookSuccess = await saveWebhookConfig({
+              event: webhook.event,
+              url: webhook.url,
+              enabled: webhook.enabled,
+            });
+            
+            if (!webhookSuccess) {
+              success = false;
+              toast.error(`Falha ao salvar webhook para ${webhook.label}`);
+            }
           }
         }
       }

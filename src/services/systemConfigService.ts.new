@@ -151,9 +151,7 @@ const updateEnvFile = async (keyName: string, keyValue: string): Promise<void> =
     // Determinar o nome da variável de ambiente
     let envVarName = '';
     switch (keyName) {
-      case 'google_maps':
-        envVarName = 'VITE_GOOGLE_MAPS_API_KEY';
-        break;
+      // Google Maps API removida
       case 'openai':
         envVarName = 'VITE_OPENAI_API_KEY';
         break;
@@ -190,9 +188,7 @@ const updateEnvFile = async (keyName: string, keyValue: string): Promise<void> =
     // Mostrar mensagem para o usuário atualizar manualmente
     let envVarName = '';
     switch (keyName) {
-      case 'google_maps':
-        envVarName = 'VITE_GOOGLE_MAPS_API_KEY';
-        break;
+      // Google Maps API removida
       case 'openai':
         envVarName = 'VITE_OPENAI_API_KEY';
         break;

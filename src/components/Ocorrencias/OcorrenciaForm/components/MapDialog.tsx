@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import GoogleMapComponent from '@/components/Map/GoogleMap';
+import SimpleMapComponent from '@/components/Map/SimpleMap';
 import { useOcorrenciaForm } from '../OcorrenciaFormContext';
 
 const MapDialog = () => {
@@ -23,7 +23,7 @@ const MapDialog = () => {
           </DialogDescription>
         </DialogHeader>
         <div className="h-[400px] w-full">
-          <GoogleMapComponent
+          <SimpleMapComponent
             markers={position ? [position] : []}
             zoom={13}
             showUserLocation={true}

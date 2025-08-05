@@ -103,9 +103,25 @@ const SystemSettings = () => {
             <Button 
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
+                console.log('Botão de salvar chave do Google Maps clicado');
+                console.log('Valor atual do campo mapsApiKey:', mapsApiKey ? (mapsApiKey.includes('•') ? 'Placeholder' : 'Nova chave') : 'Vazio');
+                
+                // Verificar se o campo não está vazio e não é apenas o placeholder
+                if (!mapsApiKey) {
+                  console.error('Campo da chave está vazio');
+                  return;
+                }
+                
+                if (mapsApiKey.includes('•')) {
+                  console.log('Campo contém apenas o placeholder, solicitando nova chave');
+                  alert('Para alterar a chave, digite uma nova chave no campo.');
+                  return;
+                }
+                
+                console.log('Chamando saveConfig com onlyGoogleMaps=true');
                 saveConfig({ onlyGoogleMaps: true });
               }} 
-              disabled={isSaving || !mapsApiKey}
+              disabled={isSaving || !mapsApiKey || mapsApiKey.includes('•')}
               className="whitespace-nowrap"
             >
               {isSaving ? 'Salvando...' : 'Salvar Chave'}

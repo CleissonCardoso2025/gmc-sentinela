@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Lock, Mail, BrainCircuit } from 'lucide-react';
-import { useSystemConfig } from '@/hooks/use-system-config';
 import { toast } from 'sonner';
-import { getApiKey, saveApiKey, getEmailConfig, saveEmailConfig, testEmailConfig } from '@/services/systemConfigService';
+import { getEmailConfig, saveEmailConfig, testEmailConfig, getApiKey, saveApiKey } from '@/services/systemConfigService';
+import { useSystemConfig } from '@/hooks/use-system-config';
 
 const ApiIntegrations = () => {
   const {
@@ -17,11 +18,21 @@ const ApiIntegrations = () => {
     isSaving,
     error,
     saveConfig,
+    mapsApiKey: hookMapsApiKey,
+    setMapsApiKey: hookSetMapsApiKey,
   } = useSystemConfig();
 
   // Estados para as APIs
   const [openaiApiKey, setOpenaiApiKey] = React.useState('');
+  // Usamos o estado do hook useSystemConfig para a chave do Google Maps
   const [mapsApiKey, setMapsApiKey] = React.useState('');
+  
+  // Sincronizar o estado local com o estado do hook
+  React.useEffect(() => {
+    if (hookMapsApiKey) {
+      setMapsApiKey(hookMapsApiKey);
+    }
+  }, [hookMapsApiKey]);
   const [emailService, setEmailService] = React.useState({
     enabled: false,
     provider: 'smtp',
@@ -45,8 +56,35 @@ const ApiIntegrations = () => {
         toast.error('Falha ao salvar chave da API OpenAI');
       }
     } catch (error) {
-      console.error('Erro ao salvar chave OpenAI:', error);
+      console.error('Erro ao salvar chave da API OpenAI:', error);
       toast.error('Erro ao salvar chave da API OpenAI');
+    }
+  };
+  
+  // Função para salvar chave do Google Maps
+  const saveMapsApiKey = async () => {
+    try {
+      console.log('Botão de salvar chave do Google Maps clicado');
+      console.log('Valor atual do campo mapsApiKey:', mapsApiKey ? (mapsApiKey.includes('•') ? 'Placeholder' : 'Nova chave') : 'Vazio');
+      
+      // Verificar se o campo não está vazio e não é apenas o placeholder
+      if (!mapsApiKey) {
+        console.error('Campo da chave está vazio');
+        toast.error('O campo da chave não pode estar vazio');
+        return;
+      }
+      
+      if (mapsApiKey.includes('•')) {
+        console.log('Campo contém apenas o placeholder, solicitando nova chave');
+        toast.info('Para alterar a chave, digite uma nova chave no campo.');
+        return;
+      }
+      
+      console.log('Chamando saveConfig com onlyGoogleMaps=true');
+      await saveConfig({ onlyGoogleMaps: true });
+    } catch (error) {
+      console.error('Erro ao salvar chave da API Google Maps:', error);
+      toast.error('Erro ao salvar chave da API Google Maps');
     }
   };
 
@@ -106,13 +144,29 @@ const ApiIntegrations = () => {
   // Função para salvar chave do Google Maps
   const saveMapsApiKey = async () => {
     try {
-      const success = await saveApiKey('google_maps', mapsApiKey);
-      if (success) {
-        toast.success('Chave da API Google Maps salva com sucesso!');
-        setMapsApiKey('••••••••••••••••');
-      } else {
-        toast.error('Falha ao salvar chave da API Google Maps');
+      console.log('Iniciando salvamento da chave do Google Maps usando useSystemConfig...');
+      
+      // Verificar se a chave não está vazia
+      if (!mapsApiKey || mapsApiKey.trim() === '') {
+        toast.error('A chave da API do Google Maps não pode estar vazia');
+        return;
       }
+      
+      // Verificar se a chave não é apenas o placeholder
+      if (mapsApiKey.includes('•')) {
+        console.log('Campo contém apenas o placeholder, solicitando nova chave');
+        toast.info('Para alterar a chave, digite uma nova chave no campo.');
+        return;
+      }
+      
+      console.log('Chamando saveConfig com onlyGoogleMaps=true');
+      
+      // Usar o hook useSystemConfig para salvar a chave
+      // Isso garante consistência com o componente SystemSettings
+      await saveConfig({ onlyGoogleMaps: true });
+      
+      // O toast de sucesso/erro é gerenciado pelo hook useSystemConfig
+      // Não precisamos fazer nada aqui
     } catch (error) {
       console.error('Erro ao salvar chave Google Maps:', error);
       toast.error('Erro ao salvar chave da API Google Maps');
@@ -123,13 +177,17 @@ const ApiIntegrations = () => {
   React.useEffect(() => {
     const loadApiConfigs = async () => {
       try {
+        console.log('Carregando configurações de API...');
+        
         // Carregar chave da OpenAI
+        console.log('Carregando chave da OpenAI...');
         const hasOpenAIKey = await getApiKey('openai');
+        console.log('Chave da OpenAI carregada:', hasOpenAIKey ? 'Encontrada' : 'Não encontrada');
         setOpenaiApiKey(hasOpenAIKey ? '••••••••••••••••' : '');
         
-        // Carregar chave do Google Maps
-        const hasMapsApiKey = await getApiKey('google_maps');
-        setMapsApiKey(hasMapsApiKey ? '••••••••••••••••' : '');
+        // A chave do Google Maps já é carregada pelo hook useSystemConfig
+        // Não precisamos carregá-la novamente aqui
+        // O estado mapsApiKey deve ser sincronizado com o estado do hook
 
         // Carregar configurações de email
         const emailConfig = await getEmailConfig();
@@ -254,7 +312,11 @@ const ApiIntegrations = () => {
                   type="password"
                   placeholder="Digite uma nova chave para substituir a atual"
                   value={mapsApiKey}
-                  onChange={e => setMapsApiKey(e.target.value)}
+                  onChange={e => {
+                    // Atualizar tanto o estado local quanto o estado do hook
+                    setMapsApiKey(e.target.value);
+                    hookSetMapsApiKey(e.target.value);
+                  }}
                   autoComplete="off"
                 />
                 <Button 

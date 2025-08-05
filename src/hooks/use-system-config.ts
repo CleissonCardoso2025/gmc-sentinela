@@ -31,7 +31,7 @@ export function useSystemConfig() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState<string | null>(null);
-  // Google Maps API removida
+  const [mapsApiKey, setMapsApiKey] = useState<string>('');
   const [webhooks, setWebhooks] = useState<WebhookFormData[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +59,16 @@ export function useSystemConfig() {
         
         setWebhooks(initialWebhooks);
         
-        // Google Maps API removida
+        // Carregar chave da API do Google Maps
+        console.log('Carregando chave da API do Google Maps...');
+        const googleMapsKey = await getApiKey('google_maps');
+        console.log('Chave do Google Maps carregada:', googleMapsKey ? 'Encontrada' : 'Não encontrada');
+        
+        if (googleMapsKey) {
+          setMapsApiKey('••••••••••••••••'); // Não exibimos a chave real, apenas um placeholder
+        } else {
+          setMapsApiKey(''); // Campo vazio se não houver chave
+        }
       } catch (err) {
         console.error('Erro ao carregar configurações:', err);
         setError('Falha ao carregar configurações do sistema');
@@ -72,13 +81,49 @@ export function useSystemConfig() {
   }, []);
 
   // Salvar configurações
-  const saveConfig = async () => {
+  const saveConfig = async (options?: { onlyGoogleMaps?: boolean }) => {
     setIsSaving(true);
     let success = true;
     
     try {
-      // Salvar configurações de webhook
-      for (const webhook of webhooks) {
+      console.log('Iniciando saveConfig com opções:', options);
+      
+      // Salvar chave da API do Google Maps se fornecida
+      if (mapsApiKey && (!options || options.onlyGoogleMaps)) {
+        console.log('Salvando chave da API do Google Maps...');
+        
+        // Verificar se a chave não é apenas o placeholder
+        if (mapsApiKey.includes('•')) {
+          console.log('Chave já está salva (placeholder detectado)');
+          if (options?.onlyGoogleMaps) {
+            toast.info('A chave da API já está salva. Para alterar, digite uma nova chave.');
+            setIsSaving(false);
+            return;
+          }
+        } else {
+          // Salvar a nova chave
+          console.log('Chamando saveApiKey para google_maps...');
+          const mapsKeySuccess = await saveApiKey('google_maps', mapsApiKey);
+          
+          if (!mapsKeySuccess) {
+            console.error('Falha ao salvar chave da API Google Maps');
+            success = false;
+            toast.error('Falha ao salvar chave da API Google Maps');
+          } else {
+            console.log('Chave da API Google Maps salva com sucesso!');
+            if (options?.onlyGoogleMaps) {
+              toast.success('Chave da API Google Maps salva com sucesso!');
+              setMapsApiKey('••••••••••••••••'); // Atualizar para o placeholder
+              setIsSaving(false);
+              return; // Se estamos salvando apenas a chave, podemos retornar aqui
+            }
+          }
+        }
+      }
+      
+      // Salvar configurações de webhook se não estamos salvando apenas a chave do Maps
+      if (!options?.onlyGoogleMaps) {
+        for (const webhook of webhooks) {
         if (webhook.enabled && webhook.url) {
           const webhookSuccess = await saveWebhookConfig({
             event: webhook.event,
@@ -91,8 +136,10 @@ export function useSystemConfig() {
             toast.error(`Falha ao salvar webhook para ${webhook.label}`);
           }
         }
+        }
       }
-      if (success) {
+      
+      if (success && !options?.onlyGoogleMaps) {
         toast.success('Configurações salvas com sucesso!');
       } else {
         toast.warning('Algumas configurações não puderam ser salvas');
@@ -157,6 +204,8 @@ export function useSystemConfig() {
     isLoading,
     isSaving,
     isTesting,
+    mapsApiKey,
+    setMapsApiKey,
     webhooks,
     error,
     updateWebhookUrl,

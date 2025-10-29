@@ -169,16 +169,6 @@ export const createEscalaItem = async (escalaData: {
   try {
     console.log("Creating escala item with data:", escalaData);
     
-    // Get current user to satisfy RLS policy
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-    
-    if (!userId) {
-      console.error("No authenticated user found");
-      toast.error("Você precisa estar autenticado para criar uma escala");
-      return null;
-    }
-    
     const { data, error } = await supabase
       .from('escala_items')
       .insert([{
@@ -189,8 +179,7 @@ export const createEscalaItem = async (escalaData: {
         periodo: escalaData.periodo,
         agent: escalaData.agent,
         role: escalaData.role,
-        schedule: escalaData.schedule as Json,
-        user_id: userId // Add user_id to satisfy RLS policy
+        schedule: escalaData.schedule as Json
       }])
       .select()
       .single();
@@ -233,16 +222,6 @@ export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaIt
   try {
     const scheduleForDB = escalaItem.schedule as unknown as Json;
     
-    // Get current user to satisfy RLS policy
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-    
-    if (!userId) {
-      console.error("No authenticated user found");
-      toast.error("Você precisa estar autenticado para atualizar uma escala");
-      return null;
-    }
-    
     const { data, error } = await supabase
       .from('escala_items')
       .update({
@@ -254,7 +233,7 @@ export const updateEscalaItem = async (escalaItem: EscalaItem): Promise<EscalaIt
         agent: escalaItem.agent,
         role: escalaItem.role,
         schedule: scheduleForDB,
-        user_id: userId // Ensure user_id is set for RLS policy
+        updated_at: new Date().toISOString()
       })
       .eq('id', escalaItem.id)
       .select()

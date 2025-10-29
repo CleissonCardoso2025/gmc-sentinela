@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste de Criptografia</title>
+</head>
+<body>
+    <h1>Teste de Criptografia</h1>
+    <button onclick="testEncrypt()">Testar Criptografia</button>
+    <div id="result"></div>
+
+    <script>
+        function encrypt(text) {
+            try {
+                return btoa(unescape(encodeURIComponent(text)));
+            } catch (error) {
+                console.error('Erro ao criptografar:', error);
+                throw new Error('Falha ao criptografar dados');
+            }
+        }
+
+        function decrypt(encryptedText) {
+            try {
+                return decodeURIComponent(escape(atob(encryptedText)));
+            } catch (error) {
+                console.error('Erro ao descriptografar:', error);
+                return '';
+            }
+        }
+
+        function testEncrypt() {
+            const testKey = "AIzaSyTest123456789";
+            console.log("Testando criptografia...");
+            console.log("Texto original:", testKey);
+            
+            try {
+                const encrypted = encrypt(testKey);
+                console.log("Texto criptografado:", encrypted);
+                
+                const decrypted = decrypt(encrypted);
+                console.log("Texto descriptografado:", decrypted);
+                
+                if (decrypted === testKey) {
+                    document.getElementById('result').innerHTML = `
+                        <h2 style="color: green;">✅ SUCESSO!</h2>
+                        <p>Original: ${testKey}</p>
+                        <p>Criptografado: ${encrypted}</p>
+                        <p>Descriptografado: ${decrypted}</p>
+                        <p><strong>A criptografia está funcionando perfeitamente!</strong></p>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `
+                        <h2 style="color: red;">❌ ERRO!</h2>
+                        <p>Os textos não coincidem</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h2 style="color: red;">❌ ERRO!</h2>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

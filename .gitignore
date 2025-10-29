@@ -13,12 +13,18 @@ dist
 dist-ssr
 *.local
 
-# Environment variables
+# Environment variables - NUNCA COMMITAR CHAVES DE API!
 .env
+.env.*
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
+*.env
+*.env.*
 
 # Editor directories and files
 .vscode/*

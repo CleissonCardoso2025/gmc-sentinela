@@ -19,11 +19,13 @@ export function encrypt(text: string): string {
   // Esta é uma implementação simplificada para fins de demonstração
   // Em produção, use uma biblioteca de criptografia robusta como crypto-js
   
-  // Simulação de criptografia (não use em produção)
-  const buffer = Buffer.from(text);
-  const encrypted = buffer.toString('base64');
-  
-  return encrypted;
+  // Usar btoa para Base64 encoding (disponível no navegador)
+  try {
+    return btoa(unescape(encodeURIComponent(text)));
+  } catch (error) {
+    console.error('Erro ao criptografar:', error);
+    throw new Error('Falha ao criptografar dados');
+  }
 }
 
 /**
@@ -35,11 +37,13 @@ export function decrypt(encryptedText: string): string {
   // Esta é uma implementação simplificada para fins de demonstração
   // Em produção, use uma biblioteca de criptografia robusta como crypto-js
   
-  // Simulação de descriptografia (não use em produção)
-  const buffer = Buffer.from(encryptedText, 'base64');
-  const decrypted = buffer.toString();
-  
-  return decrypted;
+  // Usar atob para Base64 decoding (disponível no navegador)
+  try {
+    return decodeURIComponent(escape(atob(encryptedText)));
+  } catch (error) {
+    console.error('Erro ao descriptografar:', error);
+    return '';
+  }
 }
 
 /**

@@ -1,18 +1,21 @@
 import { supabase } from '@/integrations/supabase/client';
 import { WebhookConfig, ApiKeyConfig, EmailConfig } from '@/types/system-config';
 
-// Funções simplificadas de criptografia (temporárias até resolver o import)
+// Funções de criptografia usando APIs do navegador
 function encrypt(text: string): string {
-  // Implementação básica para fins de demonstração
-  const buffer = Buffer.from(text);
-  return buffer.toString('base64');
+  try {
+    // Usar btoa para Base64 encoding (disponível no navegador)
+    return btoa(unescape(encodeURIComponent(text)));
+  } catch (error) {
+    console.error('Erro ao criptografar:', error);
+    throw new Error('Falha ao criptografar dados');
+  }
 }
 
 function decrypt(encryptedText: string): string {
-  // Implementação básica para fins de demonstração
   try {
-    const buffer = Buffer.from(encryptedText, 'base64');
-    return buffer.toString();
+    // Usar atob para Base64 decoding (disponível no navegador)
+    return decodeURIComponent(escape(atob(encryptedText)));
   } catch (error) {
     console.error('Erro ao descriptografar:', error);
     return '';

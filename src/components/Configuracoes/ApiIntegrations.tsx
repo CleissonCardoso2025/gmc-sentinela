@@ -1,160 +1,49 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Lock, Mail, BrainCircuit } from 'lucide-react';
-import { toast } from 'sonner';
-import { getEmailConfig, saveEmailConfig, testEmailConfig, getApiKey, saveApiKey } from '@/services/systemConfigService';
-import { saveGoogleMapsKey, hasGoogleMapsKey } from '@/services/googleMapsService';
+import { AlertCircle, CheckCircle2, Lock, Mail, BrainCircuit, MapPin, ExternalLink } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { getConfigStatus } from '@/services/envConfigService';
+
+interface ConfigStatusState {
+  googleMaps: { configured: boolean; message: string };
+  openai: { configured: boolean; message: string };
+  email: { configured: boolean; message: string };
+}
 
 const ApiIntegrations = () => {
-  // Estados simples
-  const [openaiApiKey, setOpenaiApiKey] = React.useState('');
-  const [mapsApiKey, setMapsApiKey] = React.useState('');
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [emailService, setEmailService] = React.useState({
-    enabled: false,
-    provider: 'smtp',
-    host: '',
-    port: '587',
-    username: '',
-    password: '',
-    fromEmail: '',
-    fromName: 'GMC Sentinela',
-    secure: true
+  const [isLoading, setIsLoading] = useState(true);
+  const [configStatus, setConfigStatus] = useState<ConfigStatusState>({
+    googleMaps: { configured: false, message: '' },
+    openai: { configured: false, message: '' },
+    email: { configured: false, message: '' }
   });
 
-  // Função para salvar chave da OpenAI
-  const saveOpenAIKey = async () => {
-    try {
-      const success = await saveApiKey('openai', openaiApiKey);
-      if (success) {
-        toast.success('Chave da API OpenAI salva com sucesso!');
-        setOpenaiApiKey('••••••••••••••••');
-      } else {
-        toast.error('Falha ao salvar chave da API OpenAI');
-      }
-    } catch (error) {
-      console.error('Erro ao salvar chave da API OpenAI:', error);
-      toast.error('Erro ao salvar chave da API OpenAI');
-    }
-  };
-
-  // Função para salvar configurações de email
-  const saveEmailSettings = async () => {
-    try {
-      // Validações básicas
-      if (!emailService.host || !emailService.username || (!emailService.password && !emailService.password.includes('•'))) {
-        toast.error('Preencha todos os campos obrigatórios');
-        return;
-      }
-
-      const emailConfig = {
-        provider: emailService.provider,
-        host: emailService.host,
-        port: emailService.port,
-        username: emailService.username,
-        password: emailService.password,
-        from_email: emailService.fromEmail || emailService.username,
-        from_name: emailService.fromName,
-        secure: emailService.secure,
-        enabled: emailService.enabled
-      };
-
-      const success = await saveEmailConfig(emailConfig);
-      if (success) {
-        toast.success('Configurações de email salvas com sucesso!');
-        setEmailService(prev => ({
-          ...prev,
-          password: '••••••••••••••••'
-        }));
-      } else {
-        toast.error('Falha ao salvar configurações de email');
-      }
-    } catch (error) {
-      console.error('Erro ao salvar configurações de email:', error);
-      toast.error('Erro ao salvar configurações de email');
-    }
-  };
-
-  // Função para testar configuração de email
-  const testEmailSettings = async () => {
-    try {
-      toast.info('Enviando email de teste...');
-      const success = await testEmailConfig();
-      if (success) {
-        toast.success('Email de teste enviado com sucesso!');
-      } else {
-        toast.error('Falha ao enviar email de teste');
-      }
-    } catch (error) {
-      console.error('Erro ao testar email:', error);
-      toast.error('Erro ao enviar email de teste');
-    }
-  };
-
-  // Função SIMPLES para salvar chave do Google Maps
-  const saveMapsApiKey = async () => {
-    setIsSaving(true);
-    try {
-      const success = await saveGoogleMapsKey(mapsApiKey);
-      if (success) {
-        // Atualizar para placeholder
-        setMapsApiKey('••••••••••••••••');
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Função para carregar as configurações
-  React.useEffect(() => {
-    const loadApiConfigs = async () => {
+  // Carregar status das configurações
+  useEffect(() => {
+    const loadStatus = () => {
       try {
-        console.log('Carregando configurações de API...');
-        
-        // Carregar chave da OpenAI
-        const hasOpenAIKey = await getApiKey('openai');
-        setOpenaiApiKey(hasOpenAIKey ? '••••••••••••••••' : '');
-        
-        // Carregar chave do Google Maps
-        const hasGoogleKey = await hasGoogleMapsKey();
-        setMapsApiKey(hasGoogleKey ? '••••••••••••••••' : '');
-
-        // Carregar configurações de email
-        const emailConfig = await getEmailConfig();
-        if (emailConfig) {
-          setEmailService({
-            enabled: emailConfig.enabled || false,
-            provider: emailConfig.provider || 'smtp',
-            host: emailConfig.host || '',
-            port: emailConfig.port || '587',
-            username: emailConfig.username || '',
-            password: '••••••••••••••••',
-            fromEmail: emailConfig.from_email || '',
-            fromName: emailConfig.from_name || 'GMC Sentinela',
-            secure: emailConfig.secure !== undefined ? emailConfig.secure : true
-          });
-        }
+        const status = getConfigStatus();
+        setConfigStatus(status);
       } catch (error) {
-        console.error('Erro ao carregar configurações:', error);
+        console.error('Erro ao carregar status das configurações:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadApiConfigs();
+    loadStatus();
   }, []);
+
+  const openDokployDocs = () => {
+    window.open('https://docs.dokploy.com/docs/core/domain#environment-variables', '_blank');
+  };
 
   if (isLoading) {
     return (
-      <div className="space-y-8 max-w-2xl mx-auto p-4">
+      <div className="space-y-8 max-w-4xl mx-auto p-4">
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-40" />
@@ -170,218 +59,223 @@ const ApiIntegrations = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-2xl mx-auto p-4">
+    <div className="space-y-8 max-w-4xl mx-auto p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Integrações com APIs</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Integrações com APIs</h1>
+          <p className="text-muted-foreground mt-1">
+            Configure as chaves de API através das variáveis de ambiente no Dokploy
+          </p>
+        </div>
         <Lock className="h-6 w-6 text-gcm-600" />
       </div>
 
-      <Tabs defaultValue="openai" className="w-full">
+      {/* Alert informativo */}
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Importante:</strong> Por questões de segurança, as chaves de API agora devem ser configuradas
+          diretamente no painel do Dokploy através de variáveis de ambiente. Esta interface apenas exibe o
+          status das configurações.
+        </AlertDescription>
+      </Alert>
+
+      <Tabs defaultValue="google_maps" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="openai">OpenAI</TabsTrigger>
           <TabsTrigger value="google_maps">Google Maps</TabsTrigger>
+          <TabsTrigger value="openai">OpenAI</TabsTrigger>
           <TabsTrigger value="email">Email</TabsTrigger>
         </TabsList>
 
+        {/* Google Maps */}
+        <TabsContent value="google_maps">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Google Maps API
+              </CardTitle>
+              <CardDescription>
+                Necessária para funcionalidades de mapa e geolocalização
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                {configStatus.googleMaps.configured ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium">Status da Configuração</p>
+                  <p className="text-sm text-muted-foreground">{configStatus.googleMaps.message}</p>
+                </div>
+              </div>
+
+              {!configStatus.googleMaps.configured && (
+                <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                    Como configurar no Dokploy:
+                  </h4>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800 dark:text-blue-200">
+                    <li>Acesse o painel do Dokploy</li>
+                    <li>Navegue até o projeto GMC Sentinela</li>
+                    <li>Vá em "Environment Variables"</li>
+                    <li>Adicione a variável: <code className="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">VITE_GOOGLE_MAPS_API_KEY</code></li>
+                    <li>Cole sua chave da API do Google Maps</li>
+                    <li>Salve e faça o redeploy da aplicação</li>
+                  </ol>
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open('https://console.cloud.google.com/apis/credentials', '_blank')}
+                      className="gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Obter chave no Google Cloud
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* OpenAI */}
         <TabsContent value="openai">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BrainCircuit className="h-5 w-5" />
-                API OpenAI
+                OpenAI API
               </CardTitle>
+              <CardDescription>
+                Necessária para recursos de inteligência artificial
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Configure a chave da API OpenAI para utilizar recursos de inteligência artificial no sistema.
-              </p>
-              <Label htmlFor="openai-api-key">Chave da API OpenAI</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="openai-api-key"
-                  type="password"
-                  placeholder="Digite uma nova chave para substituir a atual"
-                  value={openaiApiKey}
-                  onChange={e => setOpenaiApiKey(e.target.value)}
-                  autoComplete="off"
-                />
-                <Button 
-                  onClick={saveOpenAIKey} 
-                  disabled={isSaving || !openaiApiKey || openaiApiKey.includes('•')}
-                  className="whitespace-nowrap"
-                >
-                  {isSaving ? 'Salvando...' : 'Salvar Chave'}
-                </Button>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                {configStatus.openai.configured ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium">Status da Configuração</p>
+                  <p className="text-sm text-muted-foreground">{configStatus.openai.message}</p>
+                </div>
               </div>
-              <small className="text-muted-foreground">
-                A chave nunca será exibida após salva. Para alterar, digite uma nova e salve.
-              </small>
+
+              {!configStatus.openai.configured && (
+                <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                    Como configurar no Dokploy:
+                  </h4>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800 dark:text-blue-200">
+                    <li>Acesse o painel do Dokploy</li>
+                    <li>Navegue até o projeto GMC Sentinela</li>
+                    <li>Vá em "Environment Variables"</li>
+                    <li>Adicione a variável: <code className="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">VITE_OPENAI_API_KEY</code></li>
+                    <li>Cole sua chave da API OpenAI</li>
+                    <li>Salve e faça o redeploy da aplicação</li>
+                  </ol>
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open('https://platform.openai.com/api-keys', '_blank')}
+                      className="gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Obter chave na OpenAI
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="google_maps">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
-                Google Maps API Key
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Configure a chave da API Google Maps para utilizar recursos de mapas e geolocalização no sistema.
-              </p>
-              <Label htmlFor="maps-api-key">Google Maps API Key</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="maps-api-key"
-                  type="password"
-                  placeholder="Digite uma nova chave para substituir a atual"
-                  value={mapsApiKey}
-                  onChange={e => setMapsApiKey(e.target.value)}
-                  autoComplete="off"
-                />
-                <Button 
-                  onClick={saveMapsApiKey} 
-                  disabled={isSaving || !mapsApiKey || mapsApiKey.includes('•')}
-                  className="whitespace-nowrap"
-                >
-                  {isSaving ? 'Salvando...' : 'Salvar Chave'}
-                </Button>
-              </div>
-              <small className="text-muted-foreground">
-                A chave nunca será exibida após salva. Para alterar, digite uma nova e salve.
-              </small>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
+        {/* Email */}
         <TabsContent value="email">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                Serviço de Email
+                Configuração de Email
               </CardTitle>
+              <CardDescription>
+                Necessária para envio de notificações por email
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Switch
-                  checked={emailService.enabled}
-                  onCheckedChange={(checked) => setEmailService(prev => ({ ...prev, enabled: checked }))}
-                  id="email-enabled"
-                />
-                <Label htmlFor="email-enabled">Ativar serviço de email</Label>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email-host">Servidor SMTP</Label>
-                    <Input
-                      id="email-host"
-                      placeholder="smtp.example.com"
-                      value={emailService.host}
-                      onChange={e => setEmailService(prev => ({ ...prev, host: e.target.value }))}
-                      disabled={!emailService.enabled}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email-port">Porta</Label>
-                    <Input
-                      id="email-port"
-                      placeholder="587"
-                      value={emailService.port}
-                      onChange={e => setEmailService(prev => ({ ...prev, port: e.target.value }))}
-                      disabled={!emailService.enabled}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="email-username">Usuário</Label>
-                  <Input
-                    id="email-username"
-                    placeholder="seu-email@example.com"
-                    value={emailService.username}
-                    onChange={e => setEmailService(prev => ({ ...prev, username: e.target.value }))}
-                    disabled={!emailService.enabled}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="email-password">Senha</Label>
-                  <Input
-                    id="email-password"
-                    type="password"
-                    placeholder="Digite uma nova senha para substituir a atual"
-                    value={emailService.password}
-                    onChange={e => setEmailService(prev => ({ ...prev, password: e.target.value }))}
-                    autoComplete="off"
-                    disabled={!emailService.enabled}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email-from">Email de Origem</Label>
-                    <Input
-                      id="email-from"
-                      placeholder="noreply@seudominio.com"
-                      value={emailService.fromEmail}
-                      onChange={e => setEmailService(prev => ({ ...prev, fromEmail: e.target.value }))}
-                      disabled={!emailService.enabled}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email-name">Nome de Exibição</Label>
-                    <Input
-                      id="email-name"
-                      placeholder="GMC Sentinela"
-                      value={emailService.fromName}
-                      onChange={e => setEmailService(prev => ({ ...prev, fromName: e.target.value }))}
-                      disabled={!emailService.enabled}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={emailService.secure}
-                    onCheckedChange={(checked) => setEmailService(prev => ({ ...prev, secure: checked }))}
-                    id="email-secure"
-                    disabled={!emailService.enabled}
-                  />
-                  <Label htmlFor="email-secure">Conexão segura (SSL/TLS)</Label>
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button 
-                    onClick={saveEmailSettings} 
-                    disabled={isSaving || !emailService.enabled}
-                    className="whitespace-nowrap"
-                  >
-                    {isSaving ? 'Salvando...' : 'Salvar Configurações'}
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={testEmailSettings} 
-                    disabled={!emailService.enabled || !emailService.host || !emailService.username}
-                    className="whitespace-nowrap"
-                  >
-                    Testar Configuração
-                  </Button>
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                {configStatus.email.configured ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium">Status da Configuração</p>
+                  <p className="text-sm text-muted-foreground">{configStatus.email.message}</p>
                 </div>
               </div>
+
+              {!configStatus.email.configured && (
+                <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                    Como configurar no Dokploy:
+                  </h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                    Adicione as seguintes variáveis de ambiente no Dokploy:
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                      <code>VITE_EMAIL_HOST</code> - Servidor SMTP (ex: smtp.gmail.com)
+                    </div>
+                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                      <code>VITE_EMAIL_PORT</code> - Porta SMTP (ex: 587)
+                    </div>
+                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                      <code>VITE_EMAIL_USER</code> - Usuário/email de autenticação
+                    </div>
+                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                      <code>VITE_EMAIL_PASSWORD</code> - Senha do email
+                    </div>
+                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                      <code>VITE_EMAIL_FROM</code> - Email remetente (opcional)
+                    </div>
+                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                      <code>VITE_EMAIL_FROM_NAME</code> - Nome do remetente (opcional)
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Botão para documentação */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Precisa de ajuda?</h3>
+              <p className="text-sm text-muted-foreground">
+                Consulte a documentação do Dokploy sobre variáveis de ambiente
+              </p>
+            </div>
+            <Button onClick={openDokployDocs} variant="outline" className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Documentação Dokploy
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
 export default ApiIntegrations;
-
-

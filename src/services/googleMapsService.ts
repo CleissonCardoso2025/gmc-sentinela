@@ -1,153 +1,36 @@
 /**
- * Serviço SIMPLIFICADO para gerenciar a chave da API do Google Maps
- * SEM criptografia complexa, SEM hooks complicados
- * Apenas salvar e carregar do banco de dados
+ * Serviço para gerenciar a chave da API do Google Maps
+ * 
+ * IMPORTANTE: As chaves agora são gerenciadas através de variáveis de ambiente
+ * Configure VITE_GOOGLE_MAPS_API_KEY no Dokploy para usar o Google Maps
  */
 
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { getGoogleMapsApiKey, hasGoogleMapsKey as checkGoogleMapsKey } from './envConfigService';
 
 /**
- * Criptografia SIMPLES usando Base64 (navegador)
+ * Obtém a chave da API do Google Maps das variáveis de ambiente
+ * @returns A chave da API ou null se não configurada
  */
-function simpleEncrypt(text: string): string {
-  return btoa(text);
+export function loadGoogleMapsKey(): string | null {
+  return getGoogleMapsApiKey();
 }
 
 /**
- * Descriptografia SIMPLES usando Base64 (navegador)
+ * Verifica se a chave do Google Maps está configurada
+ * @returns true se a chave está configurada
  */
-function simpleDecrypt(encrypted: string): string {
-  return atob(encrypted);
+export function hasGoogleMapsKey(): boolean {
+  return checkGoogleMapsKey();
 }
 
 /**
- * Salvar chave do Google Maps no banco de dados
+ * Função mantida para compatibilidade com código existente
+ * Agora apenas informa que as chaves devem ser configuradas no Dokploy
+ * @deprecated Use variáveis de ambiente no Dokploy
  */
 export async function saveGoogleMapsKey(apiKey: string): Promise<boolean> {
-  try {
-    console.log('🔑 Salvando chave do Google Maps...');
-    
-    // Validar entrada
-    if (!apiKey || apiKey.trim() === '') {
-      toast.error('A chave não pode estar vazia');
-      return false;
-    }
-    
-    // Não salvar se for placeholder
-    if (apiKey.includes('•')) {
-      toast.info('Digite uma nova chave para substituir');
-      return false;
-    }
-    
-    // Criptografar
-    const encryptedKey = simpleEncrypt(apiKey);
-    console.log('✅ Chave criptografada');
-    
-    // Verificar se já existe
-    const { data: existing } = await supabase
-      .from('system_api_keys')
-      .select('id')
-      .eq('key_name', 'google_maps')
-      .single();
-    
-    if (existing) {
-      // ATUALIZAR
-      console.log('📝 Atualizando chave existente...');
-      const { error } = await supabase
-        .from('system_api_keys')
-        .update({
-          key_value: encryptedKey,
-          updated_at: new Date().toISOString()
-        })
-        .eq('key_name', 'google_maps');
-      
-      if (error) {
-        console.error('❌ Erro ao atualizar:', error);
-        toast.error('Erro ao atualizar chave: ' + error.message);
-        return false;
-      }
-    } else {
-      // INSERIR
-      console.log('➕ Inserindo nova chave...');
-      const { error } = await supabase
-        .from('system_api_keys')
-        .insert({
-          key_name: 'google_maps',
-          key_value: encryptedKey,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-      
-      if (error) {
-        console.error('❌ Erro ao inserir:', error);
-        toast.error('Erro ao inserir chave: ' + error.message);
-        return false;
-      }
-    }
-    
-    console.log('✅ Chave salva com sucesso!');
-    toast.success('Chave do Google Maps salva com sucesso!');
-    return true;
-    
-  } catch (error) {
-    console.error('❌ Erro inesperado:', error);
-    toast.error('Erro ao salvar chave');
-    return false;
-  }
-}
-
-/**
- * Carregar chave do Google Maps do banco de dados
- */
-export async function loadGoogleMapsKey(): Promise<string | null> {
-  try {
-    console.log('📥 Carregando chave do Google Maps...');
-    
-    const { data, error } = await supabase
-      .from('system_api_keys')
-      .select('key_value')
-      .eq('key_name', 'google_maps')
-      .single();
-    
-    if (error) {
-      if (error.code === 'PGRST116') {
-        console.log('ℹ️ Nenhuma chave encontrada');
-        return null;
-      }
-      console.error('❌ Erro ao carregar:', error);
-      return null;
-    }
-    
-    if (!data || !data.key_value) {
-      console.log('ℹ️ Chave vazia');
-      return null;
-    }
-    
-    // Descriptografar
-    const decryptedKey = simpleDecrypt(data.key_value);
-    console.log('✅ Chave carregada');
-    return decryptedKey;
-    
-  } catch (error) {
-    console.error('❌ Erro inesperado:', error);
-    return null;
-  }
-}
-
-/**
- * Verificar se existe uma chave salva
- */
-export async function hasGoogleMapsKey(): Promise<boolean> {
-  try {
-    const { data } = await supabase
-      .from('system_api_keys')
-      .select('id')
-      .eq('key_name', 'google_maps')
-      .single();
-    
-    return !!data;
-  } catch {
-    return false;
-  }
+  console.warn('⚠️ AVISO: As chaves de API agora devem ser configuradas no Dokploy através de variáveis de ambiente.');
+  console.warn('⚠️ Configure VITE_GOOGLE_MAPS_API_KEY no painel do Dokploy.');
+  console.warn('⚠️ Esta função não salva mais chaves no banco de dados por questões de segurança.');
+  return false;
 }

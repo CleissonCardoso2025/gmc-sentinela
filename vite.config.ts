@@ -10,6 +10,15 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  preview: {
+    host: "::",
+    port: 8080,
+    allowedHosts: [
+      'gcm.nexgov.com.br',
+      'localhost',
+      '127.0.0.1',
+    ],
+  },
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
